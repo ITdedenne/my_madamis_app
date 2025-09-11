@@ -77,8 +77,10 @@ build
 .vscode/
 
 # Amplify
-amplify/.config
+amplify/team-provider-info.json
+amplify/backend/backend-config.json
 amplify/backend/awscloudformation
+amplify/.config
 amplify-backup
 amplify-meta.json
 aws-exports.js
