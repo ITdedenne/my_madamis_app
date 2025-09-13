@@ -1,6 +1,6 @@
 {
   "name": "Flutter AWS App",
-  // ベースとなるOSイメージ
+  // ベースとなるOSイメージをUbuntuに指定
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
 
   // Codespacesの公式機能(Features)を使ってツールをインストール
@@ -33,11 +33,5 @@
         "ms-azuretools.vscode-docker"
       ]
     }
-  },
-
-  // ポートフォワーディング
-  "forwardPorts": [
-    8080,
-    3000
-  ]
+  }
 }
