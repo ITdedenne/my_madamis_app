@@ -1,19 +1,28 @@
 #!/bin/bash
 
 # --- Flutter SDKのインストール ---
-# ユーザーが書き込み可能な /workspaces/ ディレクトリにインストール先を変更
+echo "Cloning Flutter repository..."
 git clone https://github.com/flutter/flutter.git --depth 1 /workspaces/flutter
 
-# Flutterコマンドにパスを通す (新しいパスに変更)
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+# 【重要】安定版（stable）チャンネルに切り替える
+echo "Switching to Flutter stable channel..."
+cd /workspaces/flutter
+git checkout stable
+cd /workspaces/my_madamis_app
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+
+# Flutterコマンドにパスを通す
+echo "Configuring Flutter PATH..."
 echo 'export PATH="$PATH:/workspaces/flutter/bin"' >> ~/.bashrc
-# すぐに使えるように現在のセッションでもパスを有効化
 export PATH="$PATH:/workspaces/flutter/bin"
 
 # Flutterのセットアップ（Doctorで確認）
-flutter precache
+echo "Running flutter doctor..."
 flutter doctor
 
 # --- Amplify CLIのインストール ---
+echo "Installing Amplify CLI..."
 npm install -g @aws-amplify/cli
 
 echo "✅ Post-create script finished successfully!"
