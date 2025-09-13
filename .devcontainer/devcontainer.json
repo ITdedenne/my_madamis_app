@@ -1,7 +1,7 @@
 {
   "name": "Flutter AWS App",
-  // ベースとなるコンテナイメージ。多くのツールがプリインストールされているユニバーサルイメージが便利
-  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  // ベースイメージを軽量なUbuntuに変更
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
 
   // 自動でインストールする機能 (Features)
   "features": {
@@ -10,24 +10,25 @@
     // Python 3をインストール
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.11"
+    },
+    // Node.js (npm) をインストール (Amplify CLIのために必要)
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
     }
   },
 
-  // コンテナ作成後に実行するコマンド
+  // コンテナ作成後に実行するコマンド (この部分は変更なし)
   "postCreateCommand": "bash ./.devcontainer/post-create.sh",
 
-  // 自動でフォワーディングするポート
+  // 自動でフォワーディングするポート (この部分は変更なし)
   "forwardPorts": [
-    // Flutter Webアプリが使用する可能性のあるポート
     8080,
     3000
-    // 必要に応じてLambdaのローカルテスト用ポートなども追加
   ],
 
-  // VS Codeの設定
+  // VS Codeの設定 (この部分は変更なし)
   "customizations": {
     "vscode": {
-      // 自動でインストールするVS Code拡張機能
       "extensions": [
         "Dart-Code.flutter",
         "Dart-Code.dart-code",
