@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "paths": {
+    "/scenarios": {
+      "name": "/scenarios",
+      "lambdaFunction": "scenarioapiFunction",
+      "permissions": {
+        "setting": "private",
+        "auth": [
+          "create",
+          "read",
+          "update",
+          "delete"
+        ]
+      }
+    }
+  }
+}

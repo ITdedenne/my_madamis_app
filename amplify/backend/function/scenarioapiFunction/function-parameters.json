@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "auth": {
+      "mymadamisapp681e0ddb": [
+        "read"
+      ]
+    }
+  },
+  "lambdaLayers": []
+}
