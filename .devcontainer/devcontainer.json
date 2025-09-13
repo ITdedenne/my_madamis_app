@@ -1,34 +1,40 @@
 {
   "name": "Flutter AWS App",
-  // ベースイメージを軽量なUbuntuに変更
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+  // "image"の代わりに"build"セクションを使用する
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
 
   // 自動でインストールする機能 (Features)
   "features": {
-    // AWS CLIをインストール
     "ghcr.io/devcontainers/features/aws-cli:1": {},
-    // Python 3をインストール
     "ghcr.io/devcontainers/features/python:1": {
       "version": "3.11"
     },
-    // Node.js (npm) をインストール (Amplify CLIのために必要)
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
     }
   },
 
-  // コンテナ作成後に実行するコマンド (この部分は変更なし)
-  "postCreateCommand": "bash ./.devcontainer/post-create.sh",
+  // postCreateCommandはDockerfileに処理を移したため不要
+  // "postCreateCommand": "bash ./.devcontainer/post-create.sh",
 
-  // 自動でフォワーディングするポート (この部分は変更なし)
+  // コンテナ作成後に実行するコマンドでAmplify CLIをインストール
+  "postStartCommand": "npm install -g @aws-amplify/cli",
+
+  // 自動でフォワーディングするポート
   "forwardPorts": [
     8080,
     3000
   ],
 
-  // VS Codeの設定 (この部分は変更なし)
+  // VS Codeの設定
   "customizations": {
     "vscode": {
+      "settings": {
+        // Flutter SDKのパスを最初から指定しておく
+        "dart.flutterSdkPath": "/workspaces/flutter"
+      },
       "extensions": [
         "Dart-Code.flutter",
         "Dart-Code.dart-code",
