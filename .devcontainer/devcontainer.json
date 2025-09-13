@@ -1,0 +1,43 @@
+{
+  "name": "Flutter AWS App",
+  // ベースとなるOSイメージ
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  // Codespacesの公式機能(Features)を使ってツールをインストール
+  "features": {
+    // 公式のFlutterインストール機能を利用し、安定版(stable)を指定
+    "ghcr.io/devcontainers/features/flutter:1": {
+      "channel": "stable",
+      "version": "latest"
+    },
+    // 必要なその他のツール
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+
+  // コンテナ起動後にAmplify CLIをインストール
+  "postCreateCommand": "npm install -g @aws-amplify/cli",
+
+  // VS Codeの拡張機能と設定
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.flutter",
+        "Dart-Code.dart-code",
+        "ms-python.python",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  },
+
+  // ポートフォワーディング
+  "forwardPorts": [
+    8080,
+    3000
+  ]
+}
