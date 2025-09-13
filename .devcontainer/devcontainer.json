@@ -1,31 +1,24 @@
 {
   "name": "Flutter AWS App",
-  // ベースとなるOSイメージをUbuntuに指定
-  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
-
-  // Codespacesの公式機能(Features)を使ってツールをインストール
-  "features": {
-    // 公式のFlutterインストール機能を利用し、安定版(stable)を指定
-    "ghcr.io/devcontainers/features/flutter:1": {
-      "channel": "stable",
-      "version": "latest"
-    },
-    // 必要なその他のツール
-    "ghcr.io/devcontainers/features/aws-cli:1": {},
-    "ghcr.io/devcontainers/features/python:1": {
-      "version": "3.11"
-    },
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "lts"
-    }
+  // "image"の代わりに"build"セクションでDockerfileを指定
+  "build": {
+    "dockerfile": "Dockerfile"
   },
-
-  // コンテナ起動後にAmplify CLIをインストール
-  "postCreateCommand": "npm install -g @aws-amplify/cli",
-
+  // Featureを使わないので、featuresセクションはFlutter以外を指定
+  "features": {
+    "ghcr.io/devcontainers/features/aws-cli:1": {},
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.11" },
+    "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
+  },
+  // コンテナ起動後に各種セットアップを実行
+  "postCreateCommand": "npm install -g @aws-amplify/cli && sudo chown -R vscode /workspaces/flutter && flutter doctor && flutter config --enable-web",
+  
   // VS Codeの拡張機能と設定
   "customizations": {
     "vscode": {
+      "settings": {
+        "dart.flutterSdkPath": "/workspaces/flutter"
+      },
       "extensions": [
         "Dart-Code.flutter",
         "Dart-Code.dart-code",
