@@ -56,6 +56,7 @@ build
 .vscode/
 
 # Amplify
+amplify/
 amplify/team-provider-info.json
 amplify/backend/backend-config.json
 amplify/backend/awscloudformation
