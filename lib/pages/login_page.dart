@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/pages/home_page.dart';
 import '../notifiers/auth_state_notifier.dart';
 import 'signup_page.dart';
 // import 'home_page.dart'; // TODO: ログイン後のホーム画面を作成
@@ -19,7 +20,9 @@ class LoginPage extends ConsumerWidget {
     ref.listen(authStateNotifierProvider, (_, next) {
       if (next.status == AuthStatus.authenticated) {
         // ログイン成功時の画面遷移
-        // Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomePage()));
+             Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
       }
     });
 
