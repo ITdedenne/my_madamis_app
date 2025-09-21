@@ -107,4 +107,27 @@ class AuthRepository {
       rethrow;
     }
   }
+
+  Future<void> updateUserAttributes({
+    required String username,
+    required String bio,
+  }) async {
+    try {
+      await Amplify.Auth.updateUserAttributes(
+        attributes: [
+          AuthUserAttribute(
+            userAttributeKey: AuthUserAttributeKey.preferredUsername,
+            value: username,
+          ),
+          AuthUserAttribute(
+            userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
+            value: bio,
+          ),
+        ],
+      );
+    } on AuthException catch (e) {
+      safePrint('Error updating user attributes: $e');
+      rethrow;
+    }
+  }
 }

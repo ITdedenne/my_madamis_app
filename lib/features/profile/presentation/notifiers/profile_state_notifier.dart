@@ -72,4 +72,22 @@ class ProfileStateNotifier extends StateNotifier<ProfileState> {
       );
     }
   }
+
+    Future<void> updateProfile({
+    required String username,
+    required String bio,
+  }) async {
+    try {
+      await _authRepository.updateUserAttributes(
+        username: username,
+        bio: bio,
+      );
+      state = state.copyWith(
+        username: username,
+        bio: bio,
+      );
+    } catch (e) {
+      // Handle error appropriately
+    }
+  }
 }

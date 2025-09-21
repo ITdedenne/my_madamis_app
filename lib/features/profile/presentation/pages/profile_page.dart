@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/profile/presentation/pages/edit_profile_page.dart';
 import '../notifiers/profile_state_notifier.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -14,13 +15,13 @@ class ProfilePage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('プロフィール'),
-        actions: [
-          // プロフィール編集画面への導線（今回は押しても機能しない）
+actions: [
           IconButton(
             onPressed: () {
-              // TODO: ここにマイプロフィール編集画面への遷移処理を実装
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('編集機能は現在準備中です。')),
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const EditProfilePage(),
+                ),
               );
             },
             icon: const Icon(Icons.edit),
