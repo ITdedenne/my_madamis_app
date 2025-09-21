@@ -12,6 +12,7 @@ import 'package:my_madamis_app/features/auth/presentation/pages/forgot_password_
 import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/reset_password_page.dart';
 
+import '../../../../helpers/test_helpers.dart';
 import '../../../../mocks.mocks.dart';
 
 void main() {
@@ -70,10 +71,8 @@ void main() {
             find.widgetWithText(TextFormField, 'メールアドレス'), 'test@example.com');
         await tester.enterText(
             find.widgetWithText(TextFormField, 'パスワード'), 'wrong_password');
-        
         await tester.tap(find.widgetWithText(ElevatedButton, 'ログイン'));
         await tester.pumpAndSettle();
-
         expect(find.textContaining('エラー: ログインに失敗しました'), findsOneWidget);
       });
     });
