@@ -10,9 +10,8 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ▼▼▼ ref.listen を追加 ▼▼▼
+    // 編集画面から戻ってきた際の更新成功メッセージ表示を監視
     ref.listen(profileStateNotifierProvider, (previous, next) {
-      // updateStatusがsuccessに変わった時だけSnackBarを表示
       if (next.updateStatus == UpdateStatus.success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -20,7 +19,7 @@ class ProfilePage extends ConsumerWidget {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        // 一度表示したらステータスをリセットする
+        // メッセージ表示後にステータスをリセット
         ref.read(profileStateNotifierProvider.notifier).resetUpdateStatus();
       }
     });
@@ -33,16 +32,16 @@ class ProfilePage extends ConsumerWidget {
         actions: [
           IconButton(
             onPressed: () {
-              // EditProfilePageへの遷移
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const EditProfilePage()),
               );
             },
             icon: const Icon(Icons.edit),
+            tooltip: 'プロフィールを編集',
           ),
         ],
       ),
-      body: Center( // ... 以下、既存のコードと同じ ...
+      body: Center(
         child: switch (profileState.status) {
           ProfileStatus.loading => const CircularProgressIndicator(),
           ProfileStatus.error => Text('エラー: ${profileState.errorMessage}'),
@@ -69,7 +68,6 @@ class ProfilePage extends ConsumerWidget {
     );
   }
   
-  // ... _buildProfileHeader と _buildSectionTitle は変更なし ...
   Widget _buildProfileHeader(BuildContext context, ProfileState state) {
     return Row(
       children: [
@@ -88,7 +86,7 @@ class ProfilePage extends ConsumerWidget {
         const SizedBox(width: 16),
         Expanded(
           child: Text(
-            state.username ?? 'ユーザー名不明',
+            state.username ?? 'ユーザー名未設定', // 未設定の場合の表示
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             overflow: TextOverflow.ellipsis,
           ),

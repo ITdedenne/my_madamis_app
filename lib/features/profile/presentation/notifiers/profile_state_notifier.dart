@@ -1,11 +1,12 @@
 // ファイルパス: lib/features/profile/presentation/notifiers/profile_state_notifier.dart
 
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/data/auth_repository.dart';
 
 // プロフィール画面の状態
 enum ProfileStatus { loading, loaded, error }
-// ▼▼▼ 1. 保存処理の状態を追加 ▼▼▼
+// 保存処理の状態
 enum UpdateStatus { initial, success, error }
 
 // 状態管理クラス
@@ -14,7 +15,6 @@ class ProfileState {
   final String? username;
   final String? bio;
   final String? errorMessage;
-  // ▼▼▼ 2. 保存状態のプロパティを追加 ▼▼▼
   final UpdateStatus updateStatus;
 
   const ProfileState({
@@ -22,7 +22,6 @@ class ProfileState {
     this.username,
     this.bio,
     this.errorMessage,
-    // ▼▼▼ 3. 初期値を追加 ▼▼▼
     this.updateStatus = UpdateStatus.initial,
   });
 
@@ -31,7 +30,6 @@ class ProfileState {
     String? username,
     String? bio,
     String? errorMessage,
-    // ▼▼▼ 4. copyWith に追加 ▼▼▼
     UpdateStatus? updateStatus,
   }) {
     return ProfileState(
@@ -44,7 +42,7 @@ class ProfileState {
   }
 }
 
-// StateNotifierProvider (変更なし)
+// StateNotifierProvider
 final profileStateNotifierProvider =
     StateNotifierProvider<ProfileStateNotifier, ProfileState>((ref) {
   return ProfileStateNotifier(ref.watch(authRepositoryProvider))..loadCurrentUser();
@@ -57,14 +55,29 @@ class ProfileStateNotifier extends StateNotifier<ProfileState> {
 
   ProfileStateNotifier(this._authRepository) : super(const ProfileState());
 
-  // loadCurrentUser メソッド (変更なし)
+  /// ログイン後、最初にユーザー情報を読み込みます。
   Future<void> loadCurrentUser() async {
-    // ... 既存のコード ...
+    try {
+      state = state.copyWith(status: ProfileStatus.loading);
+      final attributes = await _authRepository.fetchCurrentUserAttributes();
+      
+      final username = attributes[AuthUserAttributeKey.preferredUsername];
+      final bio = attributes[const CognitoUserAttributeKey.custom('bio')];
+
+      state = state.copyWith(
+        status: ProfileStatus.loaded,
+        username: username,
+        bio: bio,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: ProfileStatus.error,
+        errorMessage: 'ユーザー情報の取得に失敗しました: $e',
+      );
+    }
   }
 
-  // ▼▼▼ 5. updateProfileメソッドを修正 ▼▼▼
-  /// ユーザーのプロフィール情報（ユーザー名、自己紹介）を更新します。
-  /// 成功した場合は true, 失敗した場合は false を返します。
+  /// プロフィール情報を更新します。
   Future<bool> updateProfile({
     required String username,
     required String bio,
@@ -74,7 +87,6 @@ class ProfileStateNotifier extends StateNotifier<ProfileState> {
         username: username,
         bio: bio,
       );
-      // ローカルの状態も更新し、成功ステータスをセット
       state = state.copyWith(
         username: username,
         bio: bio,
@@ -82,13 +94,12 @@ class ProfileStateNotifier extends StateNotifier<ProfileState> {
       );
       return true;
     } catch (e) {
-      // エラーステータスをセット
       state = state.copyWith(updateStatus: UpdateStatus.error);
       return false;
     }
   }
 
-  // ▼▼▼ 6. 保存状態をリセットするメソッドを追加 ▼▼▼
+  /// 更新後のメッセージ表示を一度だけに限定するため、ステータスをリセットします。
   void resetUpdateStatus() {
     state = state.copyWith(updateStatus: UpdateStatus.initial);
   }

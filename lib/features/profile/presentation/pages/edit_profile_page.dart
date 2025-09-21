@@ -20,7 +20,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   @override
   void initState() {
     super.initState();
-    // ビルド前にProviderから安全に読み込む
+    // 現在の状態をProviderから読み込んで初期値として設定
     final profileState = ref.read(profileStateNotifierProvider);
     _usernameController = TextEditingController(text: profileState.username);
     _bioController = TextEditingController(text: profileState.bio);
@@ -35,11 +35,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
 
   // 保存ボタンが押されたときの処理
   Future<void> _onSave() async {
-    // 入力チェック
+    // バリデーションチェック
     if (!_formKey.currentState!.validate()) {
       return;
     }
-    // ローディング開始
     setState(() => _isLoading = true);
 
     final notifier = ref.read(profileStateNotifierProvider.notifier);
@@ -48,15 +47,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       bio: _bioController.text,
     );
 
-    // ローディング終了
-    setState(() => _isLoading = false);
-
+    // このウィジェットが画面上に存在するかを確認
     if (mounted) {
       if (success) {
-        // 成功したら前の画面に戻る
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(); // 成功したらプロフィール画面に戻る
       } else {
-        // 失敗したらエラーメッセージを表示
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('プロフィールの更新に失敗しました。')),
         );
@@ -69,14 +65,13 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('プロフィール編集'),
-        // ▼▼▼ AppBarのactionsを削除 ▼▼▼
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch, // ボタンを横幅いっぱいに広げる
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               TextFormField(
                 controller: _usernameController,
@@ -85,7 +80,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                   border: OutlineInputBorder(),
                 ),
                 validator: (value) {
-                  if (value == null || value.isEmpty) {
+                  if (value == null || value.trim().isEmpty) {
                     return 'ユーザー名を入力してください';
                   }
                   return null;
@@ -97,17 +92,16 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 decoration: const InputDecoration(
                   labelText: '自己紹介',
                   border: OutlineInputBorder(),
-                  alignLabelWithHint: true, // ラベルを左上に固定
+                  alignLabelWithHint: true,
                 ),
                 maxLines: 5,
-                maxLength: 200, // 文字数制限の例
+                maxLength: 200,
               ),
               const SizedBox(height: 24.0),
-              // ▼▼▼ 保存ボタンを追加 ▼▼▼
               ElevatedButton.icon(
-                onPressed: _isLoading ? null : _onSave, // ローディング中は無効化
+                onPressed: _isLoading ? null : _onSave,
                 icon: _isLoading
-                    ? Container( // ローディングインジケーター
+                    ? Container(
                         width: 24,
                         height: 24,
                         padding: const EdgeInsets.all(2.0),

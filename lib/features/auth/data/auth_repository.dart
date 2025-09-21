@@ -18,7 +18,6 @@ class AuthRepository {
           AuthUserAttributeKey.email: email,
         },
       );
-      // Cognitoのusernameにはemailを渡す
       return await Amplify.Auth.signUp(
         username: email,
         password: password,
@@ -104,40 +103,44 @@ class AuthRepository {
     }
   }
 
-  /// ユーザー属性（ユーザー名、自己紹介）を更新します。
-  Future<void> updateUserAttributes({
+  /// ユーザー属性（ユーザー名、自己紹介）を更新または新規作成します。
+   Future<void> updateUserAttributes({
     required String username,
     required String bio,
   }) async {
     try {
-      // 送信する属性のリストを準備
-      final attributesToUpdate = <AuthUserAttribute>[
-        // ユーザー名は必須なので必ずリストに追加
-        AuthUserAttribute(
-          userAttributeKey: AuthUserAttributeKey.preferredUsername,
-          value: username,
-        ),
-      ];
+      print('--- デバッグ: ユーザー名のみ更新を開始 ---');
+      print('更新するユーザー名: $username');
 
-      // 自己紹介文が空文字やスペースだけで構成されていない場合のみ、リストに追加
-      if (bio.trim().isNotEmpty) {
-        attributesToUpdate.add(
+      await Amplify.Auth.updateUserAttributes(
+        attributes: [
           AuthUserAttribute(
-            userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
-            value: bio,
+            userAttributeKey: AuthUserAttributeKey.preferredUsername,
+            value: username,
           ),
+        ],
+      );
+
+      print('--- デバッグ: ユーザー名のみ更新が成功 ---');
+
+      // ユーザー名の更新が成功した場合のみ、次に自己紹介を試す
+      // 自己紹介が空でなければ更新処理を行う
+      if (bio.trim().isNotEmpty) {
+        print('--- デバッグ: 自己紹介の更新を開始 ---');
+        print('更新する自己紹介: $bio');
+        await Amplify.Auth.updateUserAttributes(
+          attributes: [
+            AuthUserAttribute(
+              userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
+              value: bio,
+            ),
+          ],
         );
+        print('--- デバッグ: 自己紹介の更新が成功 ---');
       }
 
-      // 準備したリストを使って属性を更新
-      await Amplify.Auth.updateUserAttributes(
-        attributes: attributesToUpdate,
-      );
     } on AuthException catch (e) {
-      // safePrintはAmplifyライブラリの機能なので、
-      // どこでも使えるように標準のprintに変更するか、別途インポートが必要です。
-      // ここでは標準のprintを使用します。
-      print('Error updating user attributes: $e');
+      print('属性の更新中にエラーが発生しました: $e');
       rethrow;
     }
   }
