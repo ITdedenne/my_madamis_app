@@ -1,11 +1,13 @@
 // ファイルパス: lib/pages/login_page.dart
 
 import 'package:flutter/material.dart';
+
+// import 'package.flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/pages/forgot_password_page.dart';
 import 'package:my_madamis_app/pages/home_page.dart';
 import '../notifiers/auth_state_notifier.dart';
 import 'signup_page.dart';
-// import 'home_page.dart'; // TODO: ログイン後のホーム画面を作成
 // import 'forgot_password_page.dart'; // TODO: パスワードリセット画面を作成
 
 class LoginPage extends ConsumerWidget {
@@ -51,7 +53,7 @@ class LoginPage extends ConsumerWidget {
                 child: Text('エラー: ${authState.errorMessage}', style: const TextStyle(color: Colors.red)),
               ),
             TextButton(
-              onPressed: () { /* Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordPage())); */ },
+              onPressed: () { Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordPage())); },
               child: const Text('パスワードを忘れた場合はこちら'),
             ),
             OutlinedButton(

@@ -10,6 +10,8 @@ enum AuthStatus {
   authenticated,
   unauthenticated,
   confirmationRequired,
+  passwordResetRequired,
+  passwordResetSuccess,
   error,
 }
 
@@ -87,6 +89,26 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(status: AuthStatus.authenticated);
     } catch (e) {
       state = state.copyWith(status: AuthStatus.error, errorMessage: 'ログインに失敗しました: $e');
+    }
+  }
+
+  Future<void> resetPassword(String username) async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      await _authRepository.resetPassword(username);
+      state = state.copyWith(status: AuthStatus.passwordResetRequired);
+    } catch (e) {
+      state = state.copyWith(status: AuthStatus.error, errorMessage: '登録されていないメールアドレスです');
+    }
+  }
+
+  Future<void> confirmResetPassword({required String username, required String newPassword, required String confirmationCode}) async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      await _authRepository.confirmResetPassword(username: username, newPassword: newPassword, confirmationCode: confirmationCode);
+      state = state.copyWith(status: AuthStatus.passwordResetSuccess);
+    } catch (e) {
+      state = state.copyWith(status: AuthStatus.error, errorMessage: '認証コードが間違っています');
     }
   }
   
