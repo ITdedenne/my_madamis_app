@@ -1,6 +1,8 @@
 // ファイルパス: lib/notifiers/auth_state_notifier.dart
 
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:amplify_flutter/amplify_flutter.dart'; // AmplifyのExceptionクラスを利用するためにインポート
 import '../repositories/auth_repository.dart';
 
 // 認証状態を表現するenum
@@ -10,8 +12,8 @@ enum AuthStatus {
   authenticated,
   unauthenticated,
   confirmationRequired,
-  passwordResetRequired,
-  passwordResetSuccess,
+  passwordResetRequired, // 追加
+  passwordResetSuccess,  // 追加
   error,
 }
 
@@ -34,14 +36,16 @@ class AuthState {
   }) {
     return AuthState(
       status: status ?? this.status,
-      errorMessage: errorMessage,
-      usernameForConfirmation: usernameForConfirmation ?? this.usernameForConfirmation,
+      errorMessage: errorMessage, // nullを許容してエラーメッセージをクリアできるようにする
+      usernameForConfirmation:
+          usernameForConfirmation ?? this.usernameForConfirmation,
     );
   }
 }
 
 // StateNotifierProviderの定義
-final authStateNotifierProvider = StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
+final authStateNotifierProvider =
+    StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
   return AuthStateNotifier(ref.watch(authRepositoryProvider));
 });
 
@@ -49,23 +53,25 @@ final authStateNotifierProvider = StateNotifierProvider<AuthStateNotifier, AuthS
 class AuthStateNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
 
-  AuthStateNotifier(this._authRepository) : super(const AuthState(status: AuthStatus.unauthenticated));
+  AuthStateNotifier(this._authRepository)
+      : super(const AuthState(status: AuthStatus.unauthenticated));
 
   Future<void> signUp(String username, String password, String email) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
- // RepositoryのsignUpメソッドを呼び出す
       final result = await _authRepository.signUp(
-        username: username, // 画面のユーザー名
+        username: username,
         password: password,
-        email: email,       // 画面のメールアドレス
+        email: email,
       );
-
       if (result.isSignUpComplete) {
-        state = state.copyWith(status: AuthStatus.unauthenticated, errorMessage: '登録が完了しました。ログインしてください。');
+        state = state.copyWith(
+            status: AuthStatus.unauthenticated,
+            errorMessage: '登録が完了しました。ログインしてください。');
       } else {
-        // 確認コード画面に渡すのはCognitoのログインIDである「メールアドレス」
-        state = state.copyWith(status: AuthStatus.confirmationRequired, usernameForConfirmation: email);
+        state = state.copyWith(
+            status: AuthStatus.confirmationRequired,
+            usernameForConfirmation: email);
       }
     } catch (e) {
       state = state.copyWith(status: AuthStatus.error, errorMessage: '登録に失敗しました: $e');
@@ -73,45 +79,77 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }
 
   Future<void> confirmSignUp(String username, String confirmationCode) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
-      await _authRepository.confirmSignUp(username: username, confirmationCode: confirmationCode);
-      state = state.copyWith(status: AuthStatus.unauthenticated, errorMessage: '認証が完了しました。ログインしてください。');
+      await _authRepository.confirmSignUp(
+          username: username, confirmationCode: confirmationCode);
+      state = state.copyWith(
+          status: AuthStatus.unauthenticated,
+          errorMessage: '認証が完了しました。ログインしてください。');
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, errorMessage: '認証に失敗しました: $e');
+      state =
+          state.copyWith(status: AuthStatus.error, errorMessage: '認証に失敗しました: $e');
     }
   }
 
   Future<void> signIn(String email, String password) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.signIn(username: email, password: password);
       state = state.copyWith(status: AuthStatus.authenticated);
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, errorMessage: 'ログインに失敗しました: $e');
+      state = state.copyWith(
+          status: AuthStatus.error, errorMessage: 'ログインに失敗しました: $e');
     }
   }
 
+  // --- 以下を追加 ---
   Future<void> resetPassword(String username) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.resetPassword(username);
       state = state.copyWith(status: AuthStatus.passwordResetRequired);
+    } on UserNotFoundException {
+      state =
+          state.copyWith(status: AuthStatus.error, errorMessage: '登録されていないメールアドレスです');
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, errorMessage: '登録されていないメールアドレスです');
+      state = state.copyWith(
+          status: AuthStatus.error, errorMessage: '予期せぬエラーが発生しました: $e');
     }
   }
 
-  Future<void> confirmResetPassword({required String username, required String newPassword, required String confirmationCode}) async {
-    state = state.copyWith(status: AuthStatus.loading);
+  Future<void> confirmResetPassword({
+    required String username,
+    required String newPassword,
+    required String confirmationCode,
+  }) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
-      await _authRepository.confirmResetPassword(username: username, newPassword: newPassword, confirmationCode: confirmationCode);
+      await _authRepository.confirmResetPassword(
+        username: username,
+        newPassword: newPassword,
+        confirmationCode: confirmationCode,
+      );
       state = state.copyWith(status: AuthStatus.passwordResetSuccess);
+    } on AuthException catch (e) {
+      String errorMessage;
+      if (e is CodeMismatchException) {
+        errorMessage = '認証コードが間違っています。';
+      } else if (e is ExpiredCodeException) {
+        errorMessage = '認証コードの有効期限が切れています。もう一度パスワードリセットを試してください。';
+      } else if (e is InvalidPasswordException) {
+        errorMessage = '新しいパスワードが要件を満たしていません。';
+      } else {
+        errorMessage = 'エラーが発生しました: ${e.message}';
+      }
+      state = state.copyWith(status: AuthStatus.error, errorMessage: errorMessage);
     } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, errorMessage: '認証コードが間違っています');
+      state = state.copyWith(
+          status: AuthStatus.error, errorMessage: '予期せぬエラーが発生しました: $e');
     }
   }
-  
+  // --- ここまで追加 ---
+
   Future<void> signOut() async {
     await _authRepository.signOut();
     state = const AuthState(status: AuthStatus.unauthenticated);

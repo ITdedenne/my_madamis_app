@@ -14,8 +14,13 @@ class ForgotPasswordPage extends ConsumerWidget {
     final authState = ref.watch(authStateNotifierProvider);
 
     ref.listen(authStateNotifierProvider, (_, next) {
+      // 状態がpasswordResetRequiredになったら、次の画面へ遷移
       if (next.status == AuthStatus.passwordResetRequired) {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => ResetPasswordPage(username: emailController.text)));
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (_) =>
+                    ResetPasswordPage(username: emailController.text)));
       }
     });
 
@@ -27,20 +32,23 @@ class ForgotPasswordPage extends ConsumerWidget {
           children: [
             TextFormField(
               controller: emailController,
-              decoration: const InputDecoration(labelText: 'メールアドレス'),
+              decoration: const InputDecoration(labelText: '登録したメールアドレス'),
             ),
             const SizedBox(height: 20),
             if (authState.status == AuthStatus.loading)
               const Center(child: CircularProgressIndicator())
             else
               ElevatedButton(
-                onPressed: () => ref.read(authStateNotifierProvider.notifier).resetPassword(emailController.text),
-                child: const Text('送信'),
+                onPressed: () => ref
+                    .read(authStateNotifierProvider.notifier)
+                    .resetPassword(emailController.text),
+                child: const Text('リセットコードを送信'),
               ),
             if (authState.status == AuthStatus.error)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: Text('エラー: ${authState.errorMessage}', style: const TextStyle(color: Colors.red)),
+                child: Text('エラー: ${authState.errorMessage}',
+                    style: const TextStyle(color: Colors.red)),
               ),
           ],
         ),

@@ -1,66 +1,92 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// ファイルパス: test/widget_test.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
 import 'package:my_madamis_app/main.dart';
 import 'package:my_madamis_app/pages/forgot_password_page.dart';
 import 'package:my_madamis_app/pages/login_page.dart';
 import 'package:my_madamis_app/pages/reset_password_page.dart';
+import 'package:my_madamis_app/repositories/auth_repository.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
+
+import 'mocks.mocks.dart';
 
 void main() {
-  testWidgets('Password Reset Flow Test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+  late MockAuthRepository mockAuthRepository;
+  
+  // ★ ResetPasswordResultのMockも用意
+  late MockResetPasswordResult mockResetPasswordResult;
 
-    // Verify that LoginPage is shown.
-    expect(find.byType(LoginPage), findsOneWidget);
+  setUp(() {
+    mockAuthRepository = MockAuthRepository();
+    
+    // ★ ResetPasswordResultのMockをインスタンス化
+    mockResetPasswordResult = MockResetPasswordResult();
+  });
 
-    // Tap the 'パスワードを忘れた場合はこちら' button.
-    await tester.tap(find.text('パスワードを忘れた場合はこちら'));
-    await tester.pumpAndSettle();
+  group('Password Reset Flow Tests', () {
+    testWidgets('Successful password reset flow', (WidgetTester tester) async {
+      // --- 1. 準備 (Arrange) ---
 
-    // Verify that ForgotPasswordPage is shown.
-    expect(find.byType(ForgotPasswordPage), findsOneWidget);
+      // ★★★ ここからが修正箇所 ★★★
+      // 1. 返却するステップを定義
+      final mockResetPasswordStep = ResetPasswordStep(
+        updateStep: AuthResetPasswordStep.confirmResetPasswordWithCode,
+      );
+      // 2. Mockの結果オブジェクトに、ステップと状態を設定
+      when(mockResetPasswordResult.nextStep).thenReturn(mockResetPasswordStep);
+      when(mockResetPasswordResult.isPasswordReset).thenReturn(false);
 
-    // Enter an email and tap '送信'.
-    await tester.enterText(find.byType(TextFormField), 'test@example.com');
-    await tester.tap(find.text('送信'));
-    await tester.pumpAndSettle();
+      // 3. AuthRepositoryのresetPasswordが呼ばれたら、上で設定したMockの結果オブジェクトを返すように設定
+      when(mockAuthRepository.resetPassword(any))
+          .thenAnswer((_) async => mockResetPasswordResult);
+      // ★★★ ここまでが修正箇所 ★★★
 
-    // This part is tricky to test without a mocked backend,
-    // as it depends on Amplify's response.
-    // For a real app, you'd use a mock of AuthRepository.
-    // Assuming the navigation to ResetPasswordPage is successful.
-    // We can manually pump the ResetPasswordPage for testing its UI.
+      // confirmResetPasswordが成功した時のMockの挙動を設定
+      when(mockAuthRepository.confirmResetPassword(
+        username: anyNamed('username'),
+        newPassword: anyNamed('newPassword'),
+        confirmationCode: anyNamed('confirmationCode'),
+      )).thenAnswer((_) async {});
 
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: ResetPasswordPage(username: 'test@example.com'),
+      // --- 2. 実行 (Act) & 3. 検証 (Assert) ---
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          ],
+          child: const MyApp(),
         ),
-      ),
-    );
+      );
 
-    // Verify that ResetPasswordPage is shown.
-    expect(find.byType(ResetPasswordPage), findsOneWidget);
+      // (以降のテストコードは変更なし)
+      await tester.tap(find.text('パスワードを忘れた場合はこちら'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ForgotPasswordPage), findsOneWidget);
 
-    // Enter new password, confirmation, and code.
-    await tester.enterText(find.widgetWithText(TextFormField, '新しいパスワード'), 'newPassword123');
-    await tester.enterText(find.widgetWithText(TextFormField, '新しいパスワードを再入力'), 'newPassword123');
-    await tester.enterText(find.widgetWithText(TextFormField, '認証コード'), '123456');
+      await tester.enterText(
+          find.byType(TextFormField), 'test@example.com');
+      await tester.tap(find.text('リセットコードを送信'));
+      await tester.pumpAndSettle();
+      
+      expect(find.byType(ResetPasswordPage), findsOneWidget);
 
-    // Tap 'パスワードを更新'.
-    await tester.tap(find.text('パスワードを更新'));
-    await tester.pumpAndSettle();
+      await tester.enterText(
+          find.widgetWithText(TextFormField, '新しいパスワード'), 'newPassword123');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, '新しいパスワードを再入力'),
+          'newPassword123');
+      await tester.enterText(
+          find.widgetWithText(TextFormField, '認証コード'), '123456');
+      await tester.tap(find.text('パスワードを更新'));
+      await tester.pumpAndSettle(); 
 
-    // Again, this depends on the backend. In a real test environment with mocks,
-    // you would verify that the state notifier is called with the correct parameters
-    // and that the app navigates back to the LoginPage upon success.
+      expect(find.byType(LoginPage), findsOneWidget);
+      expect(find.text('パスワードが正常にリセットされました。ログインしてください。'), findsOneWidget);
+    });
+    
+    // (他のテストケースは変更なし)
   });
 }
