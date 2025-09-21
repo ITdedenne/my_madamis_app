@@ -48,19 +48,20 @@ class ProfilePage extends ConsumerWidget {
                     profileState.bio ?? '自己紹介が設定されていません。',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  const SizedBox(height: 24),
-                  _buildSectionTitle('通過シナリオ'),
-                  // TODO: ユーザーが通過したシナリオ一覧をここに表示
-                  const ListTile(
-                    leading: Icon(Icons.check_circle_outline),
-                    title: Text('（仮）狂気山脈'),
-                    subtitle: Text('PL'),
-                  ),
-                  const ListTile(
-                    leading: Icon(Icons.check_circle_outline),
-                    title: Text('（仮）何度だって青い月に火を灯した'),
-                    subtitle: Text('GM'),
-                  )
+                  //今後似たような機能はデータベース作成後にやるかも？今は一旦おいておく
+                  // const SizedBox(height: 24),
+                  // _buildSectionTitle('通過シナリオ'),
+                  // // TODO: ユーザーが通過したシナリオ一覧をここに表示
+                  // const ListTile(
+                  //   leading: Icon(Icons.check_circle_outline),
+                  //   title: Text('（仮）狂気山脈'),
+                  //   subtitle: Text('PL'),
+                  // ),
+                  // const ListTile(
+                  //   leading: Icon(Icons.check_circle_outline),
+                  //   title: Text('（仮）何度だって青い月に火を灯した'),
+                  //   subtitle: Text('GM'),
+                  // )
                 ],
               ),
             ),
