@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../auth/presentation/notifiers/auth_state_notifier.dart';
-import '../../auth/presentation/pages/login_page.dart';
+import '../../../auth/presentation/notifiers/auth_state_notifier.dart';
+import '../../../auth/presentation/pages/login_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});

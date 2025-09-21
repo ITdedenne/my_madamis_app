@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/home/pages/home_page.dart';
+import 'package:my_madamis_app/features/home/presentation/pages/home_page.dart';
 import '../notifiers/auth_state_notifier.dart';
 import 'forgot_password_page.dart'; // 追加
 import 'signup_page.dart';
