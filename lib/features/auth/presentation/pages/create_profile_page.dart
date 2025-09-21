@@ -35,10 +35,9 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
     final notifier = ref.read(authStateNotifierProvider.notifier);
     final success = await notifier.setupProfile(
       username: _usernameController.text,
-      bio: _bioController.text,
+      bio: _bioController.text, // bioは空文字のまま渡す
     );
 
-    // このウィジェットがまだ画面に存在しているか確認
     if (mounted) {
       if (!success) {
         setState(() => _isLoading = false);
@@ -46,7 +45,6 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
           const SnackBar(content: Text('プロフィールの設定に失敗しました。')),
         );
       }
-      // 成功した場合の画面遷移は ref.listen でハンドリング
     }
   }
 

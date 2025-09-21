@@ -1,7 +1,6 @@
-// ファイルパス: lib/repositories/auth_repository.dart
+// ファイルパス: lib/features/auth/data/auth_repository.dart
 
 import 'package:amplify_flutter/amplify_flutter.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Riverpodでこのリポジトリを提供するためのProvider
@@ -14,11 +13,9 @@ class AuthRepository {
     required String email,
   }) async {
     try {
- final options = SignUpOptions(
+      final options = SignUpOptions(
         userAttributes: {
           AuthUserAttributeKey.email: email,
-          // ユーザー名を表示名として属性に追加
-          // AuthUserAttributeKey.preferredUsername: username,
         },
       );
       // Cognitoのusernameにはemailを渡す
@@ -93,7 +90,7 @@ class AuthRepository {
     await Amplify.Auth.signOut();
   }
 
-  /// 現在サインインしているユーザーの属性情報（ユーザー名や自己紹介など）を取得します。
+  /// 現在サインインしているユーザーの属性情報を取得します。
   Future<Map<AuthUserAttributeKey, String>> fetchCurrentUserAttributes() async {
     try {
       final result = await Amplify.Auth.fetchUserAttributes();
@@ -107,25 +104,40 @@ class AuthRepository {
     }
   }
 
+  /// ユーザー属性（ユーザー名、自己紹介）を更新します。
   Future<void> updateUserAttributes({
     required String username,
     required String bio,
   }) async {
     try {
-      await Amplify.Auth.updateUserAttributes(
-        attributes: [
-          AuthUserAttribute(
-            userAttributeKey: AuthUserAttributeKey.preferredUsername,
-            value: username,
-          ),
+      // 送信する属性のリストを準備
+      final attributesToUpdate = <AuthUserAttribute>[
+        // ユーザー名は必須なので必ずリストに追加
+        AuthUserAttribute(
+          userAttributeKey: AuthUserAttributeKey.preferredUsername,
+          value: username,
+        ),
+      ];
+
+      // 自己紹介文が空文字やスペースだけで構成されていない場合のみ、リストに追加
+      if (bio.trim().isNotEmpty) {
+        attributesToUpdate.add(
           AuthUserAttribute(
             userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
             value: bio,
           ),
-        ],
+        );
+      }
+
+      // 準備したリストを使って属性を更新
+      await Amplify.Auth.updateUserAttributes(
+        attributes: attributesToUpdate,
       );
     } on AuthException catch (e) {
-      safePrint('Error updating user attributes: $e');
+      // safePrintはAmplifyライブラリの機能なので、
+      // どこでも使えるように標準のprintに変更するか、別途インポートが必要です。
+      // ここでは標準のprintを使用します。
+      print('Error updating user attributes: $e');
       rethrow;
     }
   }
