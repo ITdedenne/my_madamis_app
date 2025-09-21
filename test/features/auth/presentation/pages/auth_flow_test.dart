@@ -11,7 +11,6 @@ import 'package:my_madamis_app/features/auth/data/auth_repository.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/reset_password_page.dart';
-import 'package:amplify_flutter/amplify_flutter.dart';
 
 import '../../../../mocks.mocks.dart';
 
@@ -35,6 +34,7 @@ void main() {
 
   group('認証フロー ウィジェットテスト', () {
     group('ログイン画面', () {
+      // ... ([AUTH-WIDGET-001] と [AUTH-WIDGET-002] は変更なし)
       testWidgets('[AUTH-WIDGET-001] 正常なログインフロー', (WidgetTester tester) async {
         when(mockAuthRepository.signIn(
           username: anyNamed('username'),
@@ -49,9 +49,7 @@ void main() {
             find.widgetWithText(TextFormField, 'メールアドレス'), 'test@example.com');
         await tester.enterText(
             find.widgetWithText(TextFormField, 'パスワード'), 'password');
-
-        // ★★★ 修正点 ★★★
-        // find.textからfind.widgetWithTextに変更し、ElevatedButtonを特定
+        
         await tester.tap(find.widgetWithText(ElevatedButton, 'ログイン'));
         await tester.pumpAndSettle();
 
@@ -73,15 +71,15 @@ void main() {
         await tester.enterText(
             find.widgetWithText(TextFormField, 'パスワード'), 'wrong_password');
         
-        // ★★★ 修正点 ★★★
         await tester.tap(find.widgetWithText(ElevatedButton, 'ログイン'));
-        await tester.pumpAndSettle(); // pump()から変更
+        await tester.pumpAndSettle();
 
-        expect(find.textContaining('ログインに失敗しました'), findsOneWidget);
+        expect(find.textContaining('エラー: ログインに失敗しました'), findsOneWidget);
       });
     });
 
     group('パスワードリセットフロー', () {
+      // ... ([AUTH-WIDGET-003] は変更なし)
       testWidgets('[AUTH-WIDGET-003] 正常なパスワードリセットフロー',
           (WidgetTester tester) async {
         final mockStep = ResetPasswordStep(
@@ -125,7 +123,7 @@ void main() {
       testWidgets('[AUTH-WIDGET-004] 未登録メールアドレスでエラーメッセージが表示される',
           (WidgetTester tester) async {
         when(mockAuthRepository.resetPassword(any))
-            .thenThrow(const UserNotFoundException('User not found.'));
+            .thenThrow(const UserNotFoundException( 'User not found.'));
         
         await tester.pumpWidget(createTestApp(mockAuthRepository));
         await tester.tap(find.text('パスワードを忘れた場合はこちら'));
@@ -134,11 +132,11 @@ void main() {
         await tester.enterText(find.widgetWithText(TextFormField, '登録したメールアドレス'),
             'unregistered@example.com');
         await tester.tap(find.text('リセットコードを送信'));
-        
-        // ★★★ 修正点 ★★★
-        await tester.pumpAndSettle(); // pump()から変更
+        await tester.pumpAndSettle();
 
-        expect(find.text('登録されていないメールアドレスです'), findsOneWidget);
+        // ★★★ 修正点 ★★★
+        // "エラー: " の接頭辞を含んだテキストで検証する
+        expect(find.text('エラー: 登録されていないメールアドレスです'), findsOneWidget);
       });
 
        testWidgets('[AUTH-WIDGET-005] パスワード再設定で認証コードが違う場合にエラーが表示される',
@@ -147,7 +145,7 @@ void main() {
           username: anyNamed('username'),
           newPassword: anyNamed('newPassword'),
           confirmationCode: anyNamed('confirmationCode'),
-        )).thenThrow(const CodeMismatchException( 'Invalid code'));
+        )).thenThrow(const CodeMismatchException('Invalid code'));
         
         await tester.pumpWidget(
           ProviderScope(
@@ -167,11 +165,11 @@ void main() {
         await tester.enterText(
             find.widgetWithText(TextFormField, '認証コード'), 'wrong-code');
         await tester.tap(find.text('パスワードを更新'));
+        await tester.pumpAndSettle();
 
         // ★★★ 修正点 ★★★
-        await tester.pumpAndSettle(); // pump()から変更
-
-        expect(find.text('認証コードが間違っています。'), findsOneWidget);
+        // こちらも同様に "エラー: " を含んだテキストで検証
+        expect(find.text('エラー: 認証コードが間違っています。'), findsOneWidget);
       });
     });
   });

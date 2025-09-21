@@ -25,6 +25,7 @@ dev_dependencies:
   # 以下の2行を追加
   mockito: ^5.4.4
   build_runner: ^2.4.10
+  golden_toolkit: ^0.15.0
 
 flutter:
   uses-material-design: true
