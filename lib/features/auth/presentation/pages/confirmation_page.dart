@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/auth/presentation/pages/create_profile_page.dart';
 import '../notifiers/auth_state_notifier.dart';
 
 class ConfirmationPage extends ConsumerWidget {
@@ -13,10 +14,13 @@ class ConfirmationPage extends ConsumerWidget {
     final codeController = TextEditingController();
     
     ref.listen(authStateNotifierProvider, (_, next) {
-        if (next.status == AuthStatus.unauthenticated && next.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(next.errorMessage!)));
-            Navigator.of(context).popUntil((route) => route.isFirst);
-        }
+      // ▼▼▼ 遷移条件と遷移先を修正 ▼▼▼
+      if (next.status == AuthStatus.profileSetupRequired) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const CreateProfilePage()),
+          (route) => false,
+        );
+      }
     });
 
     return Scaffold(

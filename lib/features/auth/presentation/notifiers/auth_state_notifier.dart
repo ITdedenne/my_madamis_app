@@ -11,6 +11,7 @@ enum AuthStatus {
   authenticated,
   unauthenticated,
   confirmationRequired,
+  profileSetupRequired,
   passwordResetRequired, // 追加
   passwordResetSuccess,  // 追加
   error,
@@ -55,11 +56,10 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   AuthStateNotifier(this._authRepository)
       : super(const AuthState(status: AuthStatus.unauthenticated));
 
-  Future<void> signUp(String username, String password, String email) async {
+  Future<void> signUp(String password, String email) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       final result = await _authRepository.signUp(
-        username: username,
         password: password,
         email: email,
       );
@@ -77,14 +77,17 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // ▼▼▼ 3. confirmSignUpメソッドの成功時の処理を修正 ▼▼▼
   Future<void> confirmSignUp(String username, String confirmationCode) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.confirmSignUp(
           username: username, confirmationCode: confirmationCode);
+      // 成功したら、unauthenticated ではなく profileSetupRequired に遷移
       state = state.copyWith(
-          status: AuthStatus.unauthenticated,
-          errorMessage: '認証が完了しました。ログインしてください。');
+          status: AuthStatus.profileSetupRequired,
+          usernameForConfirmation: username // emailを保持しておく
+          );
     } catch (e) {
       state =
           state.copyWith(status: AuthStatus.error, errorMessage: '認証に失敗しました: $e');
@@ -99,6 +102,20 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     } catch (e) {
       state = state.copyWith(
           status: AuthStatus.error, errorMessage: 'ログインに失敗しました: $e');
+    }
+  }
+
+  Future<bool> setupProfile({required String username, required String bio}) async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      await _authRepository.updateUserAttributes(username: username, bio: bio);
+      // 成功したら authenticated 状態に遷移して完了
+      state = state.copyWith(status: AuthStatus.authenticated);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+          status: AuthStatus.error, errorMessage: 'プロフィールの設定に失敗しました: $e');
+      return false;
     }
   }
 

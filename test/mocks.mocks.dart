@@ -56,13 +56,11 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
 
   @override
   _i4.Future<_i2.SignUpResult> signUp({
-    required String? username,
     required String? password,
     required String? email,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#signUp, [], {
-              #username: username,
               #password: password,
               #email: email,
             }),
@@ -70,7 +68,6 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
               _FakeSignUpResult_0(
                 this,
                 Invocation.method(#signUp, [], {
-                  #username: username,
                   #password: password,
                   #email: email,
                 }),

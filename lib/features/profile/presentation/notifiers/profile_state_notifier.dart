@@ -1,6 +1,5 @@
 // ファイルパス: lib/features/profile/presentation/notifiers/profile_state_notifier.dart
 
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/data/auth_repository.dart';
 

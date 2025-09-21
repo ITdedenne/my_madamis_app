@@ -10,7 +10,6 @@ final authRepositoryProvider = Provider((_) => AuthRepository());
 class AuthRepository {
   // サインアップ処理
   Future<SignUpResult> signUp({
-    required String username,
     required String password,
     required String email,
   }) async {
@@ -19,7 +18,7 @@ class AuthRepository {
         userAttributes: {
           AuthUserAttributeKey.email: email,
           // ユーザー名を表示名として属性に追加
-          AuthUserAttributeKey.preferredUsername: username,
+          // AuthUserAttributeKey.preferredUsername: username,
         },
       );
       // Cognitoのusernameにはemailを渡す
