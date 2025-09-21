@@ -93,4 +93,18 @@ class AuthRepository {
   Future<void> signOut() async {
     await Amplify.Auth.signOut();
   }
+
+  /// 現在サインインしているユーザーの属性情報（ユーザー名や自己紹介など）を取得します。
+  Future<Map<AuthUserAttributeKey, String>> fetchCurrentUserAttributes() async {
+    try {
+      final result = await Amplify.Auth.fetchUserAttributes();
+      final attributes = <AuthUserAttributeKey, String>{};
+      for (final attribute in result) {
+        attributes[attribute.userAttributeKey] = attribute.value;
+      }
+      return attributes;
+    } on AuthException {
+      rethrow;
+    }
+  }
 }
