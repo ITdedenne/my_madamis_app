@@ -5,13 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:my_madamis_app/main.dart';
-import 'package:my_madamis_app/pages/forgot_password_page.dart';
-import 'package:my_madamis_app/pages/login_page.dart';
-import 'package:my_madamis_app/pages/reset_password_page.dart';
-import 'package:my_madamis_app/repositories/auth_repository.dart';
+import 'package:my_madamis_app/features/auth/presentation/pages/forgot_password_page.dart';
+import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
+import 'package:my_madamis_app/features/auth/presentation/pages/reset_password_page.dart';
+import 'package:my_madamis_app/features/auth/data/auth_repository.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 
-import 'mocks.mocks.dart';
+import '../../../../mocks.mocks.dart';
 
 void main() {
   late MockAuthRepository mockAuthRepository;

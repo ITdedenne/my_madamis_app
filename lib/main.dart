@@ -5,7 +5,7 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'amplifyconfiguration.dart';
-import 'pages/login_page.dart';
+import 'features/auth/presentation/pages/login_page.dart';
 
 Future<void> main() async {
   // Flutterアプリの初期化

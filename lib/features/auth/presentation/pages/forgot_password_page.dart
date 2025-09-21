@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/pages/reset_password_page.dart';
+import 'package:my_madamis_app/features/auth/presentation/pages/reset_password_page.dart';
 import '../notifiers/auth_state_notifier.dart';
 
 // ConsumerWidget から ConsumerStatefulWidget に変更
