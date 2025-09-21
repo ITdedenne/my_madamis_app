@@ -10,31 +10,42 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // ▼▼▼ ref.listen を追加 ▼▼▼
+    ref.listen(profileStateNotifierProvider, (previous, next) {
+      // updateStatusがsuccessに変わった時だけSnackBarを表示
+      if (next.updateStatus == UpdateStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('変更に成功しました'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        // 一度表示したらステータスをリセットする
+        ref.read(profileStateNotifierProvider.notifier).resetUpdateStatus();
+      }
+    });
+
     final profileState = ref.watch(profileStateNotifierProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('プロフィール'),
-actions: [
+        actions: [
           IconButton(
             onPressed: () {
+              // EditProfilePageへの遷移
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const EditProfilePage(),
-                ),
+                MaterialPageRoute(builder: (_) => const EditProfilePage()),
               );
             },
             icon: const Icon(Icons.edit),
           ),
         ],
       ),
-      body: Center(
+      body: Center( // ... 以下、既存のコードと同じ ...
         child: switch (profileState.status) {
-          // 読込中
           ProfileStatus.loading => const CircularProgressIndicator(),
-          // エラー発生時
           ProfileStatus.error => Text('エラー: ${profileState.errorMessage}'),
-          // 正常に読み込めた場合
           ProfileStatus.loaded => RefreshIndicator(
               onRefresh: () => ref.read(profileStateNotifierProvider.notifier).loadCurrentUser(),
               child: ListView(
@@ -44,25 +55,12 @@ actions: [
                   const SizedBox(height: 24),
                   _buildSectionTitle('自己紹介'),
                   const SizedBox(height: 8),
-                  // 自己紹介文がなければ固定のメッセージを表示
                   Text(
-                    profileState.bio ?? '自己紹介が設定されていません。',
+                    profileState.bio != null && profileState.bio!.isNotEmpty
+                        ? profileState.bio!
+                        : '自己紹介が設定されていません。',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
-                  //今後似たような機能はデータベース作成後にやるかも？今は一旦おいておく
-                  // const SizedBox(height: 24),
-                  // _buildSectionTitle('通過シナリオ'),
-                  // // TODO: ユーザーが通過したシナリオ一覧をここに表示
-                  // const ListTile(
-                  //   leading: Icon(Icons.check_circle_outline),
-                  //   title: Text('（仮）狂気山脈'),
-                  //   subtitle: Text('PL'),
-                  // ),
-                  // const ListTile(
-                  //   leading: Icon(Icons.check_circle_outline),
-                  //   title: Text('（仮）何度だって青い月に火を灯した'),
-                  //   subtitle: Text('GM'),
-                  // )
                 ],
               ),
             ),
@@ -70,12 +68,11 @@ actions: [
       ),
     );
   }
-
-  /// プロフィールヘッダー（アイコン、ユーザー名）のUIを構築する
+  
+  // ... _buildProfileHeader と _buildSectionTitle は変更なし ...
   Widget _buildProfileHeader(BuildContext context, ProfileState state) {
     return Row(
       children: [
-        // 固定のアイコン表示
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
@@ -89,7 +86,6 @@ actions: [
           ),
         ),
         const SizedBox(width: 16),
-        // ユーザー名
         Expanded(
           child: Text(
             state.username ?? 'ユーザー名不明',
@@ -101,7 +97,6 @@ actions: [
     );
   }
 
-  /// 各セクションのタイトルUI
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
