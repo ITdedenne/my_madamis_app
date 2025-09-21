@@ -2,7 +2,6 @@
 
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:amplify_flutter/amplify_flutter.dart'; // AmplifyのExceptionクラスを利用するためにインポート
 import '../../data/auth_repository.dart';
 
 // 認証状態を表現するenum

@@ -12,7 +12,6 @@ import 'package:my_madamis_app/features/auth/presentation/pages/forgot_password_
 import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/reset_password_page.dart';
 
-import '../../../../helpers/test_helpers.dart';
 import '../../../../mocks.mocks.dart';
 
 void main() {
