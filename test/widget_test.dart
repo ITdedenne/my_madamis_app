@@ -82,7 +82,6 @@ void main() {
           find.widgetWithText(TextFormField, '認証コード'), '123456');
       await tester.tap(find.text('パスワードを更新'));
       await tester.pumpAndSettle(); 
-
       expect(find.byType(LoginPage), findsOneWidget);
       expect(find.text('パスワードが正常にリセットされました。ログインしてください。'), findsOneWidget);
     });
