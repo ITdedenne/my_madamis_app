@@ -9,6 +9,7 @@ final authRepositoryProvider = Provider((_) => AuthRepository());
 class AuthRepository {
   // サインアップ処理
   Future<SignUpResult> signUp({
+     required String username,
     required String password,
     required String email,
   }) async {
@@ -16,6 +17,7 @@ class AuthRepository {
       final options = SignUpOptions(
         userAttributes: {
           AuthUserAttributeKey.email: email,
+           AuthUserAttributeKey.preferredUsername: username,
         },
       );
       return await Amplify.Auth.signUp(
@@ -53,6 +55,16 @@ class AuthRepository {
         username: username,
         password: password,
       );
+    } on AuthException {
+      rethrow;
+    }
+  }
+
+    // ユーザー属性の取得
+  Future<List<AuthUserAttribute>> fetchUserAttributes() async {
+    try {
+      final result = await Amplify.Auth.fetchUserAttributes();
+      return result;
     } on AuthException {
       rethrow;
     }

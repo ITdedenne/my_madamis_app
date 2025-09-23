@@ -34,15 +34,23 @@ void main() {
 
   group('認証フロー ウィジェットテスト', () {
     group('ログイン画面', () {
-      // ... ([AUTH-WIDGET-001] と [AUTH-WIDGET-002] は変更なし)
       testWidgets('[AUTH-WIDGET-001] 正常なログインフロー', (WidgetTester tester) async {
+        // --- ここから修正 ---
         when(mockAuthRepository.signIn(
-          username: anyNamed('username'),
-          password: anyNamed('password'),
+          username: 'test@example.com',
+          password: 'password',
         )).thenAnswer((_) async => const SignInResult(
               isSignedIn: true,
               nextStep: AuthNextSignInStep(signInStep: AuthSignInStep.done),
             ));
+
+        when(mockAuthRepository.fetchUserAttributes()).thenAnswer((_) async => [
+              const AuthUserAttribute(
+                userAttributeKey: AuthUserAttributeKey.preferredUsername,
+                value: 'test user',
+              )
+            ]);
+        // --- ここまで修正 ---
 
         await tester.pumpWidget(createTestApp(mockAuthRepository));
         await tester.enterText(
@@ -77,7 +85,6 @@ void main() {
     });
 
     group('パスワードリセットフロー', () {
-      // ... ([AUTH-WIDGET-003] は変更なし)
       testWidgets('[AUTH-WIDGET-003] 正常なパスワードリセットフロー',
           (WidgetTester tester) async {
         final mockStep = ResetPasswordStep(
@@ -132,8 +139,6 @@ void main() {
         await tester.tap(find.text('リセットコードを送信'));
         await tester.pumpAndSettle();
 
-        // ★★★ 修正点 ★★★
-        // "エラー: " の接頭辞を含んだテキストで検証する
         expect(find.text('エラー: 登録されていないメールアドレスです'), findsOneWidget);
       });
 
@@ -165,8 +170,6 @@ void main() {
         await tester.tap(find.text('パスワードを更新'));
         await tester.pumpAndSettle();
 
-        // ★★★ 修正点 ★★★
-        // こちらも同様に "エラー: " を含んだテキストで検証
         expect(find.text('エラー: 認証コードが間違っています。'), findsOneWidget);
       });
     });

@@ -22,23 +22,27 @@ class AuthState {
   final AuthStatus status;
   final String? errorMessage;
   final String? usernameForConfirmation;
+    final String? username;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.errorMessage,
     this.usernameForConfirmation,
+    this.username,
   });
 
   AuthState copyWith({
     AuthStatus? status,
     String? errorMessage,
     String? usernameForConfirmation,
+    String? username,
   }) {
     return AuthState(
       status: status ?? this.status,
       errorMessage: errorMessage, // nullを許容してエラーメッセージをクリアできるようにする
       usernameForConfirmation:
           usernameForConfirmation ?? this.usernameForConfirmation,
+          username: username ?? username,
     );
   }
 }
@@ -56,10 +60,11 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   AuthStateNotifier(this._authRepository)
       : super(const AuthState(status: AuthStatus.unauthenticated));
 
-  Future<void> signUp(String password, String email) async {
+  Future<void> signUp( String username,String password, String email) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       final result = await _authRepository.signUp(
+          username: username,
         password: password,
         email: email,
       );
@@ -94,16 +99,26 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signIn(String email, String password) async {
+ Future<void> signIn(String email, String password) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.signIn(username: email, password: password);
-      state = state.copyWith(status: AuthStatus.authenticated);
+      // --- 以下を追加 ---
+      final attributes = await _authRepository.fetchUserAttributes();
+      final username = attributes
+          .firstWhere((element) =>
+              element.userAttributeKey == AuthUserAttributeKey.preferredUsername)
+          .value;
+      state =
+          state.copyWith(status: AuthStatus.authenticated, username: username);
+      // --- ここまで追加 ---
     } catch (e) {
       state = state.copyWith(
           status: AuthStatus.error, errorMessage: 'ログインに失敗しました: $e');
     }
   }
+
+  
 
   Future<bool> setupProfile({required String username, required String bio}) async {
     state = state.copyWith(status: AuthStatus.loading);

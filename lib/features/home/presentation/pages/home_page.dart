@@ -13,6 +13,7 @@ class HomePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authStateNotifierProvider);
     ref.listen(authStateNotifierProvider, (_, next) {
       if (next.status == AuthStatus.unauthenticated) {
         Navigator.of(context).pushAndRemoveUntil(
@@ -48,10 +49,10 @@ class HomePage extends ConsumerWidget {
           ),
         ],
       ),
-      body: const Center(
+      body: Center(
         child: Text(
-          'ようこそ！ログインに成功しました。',
-          style: TextStyle(fontSize: 20),
+         'ようこそ！${authState.username ?? ''}さん！ログインに成功しました。',
+          style: const TextStyle(fontSize: 20),
         ),
       ),
     );

@@ -56,11 +56,13 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
 
   @override
   _i4.Future<_i2.SignUpResult> signUp({
+    required String? username,
     required String? password,
     required String? email,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#signUp, [], {
+              #username: username,
               #password: password,
               #email: email,
             }),
@@ -68,6 +70,7 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
               _FakeSignUpResult_0(
                 this,
                 Invocation.method(#signUp, [], {
+                  #username: username,
                   #password: password,
                   #email: email,
                 }),
@@ -121,6 +124,16 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
           as _i4.Future<_i2.SignInResult>);
 
   @override
+  _i4.Future<List<_i2.AuthUserAttribute>> fetchUserAttributes() =>
+      (super.noSuchMethod(
+            Invocation.method(#fetchUserAttributes, []),
+            returnValue: _i4.Future<List<_i2.AuthUserAttribute>>.value(
+              <_i2.AuthUserAttribute>[],
+            ),
+          )
+          as _i4.Future<List<_i2.AuthUserAttribute>>);
+
+  @override
   _i4.Future<_i2.ResetPasswordResult> resetPassword(String? username) =>
       (super.noSuchMethod(
             Invocation.method(#resetPassword, [username]),
@@ -154,6 +167,33 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
   _i4.Future<void> signOut() =>
       (super.noSuchMethod(
             Invocation.method(#signOut, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<Map<_i2.AuthUserAttributeKey, String>>
+  fetchCurrentUserAttributes() =>
+      (super.noSuchMethod(
+            Invocation.method(#fetchCurrentUserAttributes, []),
+            returnValue:
+                _i4.Future<Map<_i2.AuthUserAttributeKey, String>>.value(
+                  <_i2.AuthUserAttributeKey, String>{},
+                ),
+          )
+          as _i4.Future<Map<_i2.AuthUserAttributeKey, String>>);
+
+  @override
+  _i4.Future<void> updateUserAttributes({
+    required String? username,
+    required String? bio,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#updateUserAttributes, [], {
+              #username: username,
+              #bio: bio,
+            }),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )

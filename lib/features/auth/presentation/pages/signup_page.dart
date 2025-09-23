@@ -11,6 +11,7 @@ class SignUpPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // ▼▼▼ usernameController を削除 ▼▼▼
+    final usernameController = TextEditingController();
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final authState = ref.watch(authStateNotifierProvider);
@@ -39,6 +40,7 @@ class SignUpPage extends ConsumerWidget {
               ElevatedButton(
                 // ▼▼▼ signUpの引数からusernameController.textを削除 ▼▼▼
                 onPressed: () => ref.read(authStateNotifierProvider.notifier).signUp(
+                      usernameController.text,
                       passwordController.text,
                       emailController.text,
                     ),
