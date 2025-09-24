@@ -74,7 +74,6 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
     _i1.throwOnMissingStub(this);
   }
 
-  @override
   _i4.Future<_i2.SignUpResult> signUp({
     required String? password,
     required String? email,

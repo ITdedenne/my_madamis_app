@@ -6,19 +6,30 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final authRepositoryProvider = Provider((_) => AuthRepository());
 
 class AuthRepository {
- Future<SignUpResult> signUp({
-    required String password,
+  Future<SignUpResult> signUpWithProfile({
     required String email,
+    required String password,
+    required String username,
+    String? bio,
+    String? twitterId,
   }) async {
     try {
+      final userAttributes = <AuthUserAttributeKey, String>{
+        AuthUserAttributeKey.email: email,
+        AuthUserAttributeKey.preferredUsername: username,
+      };
+      if (bio != null && bio.trim().isNotEmpty) {
+        userAttributes[const CognitoUserAttributeKey.custom('bio')] = bio;
+      }
+      if (twitterId != null && twitterId.trim().isNotEmpty) {
+        userAttributes[const CognitoUserAttributeKey.custom('twitter_id')] = twitterId;
+      }
+
       final options = SignUpOptions(
-        userAttributes: {
-          AuthUserAttributeKey.email: email,
-        },
+        userAttributes: userAttributes,
       );
-      // username引数にはemailを渡す
       return await Amplify.Auth.signUp(
-        username: email,
+        username: email, // Cognitoのusernameはemailを使用
         password: password,
         options: options,
       );

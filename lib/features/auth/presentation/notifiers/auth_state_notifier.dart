@@ -60,40 +60,47 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   AuthStateNotifier(this._authRepository)
       : super(const AuthState(status: AuthStatus.unauthenticated));
 // ... (signUp, confirmSignUp, signIn, resetPassword, confirmResetPassword, signOut, updateUsername は変更なし) ...
-  Future<void> signUp(String password, String email) async {
+   Future<void> createProfileAndSignUp({
+    required String email,
+    required String password,
+    required String username,
+    String? bio,
+    String? twitterId,
+  }) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
-      // ▼▼▼ repositoryの呼び出しも修正 ▼▼▼
-      final result = await _authRepository.signUp(
-        password: password,
+      final result = await _authRepository.signUpWithProfile(
         email: email,
+        password: password,
+        username: username,
+        bio: bio,
+        twitterId: twitterId,
       );
       if (result.isSignUpComplete) {
         state = state.copyWith(
             status: AuthStatus.unauthenticated,
             errorMessage: '登録が完了しました。ログインしてください。');
       } else {
-        // 確認コード画面には引き続きemailを渡す
         state = state.copyWith(
             status: AuthStatus.confirmationRequired,
             usernameForConfirmation: email);
       }
-    } catch (e) {
-      state = state.copyWith(status: AuthStatus.error, errorMessage: '登録に失敗しました: $e');
+    } on AuthException catch (e) {
+      state = state.copyWith(status: AuthStatus.error, errorMessage: '登録に失敗しました: ${e.message}');
     }
   }
 
   // ▼▼▼ 3. confirmSignUpメソッドの成功時の処理を修正 ▼▼▼
-  Future<void> confirmSignUp(String username, String confirmationCode) async {
+Future<void> confirmSignUp(String username, String confirmationCode) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.confirmSignUp(
           username: username, confirmationCode: confirmationCode);
-      // 成功したら、unauthenticated ではなく profileSetupRequired に遷移
+      // 成功したら、ログインできるようにunauthenticated状態に遷移
       state = state.copyWith(
-          status: AuthStatus.profileSetupRequired,
-          usernameForConfirmation: username // emailを保持しておく
-          );
+        status: AuthStatus.unauthenticated,
+        errorMessage: '認証が完了しました。ログインしてください。',
+      );
     } catch (e) {
       state =
           state.copyWith(status: AuthStatus.error, errorMessage: '認証に失敗しました: $e');
