@@ -14,7 +14,6 @@ import '../../../../mocks.mocks.dart';
 void main() {
   late MockAuthRepository mockAuthRepository;
 
-  // テスト対象のWidgetとMockをProviderScopeでラップするヘルパー
   Widget createTestApp(Widget child) {
     return ProviderScope(
       overrides: [
@@ -28,12 +27,16 @@ void main() {
     mockAuthRepository = MockAuthRepository();
   });
 
+  // --- ▼▼▼ ここから修正 ▼▼▼ ---
   const initialUsername = 'initial_user';
   const initialBio = 'Initial bio text.';
+  const initialTwitterId = 'initial_twitter'; // 初期Twitter IDを追加
   final initialAttributes = {
     AuthUserAttributeKey.preferredUsername: initialUsername,
     const CognitoUserAttributeKey.custom('bio'): initialBio,
+    const CognitoUserAttributeKey.custom('twitter_id'): initialTwitterId, // 初期データを追加
   };
+  // --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
   group('Profile Flow Widget Tests', () {
     testWidgets('[PROFILE-WIDGET-001] ProfilePage - ユーザー情報が正しく表示される', (tester) async {
@@ -42,13 +45,14 @@ void main() {
 
       await tester.pumpWidget(createTestApp(const ProfilePage()));
       
-      // ローディング表示を確認
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
-      await tester.pumpAndSettle(); // 非同期処理の完了を待つ
+      await tester.pumpAndSettle();
 
-      // データが表示されたことを確認
       expect(find.text(initialUsername), findsOneWidget);
       expect(find.text(initialBio), findsOneWidget);
+      // --- ▼▼▼ ここから追加 ▼▼▼ ---
+      expect(find.text('@$initialTwitterId'), findsOneWidget); // 表示を検証
+      // --- ▲▲▲ ここまで追加 ▲▲▲ ---
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
@@ -63,45 +67,48 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(EditProfilePage), findsOneWidget);
-      // 編集画面のフィールドに初期値が設定されていることを確認
       expect(find.widgetWithText(TextFormField, initialUsername), findsOneWidget);
       expect(find.widgetWithText(TextFormField, initialBio), findsOneWidget);
+      // --- ▼▼▼ ここから追加 ▼▼▼ ---
+      expect(find.widgetWithText(TextFormField, initialTwitterId), findsOneWidget); // フィールドを検証
+      // --- ▲▲▲ ここまで追加 ▲▲▲ ---
     });
     
     testWidgets('[PROFILE-WIDGET-003] EditProfilePage - プロフィール更新の正常系フロー', (tester) async {
       const newUsername = 'new_username';
       const newBio = 'Updated bio text!';
+      const newTwitterId = 'new_twitter_id';
 
-      // 1. 初期データの準備
       when(mockAuthRepository.fetchCurrentUserAttributes())
           .thenAnswer((_) async => initialAttributes);
       
-      // 2. 更新処理のモック
-      when(mockAuthRepository.updateUserAttributes(username: newUsername, bio: newBio))
-          .thenAnswer((_) async {});
+      when(mockAuthRepository.updateUserAttributes(
+        username: newUsername,
+        bio: newBio,
+        twitterId: newTwitterId,
+      )).thenAnswer((_) async {});
       
-      // 3. ProfilePageを描画
       await tester.pumpWidget(createTestApp(const ProfilePage()));
       await tester.pumpAndSettle();
 
-      // 4. 編集画面へ遷移
       await tester.tap(find.byIcon(Icons.edit));
       await tester.pumpAndSettle();
 
-      // 5. テキストを入力
       await tester.enterText(find.widgetWithText(TextFormField, initialUsername), newUsername);
       await tester.enterText(find.widgetWithText(TextFormField, initialBio), newBio);
+      // --- ▼▼▼ ここから追加 ▼▼▼ ---
+      await tester.enterText(find.widgetWithText(TextFormField, initialTwitterId), newTwitterId); // Twitter IDの入力ステップを追加
+      // --- ▲▲▲ ここまで追加 ▲▲▲ ---
       
-      // 6. 保存ボタンをタップ
       await tester.tap(find.text('変更を保存'));
-      await tester.pumpAndSettle(); // 画面遷移と状態更新を待つ
+      await tester.pumpAndSettle();
 
-      // 7. ProfilePageに戻り、UIが更新されたことを確認
       expect(find.byType(ProfilePage), findsOneWidget);
       expect(find.byType(EditProfilePage), findsNothing);
-      expect(find.text(newUsername), findsOneWidget); // 更新後の名前が表示されている
-      expect(find.text(newBio), findsOneWidget);      // 更新後の自己紹介が表示されている
-      expect(find.text('変更に成功しました'), findsOneWidget); // SnackBarが表示される
+      expect(find.text(newUsername), findsOneWidget);
+      expect(find.text(newBio), findsOneWidget);
+      expect(find.text('@$newTwitterId'), findsOneWidget);
+      expect(find.text('変更に成功しました'), findsOneWidget);
     });
 
     testWidgets('[PROFILE-WIDGET-004] EditProfilePage - ユーザー名が空の場合にバリデーションエラーが表示される', (tester) async {
@@ -113,10 +120,9 @@ void main() {
       await tester.tap(find.byIcon(Icons.edit));
       await tester.pumpAndSettle();
 
-      // ユーザー名を空にする
       await tester.enterText(find.widgetWithText(TextFormField, initialUsername), '');
       await tester.tap(find.text('変更を保存'));
-      await tester.pump(); // バリデーションエラーの表示を待つ
+      await tester.pump();
 
       expect(find.text('ユーザー名を入力してください'), findsOneWidget);
     });

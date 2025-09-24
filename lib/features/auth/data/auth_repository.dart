@@ -3,11 +3,10 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Riverpodでこのリポジトリを提供するためのProvider
 final authRepositoryProvider = Provider((_) => AuthRepository());
 
 class AuthRepository {
-  // サインアップ処理
+  // ... (signUp, confirmSignUp, signIn, fetchUserAttributes, resetPassword, confirmResetPassword, signOut, fetchCurrentUserAttributesは変更なし) ...
   Future<SignUpResult> signUp({
      required String username,
     required String password,
@@ -114,36 +113,29 @@ class AuthRepository {
       rethrow;
     }
   }
-
-  /// ユーザー属性（ユーザー名、自己紹介）を更新または新規作成します。
-   Future<void> updateUserAttributes({
+  /// ユーザー属性を更新します。
+  Future<void> updateUserAttributes({
     required String username,
     required String bio,
+    required String twitterId,
   }) async {
     try {
-      await Amplify.Auth.updateUserAttributes(
-        attributes: [
-          AuthUserAttribute(
-            userAttributeKey: AuthUserAttributeKey.preferredUsername,
-            value: username,
-          ),
-        ],
-      );
-
-      // 自己紹介が空でなければ更新処理を行う
-      if (bio.trim().isNotEmpty) {
-        await Amplify.Auth.updateUserAttributes(
-          attributes: [
-            AuthUserAttribute(
-              userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
-              value: bio,
-            ),
-          ],
-        );
-      }
-
+      final attributesToUpdate = [
+        AuthUserAttribute(
+          userAttributeKey: AuthUserAttributeKey.preferredUsername,
+          value: username,
+        ),
+        AuthUserAttribute(
+          userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
+          value: bio,
+        ),
+        AuthUserAttribute(
+          userAttributeKey: const CognitoUserAttributeKey.custom('twitter_id'),
+          value: twitterId,
+        ),
+      ];
+      await Amplify.Auth.updateUserAttributes(attributes: attributesToUpdate);
     } on AuthException catch (e) {
-      // 本番環境ではより適切なエラーハンドリングを推奨
       safePrint('属性の更新中にエラーが発生しました: $e');
       rethrow;
     }

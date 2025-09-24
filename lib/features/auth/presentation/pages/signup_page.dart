@@ -10,7 +10,6 @@ class SignUpPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ▼▼▼ usernameController を削除 ▼▼▼
     final usernameController = TextEditingController();
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
@@ -30,15 +29,14 @@ class SignUpPage extends ConsumerWidget {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // ▼▼▼ ユーザー名のTextFormFieldを削除 ▼▼▼
+            TextFormField(controller: usernameController, decoration: const InputDecoration(labelText: 'ユーザー名')),
             TextFormField(controller: emailController, decoration: const InputDecoration(labelText: 'メールアドレス')),
-            TextFormField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'パスワード')),
+            TextFormField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'パスワード (8文字以上)')),
             const SizedBox(height: 20),
              if (authState.status == AuthStatus.loading)
               const Center(child: CircularProgressIndicator())
             else
               ElevatedButton(
-                // ▼▼▼ signUpの引数からusernameController.textを削除 ▼▼▼
                 onPressed: () => ref.read(authStateNotifierProvider.notifier).signUp(
                       usernameController.text,
                       passwordController.text,

@@ -1,7 +1,6 @@
 // ファイルパス: lib/features/auth/presentation/pages/create_profile_page.dart
 
 import 'package:flutter/material.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/home/presentation/pages/home_page.dart';
 import '../notifiers/auth_state_notifier.dart';
@@ -17,12 +16,14 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _bioController = TextEditingController();
+  final _twitterController = TextEditingController();
   bool _isLoading = false;
 
   @override
   void dispose() {
     _usernameController.dispose();
     _bioController.dispose();
+    _twitterController.dispose();
     super.dispose();
   }
 
@@ -33,9 +34,11 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
     setState(() => _isLoading = true);
 
     final notifier = ref.read(authStateNotifierProvider.notifier);
+    // setupProfileメソッドを新しい引数で呼び出す（auth_state_notifier.dartの修正も必要）
     final success = await notifier.setupProfile(
       username: _usernameController.text,
-      bio: _bioController.text, // bioは空文字のまま渡す
+      bio: _bioController.text,
+      twitterId: _twitterController.text,
     );
 
     if (mounted) {
@@ -50,12 +53,11 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    // 認証状態が変化したらホーム画面へ遷移
     ref.listen(authStateNotifierProvider, (_, next) {
       if (next.status == AuthStatus.authenticated) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const HomePage()),
-          (route) => false, // 途中の画面をすべて履歴から削除
+          (route) => false,
         );
       }
     });
@@ -74,7 +76,7 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 8),
-              const Text('他のユーザーに表示される名前を設定してください。'),
+              const Text('他のユーザーに表示される情報を設定してください。'),
               const SizedBox(height: 24),
               TextFormField(
                 controller: _usernameController,
@@ -99,6 +101,15 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
                 ),
                 maxLines: 5,
                 maxLength: 200,
+              ),
+              const SizedBox(height: 16.0),
+              TextFormField(
+                controller: _twitterController,
+                decoration: const InputDecoration(
+                  labelText: 'X (Twitter) ID (任意)',
+                  border: OutlineInputBorder(),
+                  prefixText: '@',
+                ),
               ),
               const SizedBox(height: 24.0),
               ElevatedButton(

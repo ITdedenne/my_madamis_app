@@ -4,7 +4,7 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_repository.dart';
 
-// 認証状態を表現するenum
+// ... (enum AuthStatus, class AuthState, final authStateNotifierProvider は変更なし) ...
 enum AuthStatus {
   initial,
   loading,
@@ -53,13 +53,13 @@ final authStateNotifierProvider =
   return AuthStateNotifier(ref.watch(authRepositoryProvider));
 });
 
-// StateNotifier本体
+
 class AuthStateNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
 
   AuthStateNotifier(this._authRepository)
       : super(const AuthState(status: AuthStatus.unauthenticated));
-
+// ... (signUp, confirmSignUp, signIn, resetPassword, confirmResetPassword, signOut, updateUsername は変更なし) ...
   Future<void> signUp( String username,String password, String email) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
@@ -117,15 +117,19 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
           status: AuthStatus.error, errorMessage: 'ログインに失敗しました: $e');
     }
   }
-
-  
-
-  Future<bool> setupProfile({required String username, required String bio}) async {
+  Future<bool> setupProfile({
+    required String username,
+    required String bio,
+    required String twitterId,
+  }) async {
     state = state.copyWith(status: AuthStatus.loading);
     try {
-      await _authRepository.updateUserAttributes(username: username, bio: bio);
-      // 成功したら authenticated 状態に遷移して完了
-      state = state.copyWith(status: AuthStatus.authenticated);
+      await _authRepository.updateUserAttributes(
+        username: username,
+        bio: bio,
+        twitterId: twitterId,
+      );
+      state = state.copyWith(status: AuthStatus.authenticated, username: username);
       return true;
     } catch (e) {
       state = state.copyWith(
@@ -133,8 +137,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       return false;
     }
   }
-
-  // --- 以下を追加 ---
+    // --- 以下を追加 ---
   Future<void> resetPassword(String username) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
@@ -191,5 +194,4 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   void updateUsername(String newUsername) {
     state = state.copyWith(username: newUsername);
   }
-  // --- ▲▲▲ ここまで追加 ▲▲▲ ---
 }

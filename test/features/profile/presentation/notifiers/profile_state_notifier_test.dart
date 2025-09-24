@@ -86,15 +86,16 @@ void main() {
     test('[PROFILE-NOTIFIER-003] updateProfile - 成功時にrepositoryが呼ばれ、状態が更新される', () async {
       const newUsername = 'new_username';
       const newBio = 'new_bio';
+      const newtwitterId = 'new_twitterId';
 
-      when(mockAuthRepository.updateUserAttributes(username: newUsername, bio: newBio))
+      when(mockAuthRepository.updateUserAttributes(username: newUsername, bio: newBio,twitterId: newtwitterId))
           .thenAnswer((_) async {});
 
       final notifier = container.read(profileStateNotifierProvider.notifier);
-      final success = await notifier.updateProfile(username: newUsername, bio: newBio);
+      final success = await notifier.updateProfile(username: newUsername, bio: newBio,twitterId: newtwitterId);
 
       expect(success, isTrue);
-      verify(mockAuthRepository.updateUserAttributes(username: newUsername, bio: newBio)).called(1);
+      verify(mockAuthRepository.updateUserAttributes(username: newUsername, bio: newBio,twitterId: newtwitterId)).called(1);
       
       final state = container.read(profileStateNotifierProvider);
       expect(state.username, newUsername);
@@ -105,12 +106,13 @@ void main() {
     test('[PROFILE-NOTIFIER-004] updateProfile - 失敗時にerror状態になり、falseが返される', () async {
       const newUsername = 'new_username';
       const newBio = 'new_bio';
+      const newtwitterId = 'new_twitterId';
       final exception = Exception('Failed to update profile');
-      when(mockAuthRepository.updateUserAttributes(username: newUsername, bio: newBio))
+      when(mockAuthRepository.updateUserAttributes(username: newUsername, bio: newBio,twitterId: newtwitterId))
           .thenThrow(exception);
 
       final notifier = container.read(profileStateNotifierProvider.notifier);
-      final success = await notifier.updateProfile(username: newUsername, bio: newBio);
+      final success = await notifier.updateProfile(username: newUsername, bio: newBio,twitterId: newtwitterId);
 
       expect(success, isFalse);
 

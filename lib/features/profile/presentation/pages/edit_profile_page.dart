@@ -15,27 +15,27 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _usernameController;
   late final TextEditingController _bioController;
+  late final TextEditingController _twitterController; // 追加
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    // 現在の状態をProviderから読み込んで初期値として設定
     final profileState = ref.read(profileStateNotifierProvider);
     _usernameController = TextEditingController(text: profileState.username);
     _bioController = TextEditingController(text: profileState.bio);
+    _twitterController = TextEditingController(text: profileState.twitterId); // 追加
   }
 
   @override
   void dispose() {
     _usernameController.dispose();
     _bioController.dispose();
+    _twitterController.dispose(); // 追加
     super.dispose();
   }
 
-  // 保存ボタンが押されたときの処理
   Future<void> _onSave() async {
-    // バリデーションチェック
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -45,12 +45,12 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     final success = await notifier.updateProfile(
       username: _usernameController.text,
       bio: _bioController.text,
+      twitterId: _twitterController.text, // 追加
     );
 
-    // このウィジェットが画面上に存在するかを確認
     if (mounted) {
       if (success) {
-        Navigator.of(context).pop(); // 成功したらプロフィール画面に戻る
+        Navigator.of(context).pop();
       } else {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -96,6 +96,15 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 ),
                 maxLines: 5,
                 maxLength: 200,
+              ),
+              const SizedBox(height: 16.0),
+              TextFormField( // 追加
+                controller: _twitterController,
+                decoration: const InputDecoration(
+                  labelText: 'X (Twitter) ID',
+                  border: OutlineInputBorder(),
+                  prefixText: '@',
+                ),
               ),
               const SizedBox(height: 24.0),
               ElevatedButton.icon(
