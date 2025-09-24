@@ -24,18 +24,25 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.2' # プロジェクトで使用しているFlutterのバージョンを指定
+          flutter-version: '3.22.2'
           channel: 'stable'
-          cache: true # 依存関係をキャッシュして次回以降の実行を高速化
+          cache: true
 
       # 3. プロジェクトの依存関係をインストールする
       - name: Install dependencies
         run: flutter pub get
+      
+      # --- ▼▼▼ ここから追加 ▼▼▼ ---
+      # 4. (CI/CD用) ダミーのAmplify設定ファイルを作成する
+      - name: Create dummy amplifyconfiguration.dart for analysis
+        run: |
+          echo "const String amplifyconfig = '''{}''';" > lib/amplifyconfiguration.dart
+      # --- ▲▲▲ ここまで追加 ▲▲▲ ---
 
-      # 4. 静的コード解析を実行する (コードの品質をチェック)
+      # 5. 静的コード解析を実行する (コードの品質をチェック)
       - name: Run static analysis
         run: flutter analyze
 
-      # 5. テストを実行する (すべてのテストが成功するかチェック)
+      # 6. テストを実行する (すべてのテストが成功するかチェック)
       - name: Run tests
         run: flutter test

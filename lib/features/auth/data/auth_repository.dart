@@ -121,9 +121,6 @@ class AuthRepository {
     required String bio,
   }) async {
     try {
-      print('--- デバッグ: ユーザー名のみ更新を開始 ---');
-      print('更新するユーザー名: $username');
-
       await Amplify.Auth.updateUserAttributes(
         attributes: [
           AuthUserAttribute(
@@ -133,13 +130,8 @@ class AuthRepository {
         ],
       );
 
-      print('--- デバッグ: ユーザー名のみ更新が成功 ---');
-
-      // ユーザー名の更新が成功した場合のみ、次に自己紹介を試す
       // 自己紹介が空でなければ更新処理を行う
       if (bio.trim().isNotEmpty) {
-        print('--- デバッグ: 自己紹介の更新を開始 ---');
-        print('更新する自己紹介: $bio');
         await Amplify.Auth.updateUserAttributes(
           attributes: [
             AuthUserAttribute(
@@ -148,11 +140,11 @@ class AuthRepository {
             ),
           ],
         );
-        print('--- デバッグ: 自己紹介の更新が成功 ---');
       }
 
     } on AuthException catch (e) {
-      print('属性の更新中にエラーが発生しました: $e');
+      // 本番環境ではより適切なエラーハンドリングを推奨
+      safePrint('属性の更新中にエラーが発生しました: $e');
       rethrow;
     }
   }
