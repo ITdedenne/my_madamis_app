@@ -50,7 +50,10 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
       if (next.status == AuthStatus.confirmationRequired) {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => ConfirmationPage(username: next.usernameForConfirmation!),
+            builder: (_) => ConfirmationPage(
+              username: next.usernameForConfirmation!,
+              password: _passwordController.text,
+            ),
           ),
         );
       } else if (next.status == AuthStatus.error) {

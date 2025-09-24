@@ -90,17 +90,13 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  // ▼▼▼ 3. confirmSignUpメソッドの成功時の処理を修正 ▼▼▼
-Future<void> confirmSignUp(String username, String confirmationCode) async {
+Future<void> confirmSignUp(String username, String confirmationCode, String password) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.confirmSignUp(
           username: username, confirmationCode: confirmationCode);
-      // 成功したら、ログインできるようにunauthenticated状態に遷移
-      state = state.copyWith(
-        status: AuthStatus.unauthenticated,
-        errorMessage: '認証が完了しました。ログインしてください。',
-      );
+      // 認証成功後、自動でサインイン
+      await signIn(username, password);
     } catch (e) {
       state =
           state.copyWith(status: AuthStatus.error, errorMessage: '認証に失敗しました: $e');

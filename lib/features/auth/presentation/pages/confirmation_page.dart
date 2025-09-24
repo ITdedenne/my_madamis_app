@@ -2,26 +2,25 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
+import 'package:my_madamis_app/features/home/presentation/pages/home_page.dart';
 import '../notifiers/auth_state_notifier.dart';
 
 class ConfirmationPage extends ConsumerWidget {
   final String username;
-  const ConfirmationPage({super.key, required this.username});
+  final String password;
+  const ConfirmationPage({super.key, required this.username, required this.password});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final codeController = TextEditingController();
     
     ref.listen(authStateNotifierProvider, (_, next) {
-      if (next.status == AuthStatus.unauthenticated && next.errorMessage != null) {
-        // 登録完了メッセージを表示
+      if (next.status == AuthStatus.authenticated) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(next.errorMessage!)),
+          const SnackBar(content: Text('登録が完了しました。')),
         );
-        // ログインページに遷移
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
+          MaterialPageRoute(builder: (_) => const HomePage()),
           (route) => false,
         );
       } else if (next.status == AuthStatus.error) {
@@ -46,7 +45,11 @@ class ConfirmationPage extends ConsumerWidget {
               const CircularProgressIndicator()
             else
               ElevatedButton(
-                onPressed: () => ref.read(authStateNotifierProvider.notifier).confirmSignUp(username, codeController.text),
+                onPressed: () => ref.read(authStateNotifierProvider.notifier).confirmSignUp(
+                      username,
+                      codeController.text,
+                      password,
+                    ),
                 child: const Text('認証'),
               ),
           ],
