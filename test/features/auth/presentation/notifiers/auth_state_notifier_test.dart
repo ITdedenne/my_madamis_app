@@ -87,7 +87,7 @@ void main() {
 
     test('[NOTIFIER-003] resetPassword - 成功時にpasswordResetRequired状態になる',
         () async {
-      final mockResetPasswordStep = ResetPasswordStep(
+      const mockResetPasswordStep = ResetPasswordStep(
         updateStep: AuthResetPasswordStep.confirmResetPasswordWithCode,
       );
       when(mockResetPasswordResult.nextStep).thenReturn(mockResetPasswordStep);

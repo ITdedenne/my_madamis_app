@@ -87,7 +87,7 @@ void main() {
     group('パスワードリセットフロー', () {
       testWidgets('[AUTH-WIDGET-003] 正常なパスワードリセットフロー',
           (WidgetTester tester) async {
-        final mockStep = ResetPasswordStep(
+        const mockStep = ResetPasswordStep(
           updateStep: AuthResetPasswordStep.confirmResetPasswordWithCode,
         );
         when(mockResetPasswordResult.nextStep).thenReturn(mockStep);
