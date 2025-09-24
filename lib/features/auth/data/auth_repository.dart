@@ -6,9 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final authRepositoryProvider = Provider((_) => AuthRepository());
 
 class AuthRepository {
-  // ... (signUp, confirmSignUp, signIn, fetchUserAttributes, resetPassword, confirmResetPassword, signOut, fetchCurrentUserAttributesは変更なし) ...
-  Future<SignUpResult> signUp({
-     required String username,
+ Future<SignUpResult> signUp({
     required String password,
     required String email,
   }) async {
@@ -16,9 +14,9 @@ class AuthRepository {
       final options = SignUpOptions(
         userAttributes: {
           AuthUserAttributeKey.email: email,
-           AuthUserAttributeKey.preferredUsername: username,
         },
       );
+      // username引数にはemailを渡す
       return await Amplify.Auth.signUp(
         username: email,
         password: password,
@@ -114,10 +112,11 @@ class AuthRepository {
     }
   }
   /// ユーザー属性を更新します。
+  /// bioやtwitterIdがnullや空文字の場合は更新しません。
   Future<void> updateUserAttributes({
     required String username,
-    required String bio,
-    required String twitterId,
+    String? bio,
+    String? twitterId,
   }) async {
     try {
       final attributesToUpdate = [
@@ -125,15 +124,24 @@ class AuthRepository {
           userAttributeKey: AuthUserAttributeKey.preferredUsername,
           value: username,
         ),
-        AuthUserAttribute(
+      ];
+
+      // bioがnullや空でなければ属性リストに追加
+      if (bio != null && bio.trim().isNotEmpty) {
+        attributesToUpdate.add(AuthUserAttribute(
           userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
           value: bio,
-        ),
-        AuthUserAttribute(
+        ));
+      }
+
+      // twitterIdがnullや空でなければ属性リストに追加
+      if (twitterId != null && twitterId.trim().isNotEmpty) {
+        attributesToUpdate.add(AuthUserAttribute(
           userAttributeKey: const CognitoUserAttributeKey.custom('twitter_id'),
           value: twitterId,
-        ),
-      ];
+        ));
+      }
+      
       await Amplify.Auth.updateUserAttributes(attributes: attributesToUpdate);
     } on AuthException catch (e) {
       safePrint('属性の更新中にエラーが発生しました: $e');

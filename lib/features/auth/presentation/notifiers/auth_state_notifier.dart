@@ -12,8 +12,8 @@ enum AuthStatus {
   unauthenticated,
   confirmationRequired,
   profileSetupRequired,
-  passwordResetRequired, // 追加
-  passwordResetSuccess,  // 追加
+  passwordResetRequired, 
+  passwordResetSuccess,  
   error,
 }
 
@@ -60,11 +60,11 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   AuthStateNotifier(this._authRepository)
       : super(const AuthState(status: AuthStatus.unauthenticated));
 // ... (signUp, confirmSignUp, signIn, resetPassword, confirmResetPassword, signOut, updateUsername は変更なし) ...
-  Future<void> signUp( String username,String password, String email) async {
+  Future<void> signUp(String password, String email) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
+      // ▼▼▼ repositoryの呼び出しも修正 ▼▼▼
       final result = await _authRepository.signUp(
-          username: username,
         password: password,
         email: email,
       );
@@ -73,6 +73,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
             status: AuthStatus.unauthenticated,
             errorMessage: '登録が完了しました。ログインしてください。');
       } else {
+        // 確認コード画面には引き続きemailを渡す
         state = state.copyWith(
             status: AuthStatus.confirmationRequired,
             usernameForConfirmation: email);
