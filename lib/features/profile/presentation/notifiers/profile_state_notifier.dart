@@ -3,6 +3,9 @@
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/data/auth_repository.dart';
+// --- ▼▼▼ ここから追加 ▼▼▼ ---
+import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
+// --- ▲▲▲ ここまで追加 ▲▲▲ ---
 
 // プロフィール画面の状態
 enum ProfileStatus { loading, loaded, error }
@@ -43,17 +46,24 @@ class ProfileState {
 }
 
 // StateNotifierProvider
+// --- ▼▼▼ ここから修正 ▼▼▼ ---
 final profileStateNotifierProvider =
     StateNotifierProvider<ProfileStateNotifier, ProfileState>((ref) {
-  return ProfileStateNotifier(ref.watch(authRepositoryProvider))..loadCurrentUser();
+  return ProfileStateNotifier(ref)..loadCurrentUser();
 });
+// --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
 
 // StateNotifier
 class ProfileStateNotifier extends StateNotifier<ProfileState> {
-  final AuthRepository _authRepository;
+  // --- ▼▼▼ ここから修正 ▼▼▼ ---
+  final Ref _ref;
+  late final AuthRepository _authRepository;
 
-  ProfileStateNotifier(this._authRepository) : super(const ProfileState());
+  ProfileStateNotifier(this._ref) : super(const ProfileState()) {
+    _authRepository = _ref.read(authRepositoryProvider);
+  }
+  // --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
   /// ログイン後、最初にユーザー情報を読み込みます。
   Future<void> loadCurrentUser() async {
@@ -78,6 +88,7 @@ class ProfileStateNotifier extends StateNotifier<ProfileState> {
   }
 
   /// プロフィール情報を更新します。
+  // --- ▼▼▼ ここから修正 ▼▼▼ ---
   Future<bool> updateProfile({
     required String username,
     required String bio,
@@ -87,6 +98,10 @@ class ProfileStateNotifier extends StateNotifier<ProfileState> {
         username: username,
         bio: bio,
       );
+      // AuthStateNotifierのユーザー名も更新してUIを同期
+      _ref.read(authStateNotifierProvider.notifier).updateUsername(username);
+      
+      // 現在のNotifierの状態を更新
       state = state.copyWith(
         username: username,
         bio: bio,
@@ -98,6 +113,7 @@ class ProfileStateNotifier extends StateNotifier<ProfileState> {
       return false;
     }
   }
+  // --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
   /// 更新後のメッセージ表示を一度だけに限定するため、ステータスをリセットします。
   void resetUpdateStatus() {

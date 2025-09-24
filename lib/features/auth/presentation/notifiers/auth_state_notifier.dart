@@ -42,7 +42,7 @@ class AuthState {
       errorMessage: errorMessage, // nullを許容してエラーメッセージをクリアできるようにする
       usernameForConfirmation:
           usernameForConfirmation ?? this.usernameForConfirmation,
-          username: username ?? username,
+          username: username ?? this.username,
     );
   }
 }
@@ -185,4 +185,11 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     await _authRepository.signOut();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
+
+  // --- ▼▼▼ ここから追加 ▼▼▼ ---
+  /// プロフィール更新時にユーザー名を同期するためのメソッド
+  void updateUsername(String newUsername) {
+    state = state.copyWith(username: newUsername);
+  }
+  // --- ▲▲▲ ここまで追加 ▲▲▲ ---
 }
