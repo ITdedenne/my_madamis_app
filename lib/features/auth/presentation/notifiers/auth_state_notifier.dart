@@ -11,6 +11,7 @@ enum AuthStatus {
   authenticated,
   unauthenticated,
   confirmationRequired,
+  profileSetupRequired,
   passwordResetRequired, // 追加
   passwordResetSuccess,  // 追加
   error,
@@ -21,23 +22,27 @@ class AuthState {
   final AuthStatus status;
   final String? errorMessage;
   final String? usernameForConfirmation;
+    final String? username;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.errorMessage,
     this.usernameForConfirmation,
+    this.username,
   });
 
   AuthState copyWith({
     AuthStatus? status,
     String? errorMessage,
     String? usernameForConfirmation,
+    String? username,
   }) {
     return AuthState(
       status: status ?? this.status,
       errorMessage: errorMessage, // nullを許容してエラーメッセージをクリアできるようにする
       usernameForConfirmation:
           usernameForConfirmation ?? this.usernameForConfirmation,
+          username: username ?? this.username,
     );
   }
 }
@@ -55,11 +60,11 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   AuthStateNotifier(this._authRepository)
       : super(const AuthState(status: AuthStatus.unauthenticated));
 
-  Future<void> signUp(String username, String password, String email) async {
+  Future<void> signUp( String username,String password, String email) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       final result = await _authRepository.signUp(
-        username: username,
+          username: username,
         password: password,
         email: email,
       );
@@ -77,28 +82,55 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  // ▼▼▼ 3. confirmSignUpメソッドの成功時の処理を修正 ▼▼▼
   Future<void> confirmSignUp(String username, String confirmationCode) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.confirmSignUp(
           username: username, confirmationCode: confirmationCode);
+      // 成功したら、unauthenticated ではなく profileSetupRequired に遷移
       state = state.copyWith(
-          status: AuthStatus.unauthenticated,
-          errorMessage: '認証が完了しました。ログインしてください。');
+          status: AuthStatus.profileSetupRequired,
+          usernameForConfirmation: username // emailを保持しておく
+          );
     } catch (e) {
       state =
           state.copyWith(status: AuthStatus.error, errorMessage: '認証に失敗しました: $e');
     }
   }
 
-  Future<void> signIn(String email, String password) async {
+ Future<void> signIn(String email, String password) async {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.signIn(username: email, password: password);
-      state = state.copyWith(status: AuthStatus.authenticated);
+      // --- 以下を追加 ---
+      final attributes = await _authRepository.fetchUserAttributes();
+      final username = attributes
+          .firstWhere((element) =>
+              element.userAttributeKey == AuthUserAttributeKey.preferredUsername)
+          .value;
+      state =
+          state.copyWith(status: AuthStatus.authenticated, username: username);
+      // --- ここまで追加 ---
     } catch (e) {
       state = state.copyWith(
           status: AuthStatus.error, errorMessage: 'ログインに失敗しました: $e');
+    }
+  }
+
+  
+
+  Future<bool> setupProfile({required String username, required String bio}) async {
+    state = state.copyWith(status: AuthStatus.loading);
+    try {
+      await _authRepository.updateUserAttributes(username: username, bio: bio);
+      // 成功したら authenticated 状態に遷移して完了
+      state = state.copyWith(status: AuthStatus.authenticated);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+          status: AuthStatus.error, errorMessage: 'プロフィールの設定に失敗しました: $e');
+      return false;
     }
   }
 
@@ -153,4 +185,11 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     await _authRepository.signOut();
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
+
+  // --- ▼▼▼ ここから追加 ▼▼▼ ---
+  /// プロフィール更新時にユーザー名を同期するためのメソッド
+  void updateUsername(String newUsername) {
+    state = state.copyWith(username: newUsername);
+  }
+  // --- ▲▲▲ ここまで追加 ▲▲▲ ---
 }

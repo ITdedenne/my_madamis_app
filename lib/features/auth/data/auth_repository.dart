@@ -1,7 +1,6 @@
-// ファイルパス: lib/repositories/auth_repository.dart
+// ファイルパス: lib/features/auth/data/auth_repository.dart
 
 import 'package:amplify_flutter/amplify_flutter.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Riverpodでこのリポジトリを提供するためのProvider
@@ -10,19 +9,17 @@ final authRepositoryProvider = Provider((_) => AuthRepository());
 class AuthRepository {
   // サインアップ処理
   Future<SignUpResult> signUp({
-    required String username,
+     required String username,
     required String password,
     required String email,
   }) async {
     try {
- final options = SignUpOptions(
+      final options = SignUpOptions(
         userAttributes: {
           AuthUserAttributeKey.email: email,
-          // ユーザー名を表示名として属性に追加
-          AuthUserAttributeKey.preferredUsername: username,
+           AuthUserAttributeKey.preferredUsername: username,
         },
       );
-      // Cognitoのusernameにはemailを渡す
       return await Amplify.Auth.signUp(
         username: email,
         password: password,
@@ -63,6 +60,16 @@ class AuthRepository {
     }
   }
 
+    // ユーザー属性の取得
+  Future<List<AuthUserAttribute>> fetchUserAttributes() async {
+    try {
+      final result = await Amplify.Auth.fetchUserAttributes();
+      return result;
+    } on AuthException {
+      rethrow;
+    }
+  }
+
   // パスワードリセット開始処理
   Future<ResetPasswordResult> resetPassword(String username) async {
     try {
@@ -92,5 +99,53 @@ class AuthRepository {
   // サインアウト処理
   Future<void> signOut() async {
     await Amplify.Auth.signOut();
+  }
+
+  /// 現在サインインしているユーザーの属性情報を取得します。
+  Future<Map<AuthUserAttributeKey, String>> fetchCurrentUserAttributes() async {
+    try {
+      final result = await Amplify.Auth.fetchUserAttributes();
+      final attributes = <AuthUserAttributeKey, String>{};
+      for (final attribute in result) {
+        attributes[attribute.userAttributeKey] = attribute.value;
+      }
+      return attributes;
+    } on AuthException {
+      rethrow;
+    }
+  }
+
+  /// ユーザー属性（ユーザー名、自己紹介）を更新または新規作成します。
+   Future<void> updateUserAttributes({
+    required String username,
+    required String bio,
+  }) async {
+    try {
+      await Amplify.Auth.updateUserAttributes(
+        attributes: [
+          AuthUserAttribute(
+            userAttributeKey: AuthUserAttributeKey.preferredUsername,
+            value: username,
+          ),
+        ],
+      );
+
+      // 自己紹介が空でなければ更新処理を行う
+      if (bio.trim().isNotEmpty) {
+        await Amplify.Auth.updateUserAttributes(
+          attributes: [
+            AuthUserAttribute(
+              userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
+              value: bio,
+            ),
+          ],
+        );
+      }
+
+    } on AuthException catch (e) {
+      // 本番環境ではより適切なエラーハンドリングを推奨
+      safePrint('属性の更新中にエラーが発生しました: $e');
+      rethrow;
+    }
   }
 }

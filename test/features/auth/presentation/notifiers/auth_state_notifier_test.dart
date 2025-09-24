@@ -2,7 +2,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mockito/mockito.dart'; // ★ この行を追加（または確認）
+import 'package:mockito/mockito.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:my_madamis_app/features/auth/data/auth_repository.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
@@ -29,7 +29,8 @@ void main() {
   });
 
   group('AuthStateNotifier Unit Tests', () {
-    test('[NOTIFIER-001] signIn - 成功時にauthenticated状態になる', () async {
+    test('[NOTIFIER-001] signIn - 成功時にauthenticated状態とユーザー名が設定される', () async {
+      // --- ここから修正 ---
       when(mockAuthRepository.signIn(
         username: 'test@example.com',
         password: 'password',
@@ -37,6 +38,13 @@ void main() {
             isSignedIn: true,
             nextStep: AuthNextSignInStep(signInStep: AuthSignInStep.done),
           ));
+      
+      when(mockAuthRepository.fetchUserAttributes()).thenAnswer((_) async => [
+            const AuthUserAttribute(
+                userAttributeKey: AuthUserAttributeKey.preferredUsername,
+                value: 'test user')
+          ]);
+      // --- ここまで修正 ---
 
       final notifier = container.read(authStateNotifierProvider.notifier);
 
@@ -44,8 +52,11 @@ void main() {
         notifier.stream,
         emitsInOrder([
           isA<AuthState>().having((s) => s.status, 'status', AuthStatus.loading),
+          // --- ここから修正 ---
           isA<AuthState>()
-              .having((s) => s.status, 'status', AuthStatus.authenticated),
+              .having((s) => s.status, 'status', AuthStatus.authenticated)
+              .having((s) => s.username, 'username', 'test user'),
+          // --- ここまで修正 ---
         ]),
       );
 
@@ -76,7 +87,7 @@ void main() {
 
     test('[NOTIFIER-003] resetPassword - 成功時にpasswordResetRequired状態になる',
         () async {
-      final mockResetPasswordStep = ResetPasswordStep(
+      const mockResetPasswordStep = ResetPasswordStep(
         updateStep: AuthResetPasswordStep.confirmResetPasswordWithCode,
       );
       when(mockResetPasswordResult.nextStep).thenReturn(mockResetPasswordStep);
