@@ -24,7 +24,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0' # プロジェクトで使用しているFlutterのバージョンを指定
+          flutter-version: '3.22.2' # プロジェクトで使用しているFlutterのバージョンを指定
           channel: 'stable'
           cache: true # 依存関係をキャッシュして次回以降の実行を高速化
 
