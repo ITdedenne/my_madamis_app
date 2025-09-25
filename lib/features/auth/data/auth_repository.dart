@@ -53,6 +53,15 @@ class AuthRepository {
     }
   }
 
+    /// サインアップ確認コードを再送します。
+  Future<void> resendSignUpCode({required String username}) async {
+    try {
+      await Amplify.Auth.resendSignUpCode(username: username);
+    } on AuthException {
+      rethrow;
+    }
+  }
+
   // サインイン処理
   Future<SignInResult> signIn({
     required String username,

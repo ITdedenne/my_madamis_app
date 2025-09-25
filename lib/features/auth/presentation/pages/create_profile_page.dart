@@ -48,6 +48,11 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
   Widget build(BuildContext context) {
     ref.listen(authStateNotifierProvider, (_, next) {
       if (next.status == AuthStatus.confirmationRequired) {
+                if (next.errorMessage != null && next.errorMessage!.isNotEmpty) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next.errorMessage!)),
+          );
+        }
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ConfirmationPage(
