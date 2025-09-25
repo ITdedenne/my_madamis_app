@@ -10,7 +10,6 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 編集画面から戻ってきた際の更新成功メッセージ表示を監視
     ref.listen(profileStateNotifierProvider, (previous, next) {
       if (next.updateStatus == UpdateStatus.success) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -19,7 +18,6 @@ class ProfilePage extends ConsumerWidget {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        // メッセージ表示後にステータスをリセット
         ref.read(profileStateNotifierProvider.notifier).resetUpdateStatus();
       }
     });
@@ -60,6 +58,15 @@ class ProfilePage extends ConsumerWidget {
                         : '自己紹介が設定されていません。',
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
+                  const SizedBox(height: 24),
+                  _buildSectionTitle('X (Twitter)'),
+                  const SizedBox(height: 8),
+                  Text(
+                    profileState.twitterId != null && profileState.twitterId!.isNotEmpty
+                        ? '@${profileState.twitterId!}'
+                        : 'X IDが設定されていません。',
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
                 ],
               ),
             ),
@@ -69,7 +76,8 @@ class ProfilePage extends ConsumerWidget {
   }
   
   Widget _buildProfileHeader(BuildContext context, ProfileState state) {
-    return Row(
+    // ... (変更なし) ...
+        return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(20),
@@ -96,6 +104,7 @@ class ProfilePage extends ConsumerWidget {
   }
 
   Widget _buildSectionTitle(String title) {
+    // ... (変更なし) ...
     return Text(
       title,
       style: const TextStyle(

@@ -3,25 +3,33 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Riverpodでこのリポジトリを提供するためのProvider
 final authRepositoryProvider = Provider((_) => AuthRepository());
 
 class AuthRepository {
-  // サインアップ処理
-  Future<SignUpResult> signUp({
-     required String username,
-    required String password,
+  Future<SignUpResult> signUpWithProfile({
     required String email,
+    required String password,
+    required String username,
+    String? bio,
+    String? twitterId,
   }) async {
     try {
+      final userAttributes = <AuthUserAttributeKey, String>{
+        AuthUserAttributeKey.email: email,
+        AuthUserAttributeKey.preferredUsername: username,
+      };
+      if (bio != null && bio.trim().isNotEmpty) {
+        userAttributes[const CognitoUserAttributeKey.custom('bio')] = bio;
+      }
+      if (twitterId != null && twitterId.trim().isNotEmpty) {
+        userAttributes[const CognitoUserAttributeKey.custom('twitter_id')] = twitterId;
+      }
+
       final options = SignUpOptions(
-        userAttributes: {
-          AuthUserAttributeKey.email: email,
-           AuthUserAttributeKey.preferredUsername: username,
-        },
+        userAttributes: userAttributes,
       );
       return await Amplify.Auth.signUp(
-        username: email,
+        username: email, // Cognitoのusernameはemailを使用
         password: password,
         options: options,
       );
@@ -40,6 +48,15 @@ class AuthRepository {
         username: username,
         confirmationCode: confirmationCode,
       );
+    } on AuthException {
+      rethrow;
+    }
+  }
+
+    /// サインアップ確認コードを再送します。
+  Future<void> resendSignUpCode({required String username}) async {
+    try {
+      await Amplify.Auth.resendSignUpCode(username: username);
     } on AuthException {
       rethrow;
     }
@@ -114,36 +131,39 @@ class AuthRepository {
       rethrow;
     }
   }
-
-  /// ユーザー属性（ユーザー名、自己紹介）を更新または新規作成します。
-   Future<void> updateUserAttributes({
+  /// ユーザー属性を更新します。
+  /// bioやtwitterIdがnullや空文字の場合は更新しません。
+  Future<void> updateUserAttributes({
     required String username,
-    required String bio,
+    String? bio,
+    String? twitterId,
   }) async {
     try {
-      await Amplify.Auth.updateUserAttributes(
-        attributes: [
-          AuthUserAttribute(
-            userAttributeKey: AuthUserAttributeKey.preferredUsername,
-            value: username,
-          ),
-        ],
-      );
+      final attributesToUpdate = [
+        AuthUserAttribute(
+          userAttributeKey: AuthUserAttributeKey.preferredUsername,
+          value: username,
+        ),
+      ];
 
-      // 自己紹介が空でなければ更新処理を行う
-      if (bio.trim().isNotEmpty) {
-        await Amplify.Auth.updateUserAttributes(
-          attributes: [
-            AuthUserAttribute(
-              userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
-              value: bio,
-            ),
-          ],
-        );
+      // bioがnullや空でなければ属性リストに追加
+      if (bio != null && bio.trim().isNotEmpty) {
+        attributesToUpdate.add(AuthUserAttribute(
+          userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
+          value: bio,
+        ));
       }
 
+      // twitterIdがnullや空でなければ属性リストに追加
+      if (twitterId != null && twitterId.trim().isNotEmpty) {
+        attributesToUpdate.add(AuthUserAttribute(
+          userAttributeKey: const CognitoUserAttributeKey.custom('twitter_id'),
+          value: twitterId,
+        ));
+      }
+      
+      await Amplify.Auth.updateUserAttributes(attributes: attributesToUpdate);
     } on AuthException catch (e) {
-      // 本番環境ではより適切なエラーハンドリングを推奨
       safePrint('属性の更新中にエラーが発生しました: $e');
       rethrow;
     }

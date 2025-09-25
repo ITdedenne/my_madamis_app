@@ -8,11 +8,8 @@ import 'amplifyconfiguration.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 
 Future<void> main() async {
-  // Flutterアプリの初期化
   WidgetsFlutterBinding.ensureInitialized();
-  // Amplifyの設定
   await _configureAmplify();
-  // アプリの実行
   runApp(
     const ProviderScope(
       child: MyApp(),
@@ -22,11 +19,8 @@ Future<void> main() async {
 
 Future<void> _configureAmplify() async {
   try {
-    // Authプラグインを追加
     final auth = AmplifyAuthCognito();
     await Amplify.addPlugin(auth);
-
-    // Amplifyを設定
     await Amplify.configure(amplifyconfig);
     safePrint('Amplify configured successfully');
   } on Exception catch (e) {
@@ -35,7 +29,10 @@ Future<void> _configureAmplify() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  // ▼▼▼ 以下を追加 ▼▼▼
+  final Widget? home;
+  const MyApp({super.key, this.home});
+  // ▲▲▲ ここまで追加 ▲▲▲
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +42,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LoginPage(), // 開始画面をログイン画面に設定
+      // ▼▼▼ 以下を修正 ▼▼▼
+      home: home ?? const LoginPage(),
+      // ▲▲▲ ここまで修正 ▲▲▲
     );
   }
 }

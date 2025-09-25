@@ -2,56 +2,69 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../notifiers/auth_state_notifier.dart';
-import 'confirmation_page.dart';
+import 'create_profile_page.dart';
 
-class SignUpPage extends ConsumerWidget {
+class SignUpPage extends ConsumerStatefulWidget {
   const SignUpPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // ▼▼▼ usernameController を削除 ▼▼▼
-    final usernameController = TextEditingController();
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    final authState = ref.watch(authStateNotifierProvider);
+  ConsumerState<SignUpPage> createState() => _SignUpPageState();
+}
 
-    ref.listen(authStateNotifierProvider, (_, next) {
-      if (next.status == AuthStatus.confirmationRequired) {
-        Navigator.push(context, MaterialPageRoute(
-          builder: (_) => ConfirmationPage(username: next.usernameForConfirmation!),
-        ));
-      }
-    });
+class _SignUpPageState extends ConsumerState<SignUpPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  void _goToNextStep() {
+    if (_formKey.currentState!.validate()) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => CreateProfilePage(email: _emailController.text),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('ユーザー登録')),
+      appBar: AppBar(title: const Text('新規登録')),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            // ▼▼▼ ユーザー名のTextFormFieldを削除 ▼▼▼
-            TextFormField(controller: emailController, decoration: const InputDecoration(labelText: 'メールアドレス')),
-            TextFormField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'パスワード')),
-            const SizedBox(height: 20),
-             if (authState.status == AuthStatus.loading)
-              const Center(child: CircularProgressIndicator())
-            else
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              const Text('まず、メールアドレスを登録してください。'),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _emailController,
+                decoration: const InputDecoration(
+                  labelText: 'メールアドレス',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty || !value.contains('@')) {
+                    return '有効なメールアドレスを入力してください';
+                  }
+                  return null;
+                },
+                keyboardType: TextInputType.emailAddress,
+              ),
+              const SizedBox(height: 24),
               ElevatedButton(
-                // ▼▼▼ signUpの引数からusernameController.textを削除 ▼▼▼
-                onPressed: () => ref.read(authStateNotifierProvider.notifier).signUp(
-                      usernameController.text,
-                      passwordController.text,
-                      emailController.text,
-                    ),
-                child: const Text('登録'),
+                onPressed: _goToNextStep,
+                child: const Text('次へ'),
               ),
-            if (authState.status == AuthStatus.error)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text('エラー: ${authState.errorMessage}', style: const TextStyle(color: Colors.red)),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

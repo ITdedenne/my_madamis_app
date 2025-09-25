@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/home/presentation/pages/home_page.dart';
 import '../notifiers/auth_state_notifier.dart';
-import 'forgot_password_page.dart'; // 追加
+import 'confirmation_page.dart';
+import 'forgot_password_page.dart';
 import 'signup_page.dart';
 
 class LoginPage extends ConsumerWidget {
@@ -21,6 +22,16 @@ class LoginPage extends ConsumerWidget {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const HomePage()),
         );
+      } else if (next.status == AuthStatus.confirmationRequired) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.errorMessage ?? 'アカウントの確認が必要です。')),
+        );
+        Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => ConfirmationPage(
+            username: next.usernameForConfirmation!,
+            password: passwordController.text,
+          ),
+        ));
       }
     });
 
@@ -29,7 +40,6 @@ class LoginPage extends ConsumerWidget {
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          // ... (変更なし) ...
           children: [
             TextFormField(controller: emailController, decoration: const InputDecoration(labelText: 'メールアドレス')),
             const SizedBox(height: 12),
@@ -48,7 +58,6 @@ class LoginPage extends ConsumerWidget {
                 child: Text('エラー: ${authState.errorMessage}', style: const TextStyle(color: Colors.red)),
               ),
             TextButton(
-              // onPressedのコメントアウトを解除し、ナビゲーションを追加
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const ForgotPasswordPage()));
               },
