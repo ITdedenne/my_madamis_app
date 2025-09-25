@@ -215,7 +215,12 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.error,
         errorMessage: 'メールアドレスの変更リクエストに失敗しました: ${e.message}',
       );
-    }
+    }catch (e) { 
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: '予期せぬエラーが発生しました: $e',
+      );
+    } 
   }
 
   Future<void> confirmUpdateEmail(String confirmationCode) async {
@@ -227,6 +232,11 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: 'メールアドレスの変更に失敗しました: ${e.message}',
+      );
+    } catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: '予期せぬエラーが発生しました: $e',
       );
     }
   }
@@ -246,6 +256,11 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(
         status: AuthStatus.error,
         errorMessage: 'パスワードの変更に失敗しました: ${e.message}',
+      );
+    } catch (e) { 
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: '予期せぬエラーが発生しました: $e',
       );
     }
   }

@@ -207,10 +207,14 @@ void main() {
 
       testWidgets('[SETTINGS-FLOW-006] 新しいパスワードがポリシー違反の場合にエラーが表示される',
           (tester) async {
+        // 1. バリデーションを通過するが、ポリシー違反とみなすパスワードを定義
+        const invalidPolicyPassword = 'invalid-password';
+
         // --- モックの設定 ---
+        // 2. モックが新しいパスワード('invalid-policy-password')を受け取った場合に例外を投げるように変更
         when(mockAuthRepository.updatePassword(
-                oldPassword: oldPassword, newPassword: 'short'))
-            .thenThrow(const InvalidPasswordException('Password is too short'));
+                oldPassword: oldPassword, newPassword: invalidPolicyPassword))
+            .thenThrow(const InvalidPasswordException('Password does not conform to policy'));
 
         // --- テスト実行 ---
         await tester.pumpWidget(createTestApp(home: const SettingsPage()));
@@ -218,17 +222,21 @@ void main() {
         await tester.tap(find.text('パスワード変更'));
         await tester.pumpAndSettle();
 
-        // バリデーション自体は通るがAPIでエラーになるケースを想定
+        // 3. バリデーション自体は通るがAPIでエラーになるケースを想定
         await tester.enterText(
             find.widgetWithText(TextFormField, '現在のパスワード'), oldPassword);
+        // 4. 新しいパスワードを入力
         await tester.enterText(
-            find.widgetWithText(TextFormField, '新しいパスワード (8文字以上)'), 'short');
+            find.widgetWithText(TextFormField, '新しいパスワード (8文字以上)'),
+            invalidPolicyPassword);
         await tester.tap(find.text('パスワードを変更'));
         await tester.pumpAndSettle();
 
         // --- 検証 ---
         expect(find.byType(UpdatePasswordPage), findsOneWidget);
+        // "エラー: パスワードの変更に失敗しました..." というSnackBarが表示されることを確認
         expect(find.textContaining('パスワードの変更に失敗しました'), findsOneWidget);
+
       });
 
         testWidgets('[SETTINGS-FLOW-007] パスワード入力フォームのクライアントサイドバリデーションが機能する',
