@@ -74,27 +74,37 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
     _i1.throwOnMissingStub(this);
   }
 
-  _i4.Future<_i2.SignUpResult> signUp({
-    required String? password,
+  @override
+  _i4.Future<_i2.SignUpResult> signUpWithProfile({
     required String? email,
+    required String? password,
+    required String? username,
+    String? bio,
+    String? twitterId,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
-          #signUp,
+          #signUpWithProfile,
           [],
           {
-            #password: password,
             #email: email,
+            #password: password,
+            #username: username,
+            #bio: bio,
+            #twitterId: twitterId,
           },
         ),
         returnValue: _i4.Future<_i2.SignUpResult>.value(_FakeSignUpResult_0(
           this,
           Invocation.method(
-            #signUp,
+            #signUpWithProfile,
             [],
             {
-              #password: password,
               #email: email,
+              #password: password,
+              #username: username,
+              #bio: bio,
+              #twitterId: twitterId,
             },
           ),
         )),
@@ -126,6 +136,18 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
           ),
         )),
       ) as _i4.Future<_i2.SignUpResult>);
+
+  @override
+  _i4.Future<void> resendSignUpCode({required String? username}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #resendSignUpCode,
+          [],
+          {#username: username},
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
   _i4.Future<_i2.SignInResult> signIn({
