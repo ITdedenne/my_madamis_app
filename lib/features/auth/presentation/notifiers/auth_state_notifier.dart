@@ -5,14 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/auth_repository.dart';
 
 enum AuthStatus {
-  initial,
+ initial,
   loading,
   authenticated,
   unauthenticated,
   confirmationRequired,
+  confirmationRequiredForUpdate, // メール更新時のコード確認状態
   profileSetupRequired,
   passwordResetRequired,
   passwordResetSuccess,
+  emailUpdateSuccess, // メール更新成功状態
+  passwordUpdateSuccess, // パスワード更新成功状態
   error,
 }
 
@@ -34,10 +37,12 @@ class AuthState {
     String? errorMessage,
     String? usernameForConfirmation,
     String? username,
+    bool resetErrorMessage = false, // パラメータを追加
   }) {
     return AuthState(
       status: status ?? this.status,
-      errorMessage: errorMessage,
+      // resetErrorMessageがtrueならnullに、そうでなければ通常通り更新
+      errorMessage: resetErrorMessage ? null : errorMessage ?? this.errorMessage,
       usernameForConfirmation:
           usernameForConfirmation ?? this.usernameForConfirmation,
       username: username ?? this.username,
@@ -51,6 +56,7 @@ final authStateNotifierProvider =
 });
 
 class AuthStateNotifier extends StateNotifier<AuthState> {
+  //新しいメソッドを追加したときは"flutter pub run build_runner build --delete-conflicting-outputs"を入力。 
   final AuthRepository _authRepository;
 
   AuthStateNotifier(this._authRepository)
@@ -194,6 +200,62 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<void> signOut() async {
     await _authRepository.signOut();
     state = const AuthState(status: AuthStatus.unauthenticated);
+  }
+
+    Future<void> updateEmail(String newEmail) async {
+    state = state.copyWith(status: AuthStatus.loading, resetErrorMessage: true);
+    try {
+      await _authRepository.updateEmail(newEmail);
+      state = state.copyWith(
+        status: AuthStatus.confirmationRequiredForUpdate,
+        usernameForConfirmation: newEmail,
+      );
+    } on AuthException catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'メールアドレスの変更リクエストに失敗しました: ${e.message}',
+      );
+    }
+  }
+
+  Future<void> confirmUpdateEmail(String confirmationCode) async {
+    state = state.copyWith(status: AuthStatus.loading, resetErrorMessage: true);
+    try {
+      await _authRepository.confirmUpdateEmail(confirmationCode);
+      state = state.copyWith(status: AuthStatus.emailUpdateSuccess);
+    } on AuthException catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'メールアドレスの変更に失敗しました: ${e.message}',
+      );
+    }
+  }
+
+  Future<void> updatePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    state = state.copyWith(status: AuthStatus.loading, resetErrorMessage: true);
+    try {
+      await _authRepository.updatePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+      state = state.copyWith(status: AuthStatus.passwordUpdateSuccess);
+    } on AuthException catch (e) {
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: 'パスワードの変更に失敗しました: ${e.message}',
+      );
+    }
+  }
+
+  /// 画面遷移後などに、一時的な状態をリセットする
+  void resetStatus() {
+    state = state.copyWith(
+      status: AuthStatus.initial,
+      resetErrorMessage: true,
+    );
   }
 
   /// プロフィール更新時にユーザー名を同期するためのメソッド
