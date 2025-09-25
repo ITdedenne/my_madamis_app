@@ -55,9 +55,20 @@ class _FakeResetPasswordResult_2 extends _i1.SmartFake
         );
 }
 
-class _FakeResetPasswordStep_3 extends _i1.SmartFake
+class _FakeUpdateUserAttributeResult_3 extends _i1.SmartFake
+    implements _i2.UpdateUserAttributeResult {
+  _FakeUpdateUserAttributeResult_3(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeResetPasswordStep_4 extends _i1.SmartFake
     implements _i2.ResetPasswordStep {
-  _FakeResetPasswordStep_3(
+  _FakeResetPasswordStep_4(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -265,6 +276,52 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
         returnValue: _i4.Future<void>.value(),
         returnValueForMissingStub: _i4.Future<void>.value(),
       ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<_i2.UpdateUserAttributeResult> updateEmail(String? newEmail) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateEmail,
+          [newEmail],
+        ),
+        returnValue: _i4.Future<_i2.UpdateUserAttributeResult>.value(
+            _FakeUpdateUserAttributeResult_3(
+          this,
+          Invocation.method(
+            #updateEmail,
+            [newEmail],
+          ),
+        )),
+      ) as _i4.Future<_i2.UpdateUserAttributeResult>);
+
+  @override
+  _i4.Future<void> confirmUpdateEmail(String? confirmationCode) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #confirmUpdateEmail,
+          [confirmationCode],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> updatePassword({
+    required String? oldPassword,
+    required String? newPassword,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updatePassword,
+          [],
+          {
+            #oldPassword: oldPassword,
+            #newPassword: newPassword,
+          },
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 }
 
 /// A class which mocks [ResetPasswordResult].
@@ -285,7 +342,7 @@ class MockResetPasswordResult extends _i1.Mock
   @override
   _i2.ResetPasswordStep get nextStep => (super.noSuchMethod(
         Invocation.getter(#nextStep),
-        returnValue: _FakeResetPasswordStep_3(
+        returnValue: _FakeResetPasswordStep_4(
           this,
           Invocation.getter(#nextStep),
         ),

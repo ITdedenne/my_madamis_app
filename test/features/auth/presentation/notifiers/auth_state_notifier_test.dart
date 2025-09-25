@@ -163,4 +163,147 @@ void main() {
       );
     });
   });
+ group('Email Update', () {
+      const newEmail = 'new@example.com';
+      const confirmationCode = '123456';
+
+      test('[NOTIFIER-006] updateEmail - 成功時にconfirmationRequiredForUpdate状態になる',
+          () async {
+        when(mockAuthRepository.updateEmail(newEmail)).thenAnswer((_) async =>
+            const UpdateUserAttributeResult(
+                isUpdated: false,
+                nextStep: AuthNextUpdateAttributeStep(
+                    updateAttributeStep:
+                        AuthUpdateAttributeStep.confirmAttributeWithCode)));
+
+        final notifier = container.read(authStateNotifierProvider.notifier);
+
+        expect(
+          notifier.stream,
+          emitsInOrder([
+            isA<AuthState>()
+                .having((s) => s.status, 'status', AuthStatus.loading),
+            isA<AuthState>()
+                .having((s) => s.status, 'status',
+                    AuthStatus.confirmationRequiredForUpdate)
+                .having((s) => s.usernameForConfirmation,
+                    'usernameForConfirmation', newEmail),
+          ]),
+        );
+
+        await notifier.updateEmail(newEmail);
+      });
+
+      test('[NOTIFIER-007] updateEmail - 失敗時にerror状態になる', () async {
+        final exception = Exception('Update failed');
+        when(mockAuthRepository.updateEmail(newEmail)).thenThrow(exception);
+
+        final notifier = container.read(authStateNotifierProvider.notifier);
+
+        expect(
+          notifier.stream,
+          emitsInOrder([
+            isA<AuthState>()
+                .having((s) => s.status, 'status', AuthStatus.loading),
+            isA<AuthState>()
+                .having((s) => s.status, 'status', AuthStatus.error)
+                .having((s) => s.errorMessage, 'errorMessage', isNotNull),
+          ]),
+        );
+
+        await notifier.updateEmail(newEmail);
+      });
+
+      test('[NOTIFIER-008] confirmUpdateEmail - 成功時にemailUpdateSuccess状態になる',
+          () async {
+        when(mockAuthRepository.confirmUpdateEmail(confirmationCode))
+            .thenAnswer((_) async {});
+
+        final notifier = container.read(authStateNotifierProvider.notifier);
+
+        expect(
+          notifier.stream,
+          emitsInOrder([
+            isA<AuthState>()
+                .having((s) => s.status, 'status', AuthStatus.loading),
+            isA<AuthState>().having(
+                (s) => s.status, 'status', AuthStatus.emailUpdateSuccess),
+          ]),
+        );
+
+        await notifier.confirmUpdateEmail(confirmationCode);
+      });
+
+      test('[NOTIFIER-009] confirmUpdateEmail - 失敗時にerror状態になる', () async {
+        final exception = Exception('Confirmation failed');
+        when(mockAuthRepository.confirmUpdateEmail(confirmationCode))
+            .thenThrow(exception);
+
+        final notifier = container.read(authStateNotifierProvider.notifier);
+
+        expect(
+          notifier.stream,
+          emitsInOrder([
+            isA<AuthState>()
+                .having((s) => s.status, 'status', AuthStatus.loading),
+            isA<AuthState>()
+                .having((s) => s.status, 'status', AuthStatus.error)
+                .having((s) => s.errorMessage, 'errorMessage', isNotNull),
+          ]),
+        );
+
+        await notifier.confirmUpdateEmail(confirmationCode);
+      });
+    });
+
+    group('Password Update', () {
+      const oldPassword = 'oldPassword123';
+      const newPassword = 'newPassword123';
+
+      test('[NOTIFIER-010] updatePassword - 成功時にpasswordUpdateSuccess状態になる',
+          () async {
+        when(mockAuthRepository.updatePassword(
+                oldPassword: oldPassword, newPassword: newPassword))
+            .thenAnswer((_) async {});
+
+        final notifier = container.read(authStateNotifierProvider.notifier);
+
+        expect(
+          notifier.stream,
+          emitsInOrder([
+            isA<AuthState>()
+                .having((s) => s.status, 'status', AuthStatus.loading),
+            isA<AuthState>().having(
+                (s) => s.status, 'status', AuthStatus.passwordUpdateSuccess),
+          ]),
+        );
+
+        await notifier.updatePassword(
+            oldPassword: oldPassword, newPassword: newPassword);
+      });
+
+      test('[NOTIFIER-011] updatePassword - 失敗時にerror状態になる', () async {
+        final exception = Exception('Update failed');
+        when(mockAuthRepository.updatePassword(
+                oldPassword: oldPassword, newPassword: newPassword))
+            .thenThrow(exception);
+
+        final notifier = container.read(authStateNotifierProvider.notifier);
+
+        expect(
+          notifier.stream,
+          emitsInOrder([
+            isA<AuthState>()
+                .having((s) => s.status, 'status', AuthStatus.loading),
+            isA<AuthState>()
+                .having((s) => s.status, 'status', AuthStatus.error)
+                .having((s) => s.errorMessage, 'errorMessage', isNotNull),
+          ]),
+        );
+
+        await notifier.updatePassword(
+            oldPassword: oldPassword, newPassword: newPassword);
+      });
+    });
+
 }

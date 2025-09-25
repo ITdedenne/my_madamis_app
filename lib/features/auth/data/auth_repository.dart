@@ -168,4 +168,44 @@ class AuthRepository {
       rethrow;
     }
   }
+
+    /// ユーザーのメールアドレス属性を更新するためのリクエストを送信します。
+  Future<UpdateUserAttributeResult> updateEmail(String newEmail) async {
+    try {
+      final result = await Amplify.Auth.updateUserAttribute(
+        userAttributeKey: AuthUserAttributeKey.email,
+        value: newEmail,
+      );
+      return result;
+    } on AuthException {
+      rethrow;
+    }
+  }
+
+  /// メールアドレス更新用の確認コードを送信して、変更を確定します。
+  Future<void> confirmUpdateEmail(String confirmationCode) async {
+    try {
+      await Amplify.Auth.confirmUserAttribute(
+        userAttributeKey: AuthUserAttributeKey.email,
+        confirmationCode: confirmationCode,
+      );
+    } on AuthException {
+      rethrow;
+    }
+  }
+
+  /// サインイン中のユーザーのパスワードを変更します。
+  Future<void> updatePassword({
+    required String oldPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await Amplify.Auth.updatePassword(
+        oldPassword: oldPassword,
+        newPassword: newPassword,
+      );
+    } on AuthException {
+      rethrow;
+    }
+  }
 }

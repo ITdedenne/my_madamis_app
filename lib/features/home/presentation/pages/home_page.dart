@@ -1,12 +1,12 @@
-// ファイルパス: lib/features/home/presentation/pages/home_page.dart
+// lib/features/home/presentation/pages/home_page.dart
 
 import 'package:flutter/material.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// ▼▼▼ 1. import文を追加 ▼▼▼
 import 'package:my_madamis_app/features/profile/presentation/pages/profile_page.dart';
+
 import '../../../auth/presentation/notifiers/auth_state_notifier.dart';
 import '../../../auth/presentation/pages/login_page.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -27,10 +27,9 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('ホーム'),
         actions: [
-          // --- ▼▼▼ 2. IconButtonを追加 ▼▼▼ ---
           IconButton(
             icon: const Icon(Icons.person_outline),
-            tooltip: 'プロフィール', // アイコン長押しで表示されるテキスト
+            tooltip: 'プロフィール',
             onPressed: () {
               Navigator.push(
                 context,
@@ -38,8 +37,18 @@ class HomePage extends ConsumerWidget {
               );
             },
           ),
-          // --- ▲▲▲ IconButtonの追加ここまで ▲▲▲ ---
-          // サインアウトボタン
+          // --- ▼▼▼ 歯車アイコンを追加 ▼▼▼ ---
+          IconButton(
+            icon: const Icon(Icons.settings),
+            tooltip: '設定',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              );
+            },
+          ),
+          // --- ▲▲▲ ここまで追加 ▲▲▲ ---
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'サインアウト',
