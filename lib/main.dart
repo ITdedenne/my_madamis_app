@@ -4,77 +4,70 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/amplifyconfiguration.dart';
+// amplifyconfiguration.dartのimportは不要なので削除します
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
 import 'package:my_madamis_app/features/home/presentation/pages/home_page.dart';
 
 Future<void> main() async {
-  // ターミナルに強制的にログを出力
-  print('--- main() 開始 ---');
-  
   WidgetsFlutterBinding.ensureInitialized();
-  
-  print('--- _configureAmplify() 呼び出し前 ---');
-  final isAmplifyConfigured = await _configureAmplify();
-  print('--- _configureAmplify() 呼び出し後 ---');
-  print('--- Amplify設定結果: $isAmplifyConfigured ---');
-
-  if (isAmplifyConfigured) {
-    print('--- runApp(MyApp) 実行 ---');
-    runApp(
-      const ProviderScope(
-        child: MyApp(),
-      ),
-    );
-  } else {
-    print('--- runApp(ErrorApp) 実行 ---');
-    runApp(
-      const MaterialApp(
-        home: Scaffold(
-          backgroundColor: Colors.red,
-          body: Center(
-            child: Text(
-              'Amplifyの初期化に失敗しました。\nターミナルのログを確認してください。',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 18),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  await _configureAmplify();
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
 }
 
-Future<bool> _configureAmplify() async {
-  try {
-    print('--- _configureAmplify() 処理開始 ---');
-    
-    if (Amplify.isConfigured) {
-       print('Amplifyは既に設定済みです。');
-       return true;
-    }
+Future<void> _configureAmplify() async {
+  // ---【重要】ステップ1でAWSコンソールからコピーした3つの値を、以下の変数に貼り付けてください ---
+  const userPoolId = 'ap-northeast-1_VlS5MtFSZ'; // 例: 'ap-northeast-1_XXXXXXXXX'
+  const userPoolWebClientId = '7k5v89dhlt9k3tkpbvnshn2gj3'; // 例: '5v7e06s334lhie3467gnnn6tce'
+  const region = 'ap-northeast-1'; // 例: 'ap-northeast-1'
+  // --------------------------------------------------------------------------------
 
+  // 認証に必要な最低限の情報だけで、手動で設定文字列を構築します
+  const amplifyconfig = '''{
+      "UserAgent": "aws-amplify-cli/2.0",
+      "Version": "1.0",
+      "auth": {
+          "plugins": {
+              "awsCognitoAuthPlugin": {
+                  "UserAgent": "aws-amplify-cli/0.1.0",
+                  "Version": "0.1.0",
+                  "IdentityManager": {
+                      "Default": {}
+                  },
+                  "CognitoUserPool": {
+                      "Default": {
+                          "PoolId": "$userPoolId",
+                          "AppClientId": "$userPoolWebClientId",
+                          "Region": "$region"
+                      }
+                  },
+                  "Auth": {
+                      "Default": {
+                          "authenticationFlowType": "USER_SRP_AUTH"
+                      }
+                  }
+              }
+          }
+      }
+  }''';
+
+  try {
+    if (Amplify.isConfigured) {
+      return;
+    }
     final auth = AmplifyAuthCognito();
-    
-    print('--- Amplify.addPlugin() 呼び出し前 ---');
     await Amplify.addPlugin(auth);
-    print('--- Amplify.addPlugin() 呼び出し後 ---');
     
-    print('--- Amplify.configure() 呼び出し前 ---');
+    // 手動で作成した正しい設定を読み込ませます
     await Amplify.configure(amplifyconfig);
-    print('--- Amplify.configure() 呼び出し後 ---');
-    
-    print('--- _configureAmplify() 正常に完了 ---');
-    return true;
-  } on AmplifyAlreadyConfiguredException {
-    print('Amplify設定済み例外をキャッチ。');
-    return true;
-  } catch (e, st) {
-    print('!!!!!! _configureAmplify() で致命的なエラーが発生 !!!!!!');
-    print('エラー内容: $e');
-    print('スタックトレース: $st');
-    return false;
+
+    safePrint('Amplify configured successfully');
+  } on Exception catch (e) {
+    safePrint('Amplifyの設定中にエラーが発生しました: $e');
   }
 }
 
@@ -83,11 +76,8 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    print('--- MyApp build() 開始 ---');
     final authState = ref.watch(authStateNotifierProvider);
-    print('--- 現在の認証状態: ${authState.status} ---');
 
-    // ... (UI部分は変更なし) ...
     Widget home;
     switch (authState.status) {
       case AuthStatus.authenticated:
