@@ -22,30 +22,32 @@ class CreateProfilePage extends ConsumerWidget {
     final viewModel = ref.watch(createProfileViewModelProvider);
     final notifier = ref.read(createProfileViewModelProvider.notifier);
 
-    ref.listen<CreateProfileState>(createProfileViewModelProvider, (prev, next) {
+   ref.listen<CreateProfileState>(createProfileViewModelProvider, (prev, next) {
       if(next.status == CreateProfileStatus.error) {
+        // エラー時はローディングが解除され、スナックバーを表示
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('登録エラー: ${next.errorMessage}')),
         );
       }
       if(next.status == CreateProfileStatus.requiresConfirmation) {
-        // ViewModelに保存されたパスワードを安全に使用する
+         // ViewModelに保存されたパスワードを安全に使用する
         final passwordForConfirmation = next.lastPassword;
         if (passwordForConfirmation == null || passwordForConfirmation.isEmpty) {
-          // パスワードが予期せず空の場合のエラーハンドリング
+          // パスワードが取得できない場合は、処理を中断しエラー状態にリセット
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('予期せぬエラー: パスワードが見つかりません。')),
           );
-          // エラー状態にリセットしてローディングを解除
+          // 状態を初期に戻して、画面が操作できるようにする
           notifier.state = notifier.state.copyWith(status: CreateProfileStatus.initial);
           return;
         }
 
+         // 確認画面へ遷移（この遷移によってローディングが消える）
          Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ConfirmationPage(
               email: email,
-              // ★修正ポイント: 状態から取得したパスワードを渡す
+              // ★修正ポイント: Stateから取得したパスワードを渡す
               password: passwordForConfirmation,
             ),
           ),

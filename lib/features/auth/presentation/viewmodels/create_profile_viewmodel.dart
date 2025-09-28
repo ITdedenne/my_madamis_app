@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:my_madamis_app/features/auth/domain/usecases/sign_up_usecase.dart';
 import 'package:my_madamis_app/providers.dart';
-import 'package:my_madamis_app/features/profile/domain/entities/user_profile.dart'; // UserProfileのimportは必須です
+import 'package:my_madamis_app/features/profile/domain/entities/user_profile.dart'; // UserProfileのimportは必須
 
 enum CreateProfileStatus { initial, loading, requiresConfirmation, error }
 
@@ -36,9 +36,9 @@ class CreateProfileState {
 final createProfileViewModelProvider =
     StateNotifierProvider<CreateProfileViewModel, CreateProfileState>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
-  final signUpUseCase = SignUpUseCase(authRepository); // 位置引数
+  final signUpUseCase = SignUpUseCase(authRepository); 
   final authRepo = ref.watch(authRepositoryProvider);
-  return CreateProfileViewModel(signUpUseCase, authRepo); // 位置引数
+  return CreateProfileViewModel(signUpUseCase, authRepo);
 });
 
 class CreateProfileViewModel extends StateNotifier<CreateProfileState> {
@@ -56,20 +56,19 @@ class CreateProfileViewModel extends StateNotifier<CreateProfileState> {
   }) async {
     state = state.copyWith(status: CreateProfileStatus.loading, errorMessage: null);
     
-    // ★修正ポイント1: UserProfileエンティティを作成する
+    // UserProfileエンティティを作成
     final profile = UserProfile(
       username: username,
-      // bioやtwitterIdはnullの場合はUserProfileのデフォルト値（''）が使用されます
       bio: bio ?? '', 
       twitterId: twitterId ?? '',
     );
     
     try {
-      // ★修正ポイント2: SignUpUseCaseのシグネチャに合わせてUserProfileを渡す
+      // SignUpUseCaseのシグネチャに合わせて'profile'を渡す
       await _signUpUseCase.call(
         email: email,
         password: password,
-        profile: profile, // 必須の'profile'引数を渡す
+        profile: profile, 
       );
       
       // 新規登録成功時: パスワードを保持して確認画面へ遷移
@@ -86,7 +85,7 @@ class CreateProfileViewModel extends StateNotifier<CreateProfileState> {
       );
     }
     catch (e) {
-      // その他のエラー時
+      // その他のエラー時、ローディングを解除しエラーメッセージを表示
       state = state.copyWith(
           status: CreateProfileStatus.error, errorMessage: e.toString());
     }
