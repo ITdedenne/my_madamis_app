@@ -7,10 +7,7 @@ import 'package:mockito/mockito.dart';
 import 'package:my_madamis_app/features/home/presentation/pages/home_page.dart';
 import 'package:my_madamis_app/main.dart' as app;
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
-import 'package:my_madamis_app/features/auth/data/auth_repository.dart';
-import 'package:my_madamis_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
-import 'package:my_madamis_app/features/auth/presentation/pages/reset_password_page.dart';
 
 import '../../../../mocks.mocks.dart';
 

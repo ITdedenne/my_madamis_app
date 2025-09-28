@@ -3,11 +3,18 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i4;
+import 'dart:async' as _i5;
 
 import 'package:amplify_flutter/amplify_flutter.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:my_madamis_app/features/auth/data/auth_repository.dart' as _i3;
+import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart'
+    as _i4;
+import 'package:my_madamis_app/features/profile/domain/entities/user_profile.dart'
+    as _i3;
+import 'package:my_madamis_app/features/profile/domain/repositories/profile_repository.dart'
+    as _i6;
+import 'package:my_madamis_app/features/settings/domain/repositories/settings_repository.dart'
+    as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -44,31 +51,8 @@ class _FakeSignInResult_1 extends _i1.SmartFake implements _i2.SignInResult {
         );
 }
 
-class _FakeResetPasswordResult_2 extends _i1.SmartFake
-    implements _i2.ResetPasswordResult {
-  _FakeResetPasswordResult_2(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
-}
-
-class _FakeUpdateUserAttributeResult_3 extends _i1.SmartFake
-    implements _i2.UpdateUserAttributeResult {
-  _FakeUpdateUserAttributeResult_3(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
-}
-
-class _FakeResetPasswordStep_4 extends _i1.SmartFake
-    implements _i2.ResetPasswordStep {
-  _FakeResetPasswordStep_4(
+class _FakeUserProfile_2 extends _i1.SmartFake implements _i3.UserProfile {
+  _FakeUserProfile_2(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -80,13 +64,13 @@ class _FakeResetPasswordStep_4 extends _i1.SmartFake
 /// A class which mocks [AuthRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
+class MockAuthRepository extends _i1.Mock implements _i4.AuthRepository {
   MockAuthRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i4.Future<_i2.SignUpResult> signUpWithProfile({
+  _i5.Future<_i2.SignUpResult> signUp({
     required String? email,
     required String? password,
     required String? username,
@@ -95,7 +79,7 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
   }) =>
       (super.noSuchMethod(
         Invocation.method(
-          #signUpWithProfile,
+          #signUp,
           [],
           {
             #email: email,
@@ -105,10 +89,10 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
             #twitterId: twitterId,
           },
         ),
-        returnValue: _i4.Future<_i2.SignUpResult>.value(_FakeSignUpResult_0(
+        returnValue: _i5.Future<_i2.SignUpResult>.value(_FakeSignUpResult_0(
           this,
           Invocation.method(
-            #signUpWithProfile,
+            #signUp,
             [],
             {
               #email: email,
@@ -119,10 +103,10 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
             },
           ),
         )),
-      ) as _i4.Future<_i2.SignUpResult>);
+      ) as _i5.Future<_i2.SignUpResult>);
 
   @override
-  _i4.Future<_i2.SignUpResult> confirmSignUp({
+  _i5.Future<_i2.SignUpResult> confirmSignUp({
     required String? username,
     required String? confirmationCode,
   }) =>
@@ -135,7 +119,7 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
             #confirmationCode: confirmationCode,
           },
         ),
-        returnValue: _i4.Future<_i2.SignUpResult>.value(_FakeSignUpResult_0(
+        returnValue: _i5.Future<_i2.SignUpResult>.value(_FakeSignUpResult_0(
           this,
           Invocation.method(
             #confirmSignUp,
@@ -146,22 +130,22 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
             },
           ),
         )),
-      ) as _i4.Future<_i2.SignUpResult>);
+      ) as _i5.Future<_i2.SignUpResult>);
 
   @override
-  _i4.Future<void> resendSignUpCode({required String? username}) =>
+  _i5.Future<void> resendSignUpCode({required String? username}) =>
       (super.noSuchMethod(
         Invocation.method(
           #resendSignUpCode,
           [],
           {#username: username},
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i4.Future<_i2.SignInResult> signIn({
+  _i5.Future<_i2.SignInResult> signIn({
     required String? username,
     required String? password,
   }) =>
@@ -174,7 +158,7 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
             #password: password,
           },
         ),
-        returnValue: _i4.Future<_i2.SignInResult>.value(_FakeSignInResult_1(
+        returnValue: _i5.Future<_i2.SignInResult>.value(_FakeSignInResult_1(
           this,
           Invocation.method(
             #signIn,
@@ -185,128 +169,97 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
             },
           ),
         )),
-      ) as _i4.Future<_i2.SignInResult>);
+      ) as _i5.Future<_i2.SignInResult>);
 
   @override
-  _i4.Future<List<_i2.AuthUserAttribute>> fetchUserAttributes() =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #fetchUserAttributes,
-          [],
-        ),
-        returnValue: _i4.Future<List<_i2.AuthUserAttribute>>.value(
-            <_i2.AuthUserAttribute>[]),
-      ) as _i4.Future<List<_i2.AuthUserAttribute>>);
-
-  @override
-  _i4.Future<_i2.ResetPasswordResult> resetPassword(String? username) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #resetPassword,
-          [username],
-        ),
-        returnValue: _i4.Future<_i2.ResetPasswordResult>.value(
-            _FakeResetPasswordResult_2(
-          this,
-          Invocation.method(
-            #resetPassword,
-            [username],
-          ),
-        )),
-      ) as _i4.Future<_i2.ResetPasswordResult>);
-
-  @override
-  _i4.Future<void> confirmResetPassword({
-    required String? username,
-    required String? newPassword,
-    required String? confirmationCode,
-  }) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #confirmResetPassword,
-          [],
-          {
-            #username: username,
-            #newPassword: newPassword,
-            #confirmationCode: confirmationCode,
-          },
-        ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-
-  @override
-  _i4.Future<void> signOut() => (super.noSuchMethod(
+  _i5.Future<void> signOut() => (super.noSuchMethod(
         Invocation.method(
           #signOut,
           [],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i4.Future<Map<_i2.AuthUserAttributeKey, String>>
-      fetchCurrentUserAttributes() => (super.noSuchMethod(
-            Invocation.method(
-              #fetchCurrentUserAttributes,
-              [],
-            ),
-            returnValue:
-                _i4.Future<Map<_i2.AuthUserAttributeKey, String>>.value(
-                    <_i2.AuthUserAttributeKey, String>{}),
-          ) as _i4.Future<Map<_i2.AuthUserAttributeKey, String>>);
-
-  @override
-  _i4.Future<void> updateUserAttributes({
-    required String? username,
-    String? bio,
-    String? twitterId,
-  }) =>
+  _i5.Future<List<_i2.AuthUserAttribute>> getCurrentUserAttributes() =>
       (super.noSuchMethod(
         Invocation.method(
-          #updateUserAttributes,
+          #getCurrentUserAttributes,
           [],
-          {
-            #username: username,
-            #bio: bio,
-            #twitterId: twitterId,
-          },
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<List<_i2.AuthUserAttribute>>.value(
+            <_i2.AuthUserAttribute>[]),
+      ) as _i5.Future<List<_i2.AuthUserAttribute>>);
+}
+
+/// A class which mocks [ProfileRepository].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockProfileRepository extends _i1.Mock implements _i6.ProfileRepository {
+  MockProfileRepository() {
+    _i1.throwOnMissingStub(this);
+  }
 
   @override
-  _i4.Future<_i2.UpdateUserAttributeResult> updateEmail(String? newEmail) =>
+  _i5.Future<_i3.UserProfile> fetchUserProfile() => (super.noSuchMethod(
+        Invocation.method(
+          #fetchUserProfile,
+          [],
+        ),
+        returnValue: _i5.Future<_i3.UserProfile>.value(_FakeUserProfile_2(
+          this,
+          Invocation.method(
+            #fetchUserProfile,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i3.UserProfile>);
+
+  @override
+  _i5.Future<void> updateUserProfile(_i3.UserProfile? profile) =>
       (super.noSuchMethod(
+        Invocation.method(
+          #updateUserProfile,
+          [profile],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+}
+
+/// A class which mocks [SettingsRepository].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockSettingsRepository extends _i1.Mock
+    implements _i7.SettingsRepository {
+  MockSettingsRepository() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i5.Future<void> updateEmail(String? newEmail) => (super.noSuchMethod(
         Invocation.method(
           #updateEmail,
           [newEmail],
         ),
-        returnValue: _i4.Future<_i2.UpdateUserAttributeResult>.value(
-            _FakeUpdateUserAttributeResult_3(
-          this,
-          Invocation.method(
-            #updateEmail,
-            [newEmail],
-          ),
-        )),
-      ) as _i4.Future<_i2.UpdateUserAttributeResult>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i4.Future<void> confirmUpdateEmail(String? confirmationCode) =>
+  _i5.Future<void> confirmUpdateEmail(String? confirmationCode) =>
       (super.noSuchMethod(
         Invocation.method(
           #confirmUpdateEmail,
           [confirmationCode],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 
   @override
-  _i4.Future<void> updatePassword({
+  _i5.Future<void> updatePassword({
     required String? oldPassword,
     required String? newPassword,
   }) =>
@@ -319,41 +272,7 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
             #newPassword: newPassword,
           },
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-}
-
-/// A class which mocks [ResetPasswordResult].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockResetPasswordResult extends _i1.Mock
-    implements _i2.ResetPasswordResult {
-  MockResetPasswordResult() {
-    _i1.throwOnMissingStub(this);
-  }
-
-  @override
-  bool get isPasswordReset => (super.noSuchMethod(
-        Invocation.getter(#isPasswordReset),
-        returnValue: false,
-      ) as bool);
-
-  @override
-  _i2.ResetPasswordStep get nextStep => (super.noSuchMethod(
-        Invocation.getter(#nextStep),
-        returnValue: _FakeResetPasswordStep_4(
-          this,
-          Invocation.getter(#nextStep),
-        ),
-      ) as _i2.ResetPasswordStep);
-
-  @override
-  Map<String, Object?> toJson() => (super.noSuchMethod(
-        Invocation.method(
-          #toJson,
-          [],
-        ),
-        returnValue: <String, Object?>{},
-      ) as Map<String, Object?>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 }

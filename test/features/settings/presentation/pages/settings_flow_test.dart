@@ -12,6 +12,7 @@ import 'package:my_madamis_app/features/settings/presentation/pages/settings_pag
 import 'package:my_madamis_app/features/settings/presentation/pages/update_email_page.dart';
 import 'package:my_madamis_app/features/settings/presentation/pages/update_password_page.dart';
 import 'package:my_madamis_app/main.dart' as app;
+import 'package:my_madamis_app/providers.dart';
 
 import '../../../../mocks.mocks.dart';
 

@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/mockito.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
-import 'package:my_madamis_app/features/auth/data/auth_repository.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 
 import '../../../../mocks.mocks.dart';

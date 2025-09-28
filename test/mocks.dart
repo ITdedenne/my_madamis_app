@@ -1,9 +1,14 @@
 // ファイルパス: test/mocks.dart
 
-import 'package:amplify_flutter/amplify_flutter.dart'; // 追加
 import 'package:mockito/annotations.dart';
-import 'package:my_madamis_app/features/auth/data/auth_repository.dart';
+import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:my_madamis_app/features/profile/domain/repositories/profile_repository.dart';
+import 'package:my_madamis_app/features/settings/domain/repositories/settings_repository.dart';
 
-// ResetPasswordResult をリストに追加
-@GenerateMocks([AuthRepository, ResetPasswordResult])
+// ↓↓↓ この部分を修正 ↓↓↓
+@GenerateMocks([
+  AuthRepository,
+  ProfileRepository,
+  SettingsRepository,
+])
 void main() {}
