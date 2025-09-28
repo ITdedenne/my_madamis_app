@@ -21,23 +21,10 @@ Future<void> main() async {
 
 Future<void> _configureAmplify() async {
   try {
-    // ▼▼▼ Webで安全に動作させるための最終的な設定です ▼▼▼
-    final auth = AmplifyAuthCognito(
-      secureStorageFactory: (scope) {
-        return AmplifySecureStorage(
-          // scopeを正しく渡すように修正
-          config: AmplifySecureStorageConfig(
-            scope: scope,
-            macOSOptions: MacOSSecureStorageOptions(
-              useDataProtection: false,
-            ),
-          ),
-        );
-      },
-    );
-    // ▲▲▲ ここまで修正 ▲▲▲
-    
+    // Webで安定動作させるため、最もシンプルな初期化方法に戻します
+    final auth = AmplifyAuthCognito();
     await Amplify.addPlugin(auth);
+    
     await Amplify.configure(amplifyconfig);
 
     safePrint('Amplify configured successfully');
@@ -62,6 +49,7 @@ class MyApp extends ConsumerWidget {
         home = const LoginPage();
         break;
       case AuthStatus.initial:
+      default:
         home = const Scaffold(
           body: Center(
             child: CircularProgressIndicator(),
