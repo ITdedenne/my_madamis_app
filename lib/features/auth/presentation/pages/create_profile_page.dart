@@ -29,11 +29,21 @@ class CreateProfilePage extends ConsumerWidget {
         );
       }
       if(next.status == CreateProfileStatus.requiresConfirmation) {
+         // ViewModelに保存されたパスワードを安全に使用する
+        final passwordForConfirmation = next.lastPassword;
+        if (passwordForConfirmation == null || passwordForConfirmation.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('予期せぬエラー: パスワードが見つかりません。')),
+          );
+          return;
+        }
+
          Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ConfirmationPage(
               email: email,
-              password: passwordController.text,
+              // ★修正ポイント: 状態から取得したパスワードを渡す
+              password: passwordForConfirmation, 
             ),
           ),
         );
