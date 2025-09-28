@@ -58,7 +58,9 @@ class AuthRepositoryImpl implements AuthRepository {
   
   @override
   Future<void> signOut() async {
-    await Amplify.Auth.signOut();
+    // ★修正ポイント: globalSignOut を使用して、デバイス上のセッションを強制的にクリアする
+    const options = SignOutOptions(globalSignOut: true);
+    await Amplify.Auth.signOut(options: options);
   }
   
     @override
