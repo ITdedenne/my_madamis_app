@@ -21,9 +21,25 @@ Future<void> main() async {
 
 Future<void> _configureAmplify() async {
   try {
-    final auth = AmplifyAuthCognito();
+    // ▼▼▼ Webで安全に動作させるための最終的な設定です ▼▼▼
+    final auth = AmplifyAuthCognito(
+      secureStorageFactory: (scope) {
+        return AmplifySecureStorage(
+          // scopeを正しく渡すように修正
+          config: AmplifySecureStorageConfig(
+            scope: scope,
+            macOSOptions: MacOSSecureStorageOptions(
+              useDataProtection: false,
+            ),
+          ),
+        );
+      },
+    );
+    // ▲▲▲ ここまで修正 ▲▲▲
+    
     await Amplify.addPlugin(auth);
     await Amplify.configure(amplifyconfig);
+
     safePrint('Amplify configured successfully');
   } on Exception catch (e) {
     safePrint('An error occurred configuring Amplify: $e');
