@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:my_madamis_app/common/widgets/custom_text_form_field.dart';
 import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/create_profile_page.dart';
+import 'package:amplify_flutter/amplify_flutter.dart'; 
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -22,8 +23,18 @@ class _SignUpPageState extends State<SignUpPage> {
     super.dispose();
   }
 
-  void _goToNextStep() {
+  // ★修正: asyncを追加し、サインアウト処理を実行
+  void _goToNextStep() async {
     if (_formKey.currentState!.validate()) {
+      try {
+        if (Amplify.isConfigured) {
+           await Amplify.Auth.signOut();
+        }
+      } catch (e) {
+        safePrint('既存セッションのサインアウトに失敗しました: $e');
+        // エラーが発生しても処理は続行（セッションがない可能性が高いため）
+      }
+      
       Navigator.push(
         context,
         MaterialPageRoute(

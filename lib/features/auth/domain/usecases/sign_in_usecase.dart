@@ -13,10 +13,19 @@ class SignInUseCase {
     }
     await _repository.signIn(username: email, password: password);
     final attributes = await _repository.getCurrentUserAttributes();
-    final username = attributes
-        .firstWhere((element) =>
-            element.userAttributeKey == AuthUserAttributeKey.preferredUsername)
-        .value;
-    return username;
+    
+    // ★修正ポイント: firstWhere を orElse を使って安全にする
+    final usernameAttribute = attributes
+        .firstWhere(
+          (element) =>
+              element.userAttributeKey == AuthUserAttributeKey.preferredUsername,
+          // preferredUsernameがない場合、signInに使用したemailを代わりに返す
+          orElse: () => AuthUserAttribute(
+            userAttributeKey: AuthUserAttributeKey.preferredUsername,
+            value: email,
+          ),
+        );
+        
+    return usernameAttribute.value;
   }
 }
