@@ -4,11 +4,10 @@ import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package.my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
-import 'package.my_madamis_app/features/auth/presentation/pages/login_page.dart';
-import 'package.my_madamis_app/features/home/presentation/pages/home_page.dart';
-// ▼▼▼ この行を追加して 'amplifyconfig' のエラーを解決します ▼▼▼
-import 'amplifyconfiguration.dart';
+import 'package:my_madamis_app/amplifyconfiguration.dart';
+import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
+import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
+import 'package:my_madamis_app/features/home/presentation/pages/home_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +23,6 @@ Future<void> _configureAmplify() async {
   try {
     final auth = AmplifyAuthCognito();
     await Amplify.addPlugin(auth);
-    // 'amplifyconfig' がこのファイル内で認識されるようになります
     await Amplify.configure(amplifyconfig);
     safePrint('Amplify configured successfully');
   } on Exception catch (e) {
@@ -39,7 +37,6 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateNotifierProvider);
 
-    // 初期化中などを考慮してインジケーターを表示
     Widget home;
     switch (authState.status) {
       case AuthStatus.authenticated:
@@ -48,7 +45,6 @@ class MyApp extends ConsumerWidget {
       case AuthStatus.unauthenticated:
         home = const LoginPage();
         break;
-      // ▼▼▼ `default`句を削除し、AuthStatus.initialのケースを明記しました ▼▼▼
       case AuthStatus.initial:
         home = const Scaffold(
           body: Center(

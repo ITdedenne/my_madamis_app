@@ -73,7 +73,7 @@ class ProfilePage extends ConsumerWidget {
   Widget _buildProfileHeader(BuildContext context, String username) {
     return Row(
       children: [
-        CircleAvatar(
+        const CircleAvatar(
           radius: 40,
           child: Icon(Icons.person, size: 40),
         ),

@@ -6,7 +6,6 @@ import 'package:my_madamis_app/common/widgets/custom_text_form_field.dart';
 import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/signup_page.dart';
-// ▼▼▼ この行がエラーを解決します ▼▼▼
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/login_viewmodel.dart';
 
 class LoginPage extends ConsumerWidget {
@@ -14,7 +13,6 @@ class LoginPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Controllerはbuildメソッド内で定義するのが安全です
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     
@@ -23,7 +21,6 @@ class LoginPage extends ConsumerWidget {
 
     ref.listen<LoginState>(loginViewModelProvider, (previous, next) {
       if (next.errorMessage != null) {
-        // build完了前にSnackBarを出すとエラーになるため、遅延実行する
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -33,8 +30,6 @@ class LoginPage extends ConsumerWidget {
           );
         });
       }
-      // 認証が成功したら、グローバルな認証状態を更新します
-      // 画面遷移はmain.dartのMyAppウィジェットが自動的に行います
       if (next.isAuthenticated) {
         ref.read(authStateNotifierProvider.notifier).setAuthenticated(next.username!);
       }
@@ -62,7 +57,6 @@ class LoginPage extends ConsumerWidget {
               text: 'ログイン',
               isLoading: loginState.isLoading,
               onPressed: () {
-                // フォーカスを外してキーボードを閉じる
                 FocusScope.of(context).unfocus(); 
                 notifier.signIn(
                   emailController.text,
@@ -71,9 +65,7 @@ class LoginPage extends ConsumerWidget {
               },
             ),
             TextButton(
-              onPressed: () {
-                // TODO: パスワードリセット画面へ
-              },
+              onPressed: () {},
               child: const Text('パスワードを忘れた場合はこちら'),
             ),
             OutlinedButton(

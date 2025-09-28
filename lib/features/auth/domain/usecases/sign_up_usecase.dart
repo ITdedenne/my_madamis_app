@@ -1,6 +1,5 @@
 // ファイルパス: lib/features/auth/domain/usecases/sign_up_usecase.dart
 
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart';
 
 class SignUpUseCase {
