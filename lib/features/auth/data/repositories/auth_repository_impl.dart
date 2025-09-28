@@ -69,4 +69,40 @@ class AuthRepositoryImpl implements AuthRepository {
       rethrow;
     }
   }
+
+    @override
+  Future<void> resetPassword({required String username}) async {
+    try {
+      // Cognitoにリセットコードの送信をリクエスト
+      await Amplify.Auth.resetPassword(username: username);
+    } on AuthException catch (e) {
+      safePrint('Reset password failed with error: ${e.message}');
+      throw Exception(e.message);
+    } catch (e) {
+      safePrint('An unexpected error occurred during password reset: $e');
+      throw Exception('パスワードリセット中に予期せぬエラーが発生しました');
+    }
+  }
+
+  @override
+  Future<void> confirmResetPassword({
+    required String username,
+    required String newPassword,
+    required String confirmationCode,
+  }) async {
+    try {
+      // リセットコードと新しいパスワードで確定処理をリクエスト
+      await Amplify.Auth.confirmResetPassword(
+        username: username,
+        newPassword: newPassword,
+        confirmationCode: confirmationCode,
+      );
+    } on AuthException catch (e) {
+      safePrint('Confirm reset password failed with error: ${e.message}');
+      throw Exception(e.message);
+    } catch (e) {
+      safePrint('An unexpected error occurred during confirm reset password: $e');
+      throw Exception('パスワードの再設定中に予期せぬエラーが発生しました');
+    }
+  }
 }

@@ -7,6 +7,8 @@ import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/confirmation_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/create_profile_viewmodel.dart';
 
+import '../notifiers/auth_state_notifier.dart';
+
 class CreateProfilePage extends ConsumerWidget {
   final String email;
   const CreateProfilePage({super.key, required this.email});
@@ -22,32 +24,38 @@ class CreateProfilePage extends ConsumerWidget {
     final viewModel = ref.watch(createProfileViewModelProvider);
     final notifier = ref.read(createProfileViewModelProvider.notifier);
 
-   ref.listen<CreateProfileState>(createProfileViewModelProvider, (prev, next) {
+  ref.listen<CreateProfileState>(createProfileViewModelProvider, (prev, next) {
       if(next.status == CreateProfileStatus.error) {
-        // エラー時はローディングが解除され、スナックバーを表示
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('登録エラー: ${next.errorMessage}')),
         );
       }
+      // ★追加: ユーザーが既に確認済みでサインインに成功した場合
+      if(next.status == CreateProfileStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('サインアップをスキップし、ログインしました。')),
+        );
+        // グローバルな認証状態を更新
+        ref.read(authStateNotifierProvider.notifier).setAuthenticated(next.username!);
+        // この時点でHomePageに遷移します（main.dartのロジックによる）
+      }
+      
       if(next.status == CreateProfileStatus.requiresConfirmation) {
          // ViewModelに保存されたパスワードを安全に使用する
         final passwordForConfirmation = next.lastPassword;
         if (passwordForConfirmation == null || passwordForConfirmation.isEmpty) {
-          // パスワードが取得できない場合は、処理を中断しエラー状態にリセット
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('予期せぬエラー: パスワードが見つかりません。')),
           );
-          // 状態を初期に戻して、画面が操作できるようにする
           notifier.state = notifier.state.copyWith(status: CreateProfileStatus.initial);
           return;
         }
 
-         // 確認画面へ遷移（この遷移によってローディングが消える）
+         // 確認画面へ遷移
          Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ConfirmationPage(
               email: email,
-              // ★修正ポイント: Stateから取得したパスワードを渡す
               password: passwordForConfirmation,
             ),
           ),

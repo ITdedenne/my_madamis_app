@@ -9,24 +9,31 @@ enum AuthStatus {
   initial,
   authenticated,
   unauthenticated,
+  loading,
+  error,
+  passwordResetRequired,
 }
 
 class AuthState {
   final AuthStatus status;
   final String? username;
-
+  final String? errorMessage;
   const AuthState({
     this.status = AuthStatus.initial,
     this.username,
+    this.errorMessage, 
   });
 
   AuthState copyWith({
     AuthStatus? status,
     String? username,
+    String? errorMessage, 
   }) {
     return AuthState(
       status: status ?? this.status,
       username: username ?? this.username,
+      // errorMessageは常に渡された値で上書きし、エラーがない場合はnullを渡してクリアできるようにする
+      errorMessage: errorMessage, 
     );
   }
 }
@@ -45,7 +52,6 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
 
   Future<void> _checkCurrentUser() async {
     try {
-      // ▼▼▼ ここのメソッド名を修正しました ▼▼▼
       final attributes = await _authRepository.getCurrentUserAttributes();
       final username = attributes
           .firstWhere((element) =>
@@ -69,5 +75,40 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   // ログイン成功時にViewModelから呼び出す
   void setAuthenticated(String username) {
       state = state.copyWith(status: AuthStatus.authenticated, username: username);
+  }
+  
+  Future<void> resetPassword(String username) async {
+    if (username.isEmpty) {
+      state = state.copyWith(
+          status: AuthStatus.error, errorMessage: 'メールアドレスを入力してください');
+      return;
+    }
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    try {
+      await _authRepository.resetPassword(username: username);
+      // 成功したら次の画面へ遷移させるステータスに変更
+      state = state.copyWith(
+          status: AuthStatus.passwordResetRequired, errorMessage: null);
+    } on Exception catch (e) {
+      state = state.copyWith(
+          status: AuthStatus.error, errorMessage: e.toString());
+    }
+  }
+
+  Future<void> confirmPasswordReset(
+      String username, String newPassword, String code) async {
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
+    try {
+      await _authRepository.confirmResetPassword(
+        username: username,
+        newPassword: newPassword,
+        confirmationCode: code,
+      );
+      // パスワードリセット成功後、ログイン画面に戻るために unauthenticated 状態に遷移させる
+      state = const AuthState(status: AuthStatus.unauthenticated);
+    } on Exception catch (e) {
+      state = state.copyWith(
+          status: AuthStatus.error, errorMessage: e.toString());
+    }
   }
 }

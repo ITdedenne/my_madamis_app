@@ -8,6 +8,8 @@ import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_n
 import 'package:my_madamis_app/features/auth/presentation/pages/signup_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/login_viewmodel.dart';
 
+import 'forgot_password_page.dart';
+
 class LoginPage extends ConsumerWidget {
   const LoginPage({super.key});
 
@@ -64,10 +66,17 @@ class LoginPage extends ConsumerWidget {
                 );
               },
             ),
-            TextButton(
-              onPressed: () {},
-              child: const Text('パスワードを忘れた場合はこちら'),
-            ),
+              TextButton(
+                onPressed: () {
+                  // ForgotPasswordPageへ遷移
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ForgotPasswordPage()), // <--- 遷移ロジックを追加
+                  );
+                },
+                child: const Text('パスワードを忘れた場合はこちら'),
+              ),
             OutlinedButton(
               onPressed: () => Navigator.push(
                 context,
