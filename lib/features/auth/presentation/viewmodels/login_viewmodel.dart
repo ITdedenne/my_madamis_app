@@ -46,13 +46,25 @@ class LoginViewModel extends StateNotifier<LoginState> {
 
   Future<void> signIn(String email, String password) async {
     state = state.copyWith(isLoading: true, resetError: true);
+    
+    // ▼▼▼ 修正ポイント: サインイン処理前に、既存セッションを強制的にクリアする ▼▼▼
+    try {
+      // globalSignOut: true は AuthRepositoryImpl に実装済みだが、念のためここでもAmplifyのサインアウト処理を呼び出す
+      await _authRepository.signOut(); 
+    } catch (e) {
+      safePrint('ログイン前のセッションクリアに失敗しましたが、サインインを続行します: $e');
+    }
+    // ▲▲▲ 修正ポイント終わり ▲▲▲
+    
     try {
       await _authRepository.signIn(username: email, password: password);
       // ▼▼▼ ここのメソッド名を修正しました ▼▼▼
       final attributes = await _authRepository.getCurrentUserAttributes();
+      // preferredUsernameの取得ロジックはSignInUseCaseに移管済みだが、ViewModel側も更新
       final username = attributes
           .firstWhere((element) =>
-              element.userAttributeKey == AuthUserAttributeKey.preferredUsername)
+              element.userAttributeKey == AuthUserAttributeKey.preferredUsername,
+              orElse: () => AuthUserAttribute(userAttributeKey: AuthUserAttributeKey.preferredUsername, value: email))
           .value;
 
       state = state.copyWith(
