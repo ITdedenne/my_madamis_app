@@ -2,22 +2,21 @@
 
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../../providers.dart';
-import '../../../profile/domain/entities/user_profile.dart';
-import '../../domain/repositories/auth_repository.dart';
-import '../../domain/usecases/sign_up_usecase.dart';
+import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:my_madamis_app/features/auth/domain/usecases/sign_up_usecase.dart';
+import 'package:my_madamis_app/providers.dart';
+import 'package:my_madamis_app/features/profile/domain/entities/user_profile.dart'; // UserProfileのimportは必須です
 
 enum CreateProfileStatus { initial, loading, requiresConfirmation, error }
 
 class CreateProfileState {
   final CreateProfileStatus status;
   final String? errorMessage;
-  final String? lastPassword; // 登録時のパスワードを保持
+  final String? lastPassword; // パスワード保持のフィールド
 
   CreateProfileState({
     this.status = CreateProfileStatus.initial, 
-    this.errorMessage, 
+    this.errorMessage,
     this.lastPassword,
   });
 
@@ -37,55 +36,59 @@ class CreateProfileState {
 final createProfileViewModelProvider =
     StateNotifierProvider<CreateProfileViewModel, CreateProfileState>((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
-  // ★修正: SignUpUseCaseとViewModelのコンストラクタは位置引数を使用する
-  final signUpUseCase = SignUpUseCase(authRepository); 
-  return CreateProfileViewModel(
-    signUpUseCase, // 位置引数1
-    authRepository, // 位置引数2
-  );
+  final signUpUseCase = SignUpUseCase(authRepository); // 位置引数
+  final authRepo = ref.watch(authRepositoryProvider);
+  return CreateProfileViewModel(signUpUseCase, authRepo); // 位置引数
 });
 
 class CreateProfileViewModel extends StateNotifier<CreateProfileState> {
   final SignUpUseCase _signUpUseCase;
   final AuthRepository _authRepository;
 
-  // ★修正: コンストラクタを既存の定義（位置引数）に戻す
   CreateProfileViewModel(this._signUpUseCase, this._authRepository) : super(CreateProfileState());
 
   Future<void> signUp({
     required String email,
     required String password,
-    required String username, // CreateProfilePageに合わせるため必須引数として残す
-    required String bio,
-    required String twitterId,
+    required String username,
+    String? bio,
+    String? twitterId,
   }) async {
-    state = state.copyWith(status: CreateProfileStatus.loading);
+    state = state.copyWith(status: CreateProfileStatus.loading, errorMessage: null);
+    
+    // ★修正ポイント1: UserProfileエンティティを作成する
+    final profile = UserProfile(
+      username: username,
+      // bioやtwitterIdはnullの場合はUserProfileのデフォルト値（''）が使用されます
+      bio: bio ?? '', 
+      twitterId: twitterId ?? '',
+    );
+    
     try {
-      // ★修正: SignUpUseCase.call()を新しいシグネチャに合わせる
+      // ★修正ポイント2: SignUpUseCaseのシグネチャに合わせてUserProfileを渡す
       await _signUpUseCase.call(
         email: email,
         password: password,
-        profile: UserProfile( // UserProfileとしてまとめて渡す
-          username: username,
-          bio: bio,
-          twitterId: twitterId,
-        ),
+        profile: profile, // 必須の'profile'引数を渡す
       );
       
+      // 新規登録成功時: パスワードを保持して確認画面へ遷移
       state = state.copyWith(
         status: CreateProfileStatus.requiresConfirmation,
-        lastPassword: password, // パスワードを状態に保持
+        lastPassword: password, 
       );
     } on UsernameExistsException {
+      // ユーザーが既に存在する場合: コードを再送し、パスワードを保持して確認画面へ遷移
       await _authRepository.resendSignUpCode(username: email);
-      
       state = state.copyWith(
         status: CreateProfileStatus.requiresConfirmation,
-        lastPassword: password, // パスワードを状態に保持
+        lastPassword: password, 
       );
-    } catch (e) {
+    }
+    catch (e) {
+      // その他のエラー時
       state = state.copyWith(
-        status: CreateProfileStatus.error, errorMessage: e.toString());
+          status: CreateProfileStatus.error, errorMessage: e.toString());
     }
   }
 }

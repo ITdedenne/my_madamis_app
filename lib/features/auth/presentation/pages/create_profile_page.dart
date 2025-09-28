@@ -29,12 +29,15 @@ class CreateProfilePage extends ConsumerWidget {
         );
       }
       if(next.status == CreateProfileStatus.requiresConfirmation) {
-         // ViewModelに保存されたパスワードを安全に使用する
+        // ViewModelに保存されたパスワードを安全に使用する
         final passwordForConfirmation = next.lastPassword;
         if (passwordForConfirmation == null || passwordForConfirmation.isEmpty) {
+          // パスワードが予期せず空の場合のエラーハンドリング
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('予期せぬエラー: パスワードが見つかりません。')),
           );
+          // エラー状態にリセットしてローディングを解除
+          notifier.state = notifier.state.copyWith(status: CreateProfileStatus.initial);
           return;
         }
 
@@ -43,7 +46,7 @@ class CreateProfilePage extends ConsumerWidget {
             builder: (_) => ConfirmationPage(
               email: email,
               // ★修正ポイント: 状態から取得したパスワードを渡す
-              password: passwordForConfirmation, 
+              password: passwordForConfirmation,
             ),
           ),
         );
