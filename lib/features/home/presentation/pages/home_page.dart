@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
+// ▼▼▼ 以下2行を追加しました ▼▼▼
 import 'package:my_madamis_app/features/profile/presentation/pages/profile_page.dart';
 import 'package:my_madamis_app/features/settings/presentation/pages/settings_page.dart';
 
