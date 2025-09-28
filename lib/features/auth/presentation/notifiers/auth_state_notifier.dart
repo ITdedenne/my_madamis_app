@@ -18,22 +18,26 @@ class AuthState {
   final AuthStatus status;
   final String? username;
   final String? errorMessage;
+  final String? flashMessage; // ★追加: フラッシュメッセージ
+
   const AuthState({
     this.status = AuthStatus.initial,
     this.username,
-    this.errorMessage, 
+    this.errorMessage,
+    this.flashMessage, // ★追加
   });
 
   AuthState copyWith({
     AuthStatus? status,
     String? username,
     String? errorMessage, 
+    String? flashMessage, // ★追加: nullを渡してクリアできるようにする
   }) {
     return AuthState(
       status: status ?? this.status,
       username: username ?? this.username,
-      // errorMessageは常に渡された値で上書きし、エラーがない場合はnullを渡してクリアできるようにする
       errorMessage: errorMessage, 
+      flashMessage: flashMessage, // ★修正: 渡された値を使用
     );
   }
 }
@@ -73,8 +77,16 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   }
 
   // ログイン成功時にViewModelから呼び出す
-  void setAuthenticated(String username) {
-      state = state.copyWith(status: AuthStatus.authenticated, username: username);
+  void setAuthenticated(String username, {String? message}) { 
+      state = state.copyWith(
+        status: AuthStatus.authenticated, 
+        username: username,
+        flashMessage: message,
+      );
+  }
+
+    void clearFlashMessage() { 
+      state = state.copyWith(flashMessage: null);
   }
   
   Future<void> resetPassword(String username) async {

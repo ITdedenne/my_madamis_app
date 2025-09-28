@@ -14,6 +14,18 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateNotifierProvider);
 
+        ref.listen<AuthState>(authStateNotifierProvider, (previous, next) {
+      if (next.flashMessage != null && next.status == AuthStatus.authenticated) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(next.flashMessage!)),
+          );
+          // メッセージを表示したらクリアする
+          ref.read(authStateNotifierProvider.notifier).clearFlashMessage();
+        });
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('ホーム'),

@@ -25,11 +25,11 @@ class ConfirmationPage extends ConsumerWidget {
         );
       }
       if (next.status == ConfirmationStatus.success) {
-         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('登録が完了しました。')),
+                // メッセージを渡してグローバル状態を更新
+        ref.read(authStateNotifierProvider.notifier).setAuthenticated(
+            next.username!,
+            message: '登録が完了しました。' // ★修正: メッセージを渡す
         );
-        // ログインページは不要なのでグローバル状態を直接更新
-        ref.read(authStateNotifierProvider.notifier).setAuthenticated(next.username!);
       }
     });
 
