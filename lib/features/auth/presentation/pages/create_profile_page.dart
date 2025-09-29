@@ -57,6 +57,7 @@ class CreateProfilePage extends ConsumerWidget {
             builder: (_) => ConfirmationPage(
               email: email,
               password: passwordForConfirmation,
+              username: usernameController.text,
             ),
           ),
         );

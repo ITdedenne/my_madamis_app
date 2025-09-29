@@ -10,19 +10,16 @@ enum ConfirmationStatus { initial, loading, success, error }
 class ConfirmationState {
   final ConfirmationStatus status;
   final String? errorMessage;
-  final String? username;
 
   ConfirmationState({
     this.status = ConfirmationStatus.initial,
     this.errorMessage,
-    this.username,
   });
 
   ConfirmationState copyWith({ConfirmationStatus? status, String? errorMessage, String? username}) {
     return ConfirmationState(
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
-      username: username ?? this.username,
     );
   }
 }
@@ -48,8 +45,8 @@ class ConfirmationViewModel extends StateNotifier<ConfirmationState> {
     try {
       await _authRepository.confirmSignUp(username: email, confirmationCode: confirmationCode);
       // 確認が成功したら自動ログイン
-      final username = await _signInUseCase(email, password);
-      state = state.copyWith(status: ConfirmationStatus.success, username: username);
+      await _signInUseCase(email, password);
+       state = state.copyWith(status: ConfirmationStatus.success);
     } catch (e) {
       state = state.copyWith(status: ConfirmationStatus.error, errorMessage: e.toString());
     }

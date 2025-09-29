@@ -12,7 +12,9 @@ import '../../../home/presentation/pages/home_page.dart';
 class ConfirmationPage extends ConsumerWidget {
   final String email;
   final String password;
-  const ConfirmationPage({super.key, required this.email, required this.password});
+  final String username;
+
+  const ConfirmationPage({super.key, required this.email, required this.password,required this.username,});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -28,7 +30,7 @@ class ConfirmationPage extends ConsumerWidget {
       }
       if (next.status == ConfirmationStatus.success) {
         ref.read(authStateNotifierProvider.notifier).setAuthenticated(
-            next.username!,
+            username, 
             message: '登録が完了しました。' 
         );
 
