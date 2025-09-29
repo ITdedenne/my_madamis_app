@@ -1,10 +1,10 @@
 // ファイルパス: lib/main.dart
 
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/amplifyconfiguration.dart';
-// amplifyconfiguration.dartのimportは不要なので削除します
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
 import 'package:my_madamis_app/features/home/presentation/pages/home_page.dart';
@@ -21,7 +21,10 @@ Future<void> main() async {
 
 Future<void> _configureAmplify() async {
   try {
-    await Amplify.configure(amplifyconfig); 
+    final auth = AmplifyAuthCognito();
+    await Amplify.addPlugin(auth);
+
+    await Amplify.configure(amplifyconfig);
 
     safePrint('Amplify configured successfully');
   } on Exception catch (e) {
