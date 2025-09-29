@@ -1,6 +1,5 @@
 // ファイルパス: lib/main.dart
 
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -21,16 +20,8 @@ Future<void> main() async {
 }
 
 Future<void> _configureAmplify() async {
-
   try {
-    if (Amplify.isConfigured) {
-      return;
-    }
-    final auth = AmplifyAuthCognito();
-    await Amplify.addPlugin(auth);
-    
-    // 手動で作成した正しい設定を読み込ませます
-    await Amplify.configure(amplifyconfig);
+    await Amplify.configure(amplifyconfig); 
 
     safePrint('Amplify configured successfully');
   } on Exception catch (e) {
