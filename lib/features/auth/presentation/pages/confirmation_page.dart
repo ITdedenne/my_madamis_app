@@ -7,6 +7,8 @@ import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/confirmation_viewmodel.dart';
 
+import '../../../home/presentation/pages/home_page.dart';
+
 class ConfirmationPage extends ConsumerWidget {
   final String email;
   final String password;
@@ -25,10 +27,14 @@ class ConfirmationPage extends ConsumerWidget {
         );
       }
       if (next.status == ConfirmationStatus.success) {
-                // メッセージを渡してグローバル状態を更新
         ref.read(authStateNotifierProvider.notifier).setAuthenticated(
             next.username!,
-            message: '登録が完了しました。' // ★修正: メッセージを渡す
+            message: '登録が完了しました。' 
+        );
+
+                Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomePage()),
+          (Route<dynamic> route) => false,
         );
       }
     });
