@@ -54,10 +54,8 @@ class EditProfileViewModel extends StateNotifier<EditProfileState> {
       // グローバルなユーザー名状態も更新
       _ref.read(authStateNotifierProvider.notifier).updateUsername(username);
       
-      // ▼▼▼ ここから修正 ▼▼▼
-      // プロフィール表示画面を再読み込みするのではなく、ローカルのStateを直接更新する
-      _ref.read(profileViewModelProvider.notifier).updateStateWithNewProfile(profile);
-      // ▲▲▲ ここまで修正 ▲▲▲
+      // プロフィール表示画面のViewModelを無効化し、データ再取得をトリガーする
+      _ref.invalidate(profileViewModelProvider);
       
       state = state.copyWith(status: EditProfileStatus.success);
     } catch (e) {
