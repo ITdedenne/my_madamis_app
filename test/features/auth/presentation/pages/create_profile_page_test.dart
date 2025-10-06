@@ -20,27 +20,20 @@ class MockAuthStateNotifier extends StateNotifier<AuthState>
   MockAuthStateNotifier() : super(const AuthState());
 }
 
-
 void main() {
   late MockCreateProfileViewModel mockCreateProfileViewModel;
   late MockAuthStateNotifier mockAuthStateNotifier;
 
   // テスト対象のWidgetを準備するヘルパー関数
   Future<void> pumpCreateProfilePage(WidgetTester tester) async {
-    // モックのインスタンスを作成
     mockCreateProfileViewModel = MockCreateProfileViewModel();
     mockAuthStateNotifier = MockAuthStateNotifier();
 
-    // Widgetツリーを構築し、Providerをモックに差し替える
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          // --- ▼▼▼ ここを修正 ▼▼▼ ---
-          // overrideWithValueの代わりに `overrideWith` を使用する
           createProfileViewModelProvider.overrideWith((ref) => mockCreateProfileViewModel),
-          // このWidgetはauthStateNotifierProviderも参照しているため、同様にモック化する
           authStateNotifierProvider.overrideWith((ref) => mockAuthStateNotifier),
-          // --- ▲▲▲ ここまで修正 ▲▲▲ ---
         ],
         child: const MaterialApp(home: CreateProfilePage(email: 'test@example.com')),
       ),
@@ -64,13 +57,14 @@ void main() {
     testWidgets('正常に入力してボタンをタップすると、signUpが呼ばれること', (tester) async {
       // Arrange
       await pumpCreateProfilePage(tester);
-      // signUpメソッドが呼ばれた際の振る舞いを定義
+      
+      // any(named: '...') を使用してnull安全に対応
       when(mockCreateProfileViewModel.signUp(
-        email: anyNamed('email'),
-        password: anyNamed('password'),
-        username: anyNamed('username'),
-        bio: anyNamed('bio'),
-        twitterId: anyNamed('twitterId'),
+        email: anyNamed(name:'email'),
+        password: any( 'password'),
+        username: any( 'username'),
+        bio: any('bio'),
+        twitterId: any(named:'twitterId'),
       )).thenAnswer((_) async {});
 
       // Act
@@ -81,7 +75,6 @@ void main() {
       await tester.tap(find.text('利用を開始する'));
 
       // Assert
-      // signUpメソッドが正しい引数で1回呼ばれたことを検証
       verify(mockCreateProfileViewModel.signUp(
         email: 'test@example.com',
         password: 'password123',
