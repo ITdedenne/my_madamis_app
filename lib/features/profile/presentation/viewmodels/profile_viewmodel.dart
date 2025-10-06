@@ -53,4 +53,9 @@ class ProfileViewModel extends StateNotifier<ProfileState> {
       state = state.copyWith(status: ProfileStatus.error, errorMessage: e.toString());
     }
   }
+
+  /// 編集画面から呼び出される、ローカルStateを直接更新するためのメソッド
+  void updateStateWithNewProfile(UserProfile newProfile) {
+    state = state.copyWith(profile: newProfile);
+  }
 }
