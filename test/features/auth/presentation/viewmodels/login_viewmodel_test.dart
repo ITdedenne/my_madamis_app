@@ -3,8 +3,10 @@ import 'package:mockito/mockito.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/login_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
-import '../../../../mocks/mocks.g.dart';
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart'; // Cognitoの例外クラスをインポート
 import 'package:my_madamis_app/providers.dart';
+
+import '../../../../mocks/mocks.mocks.dart';
 
 void main() {
   late MockAuthRepository mockAuthRepository;
@@ -42,7 +44,7 @@ void main() {
       // Act
       await container.read(loginViewModelProvider.notifier).signIn(tEmail, tPassword);
       final state = container.read(loginViewModelProvider);
-      
+
       // Assert
       expect(state.isAuthenticated, isTrue);
       expect(state.username, tUsername);
@@ -51,15 +53,18 @@ void main() {
 
     test('signIn 失敗時(AuthException)、errorMessage が設定されるべき', () async {
       // Arrange
-      final exception = AuthException('ログインに失敗しました');
+      // --- ▼▼▼ ここを修正 ▼▼▼ ---
+      // AuthExceptionの代わりに、具体的なUserNotFoundExceptionを使用する
+      const exception = UserNotFoundException('ログインに失敗しました');
+      // --- ▲▲▲ ここまで修正 ▲▲▲ ---
       when(mockAuthRepository.signOut()).thenAnswer((_) async {});
       when(mockAuthRepository.signIn(username: tEmail, password: tPassword))
           .thenThrow(exception);
-          
+
       // Act
       await container.read(loginViewModelProvider.notifier).signIn(tEmail, tPassword);
       final state = container.read(loginViewModelProvider);
-      
+
       // Assert
       expect(state.isAuthenticated, isFalse);
       expect(state.errorMessage, isNotNull);
