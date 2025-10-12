@@ -34,6 +34,8 @@ class _SignUpPageState extends State<SignUpPage> {
         safePrint('既存セッションのサインアウトに失敗しました: $e');
         // エラーが発生しても処理は続行（セッションがない可能性が高いため）
       }
+
+      if (!context.mounted) return;
       
       Navigator.push(
         context,

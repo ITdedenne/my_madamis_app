@@ -13,7 +13,7 @@ import '../../../../mocks/mocks.mocks.dart';
 class MockCreateProfileViewModel extends StateNotifier<CreateProfileState>
     with Mock
     implements CreateProfileViewModel {
-  MockCreateProfileViewModel(CreateProfileState state) : super(state);
+  MockCreateProfileViewModel(super.state);
 
   @override
   Future<void> signUp({

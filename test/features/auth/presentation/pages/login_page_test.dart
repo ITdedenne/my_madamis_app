@@ -14,7 +14,7 @@ import '../../../../mocks/mocks.mocks.dart';
 class MockLoginViewModel extends StateNotifier<LoginState>
     with Mock
     implements LoginViewModel {
-  MockLoginViewModel(LoginState state) : super(state);
+  MockLoginViewModel(super.state);
 
   // signInメソッドの呼び出しを記録
   @override

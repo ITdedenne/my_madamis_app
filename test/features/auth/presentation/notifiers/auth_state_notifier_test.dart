@@ -34,7 +34,7 @@ void main() {
 
       // Act
       // Notifierをreadして初期化処理を待つ
-      await container.read(authStateNotifierProvider.notifier);
+      container.read(authStateNotifierProvider.notifier);
       final state = container.read(authStateNotifierProvider);
 
       // Assert
@@ -47,7 +47,7 @@ void main() {
       when(mockAuthRepository.getCurrentUserAttributes()).thenThrow(Exception('No user'));
 
       // Act
-      await container.read(authStateNotifierProvider.notifier);
+      container.read(authStateNotifierProvider.notifier);
       final state = container.read(authStateNotifierProvider);
 
       // Assert
@@ -61,7 +61,7 @@ void main() {
       when(mockAuthRepository.getCurrentUserAttributes()).thenAnswer((_) async => [
             const AuthUserAttribute(userAttributeKey: AuthUserAttributeKey.preferredUsername, value: 'test_user')
           ]);
-      await container.read(authStateNotifierProvider.notifier);
+      container.read(authStateNotifierProvider.notifier);
 
 
       // Act
