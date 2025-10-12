@@ -35,7 +35,7 @@ void main() {
     // Act: テスト対象のメソッドを実行
     final result = await signInUseCase.call(tEmail, tPassword);
 
-    // Assert: 結果を検証
+    // Assert 結果を検証
     expect(result, tUsername);
     verify(mockAuthRepository.signIn(username: tEmail, password: tPassword)).called(1);
     verify(mockAuthRepository.getCurrentUserAttributes()).called(1);
