@@ -54,6 +54,10 @@ class CreateProfileViewModel extends StateNotifier<CreateProfileState> {
 
   CreateProfileViewModel(this._signUpUseCase, this._authRepository, this._signInUseCase) : super(CreateProfileState()); // ★修正: コンストラクタ引数を追加
 
+    void resetStateToInitial() {
+    state = state.copyWith(status: CreateProfileStatus.initial, errorMessage: null);
+  }
+
   Future<void> _handleUserAlreadyConfirmed(String email, String password) async {
     // ユーザーが既に確認済みの場合、サインアップ/再送は失敗する。直ちにサインインを試みる。
     try {

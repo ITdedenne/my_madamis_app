@@ -47,7 +47,7 @@ class CreateProfilePage extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('予期せぬエラー: パスワードが見つかりません。')),
           );
-          notifier.state = notifier.state.copyWith(status: CreateProfileStatus.initial);
+          notifier.resetStateToInitial;
           return;
         }
 
