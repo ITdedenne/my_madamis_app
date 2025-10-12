@@ -1,12 +1,13 @@
 // ファイルパス: lib/features/profile/domain/entities/user_profile.dart
 
-class UserProfile {
-  // ▼▼▼ finalキーワードを追加し、プロパティを正しく定義しました ▼▼▼
+import 'package:equatable/equatable.dart'; 
+
+class UserProfile extends Equatable { 
   final String username;
   final String bio;
   final String twitterId;
 
-  UserProfile({
+  const UserProfile({
     required this.username,
     this.bio = '',
     this.twitterId = '',
@@ -23,4 +24,7 @@ class UserProfile {
       twitterId: twitterId ?? this.twitterId,
     );
   }
+
+  @override
+  List<Object?> get props => [username, bio, twitterId];
 }
