@@ -10,19 +10,18 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  amplify_flutter: ^1.8.0 # バージョンを更新
-  amplify_auth_cognito: ^1.8.0 # バージョンを更新
+  amplify_flutter: ^1.8.0 
+  amplify_auth_cognito: ^1.8.0 
   flutter_riverpod: ^2.5.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  integration_test: # この行を追加
+  integration_test: 
     sdk: flutter
   flutter_lints: ^4.0.0
   
-  # 以下の2行を追加
   mockito: ^5.4.4
   build_runner: ^2.4.10
   golden_toolkit: ^0.15.0

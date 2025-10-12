@@ -2,130 +2,100 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/profile/presentation/notifiers/profile_state_notifier.dart';
+import 'package:my_madamis_app/common/widgets/custom_text_form_field.dart';
+import 'package:my_madamis_app/common/widgets/primary_button.dart';
+import 'package:my_madamis_app/features/profile/domain/entities/user_profile.dart';
+import 'package:my_madamis_app/features/profile/presentation/viewmodels/edit_profile_viewmodel.dart';
 
 class EditProfilePage extends ConsumerStatefulWidget {
-  const EditProfilePage({super.key});
+  final UserProfile initialProfile;
+  const EditProfilePage({super.key, required this.initialProfile});
 
   @override
   ConsumerState<EditProfilePage> createState() => _EditProfilePageState();
 }
 
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
-  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _usernameController;
   late final TextEditingController _bioController;
-  late final TextEditingController _twitterController; // 追加
-  bool _isLoading = false;
+  late final TextEditingController _twitterController;
+  final _formKey = GlobalKey<FormState>();
 
   @override
   void initState() {
     super.initState();
-    final profileState = ref.read(profileStateNotifierProvider);
-    _usernameController = TextEditingController(text: profileState.username);
-    _bioController = TextEditingController(text: profileState.bio);
-    _twitterController = TextEditingController(text: profileState.twitterId); // 追加
+    _usernameController = TextEditingController(text: widget.initialProfile.username);
+    _bioController = TextEditingController(text: widget.initialProfile.bio);
+    _twitterController = TextEditingController(text: widget.initialProfile.twitterId);
   }
 
   @override
   void dispose() {
     _usernameController.dispose();
     _bioController.dispose();
-    _twitterController.dispose(); // 追加
+    _twitterController.dispose();
     super.dispose();
-  }
-
-  Future<void> _onSave() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    setState(() => _isLoading = true);
-
-    final notifier = ref.read(profileStateNotifierProvider.notifier);
-    final success = await notifier.updateProfile(
-      username: _usernameController.text,
-      bio: _bioController.text,
-      twitterId: _twitterController.text, // 追加
-    );
-
-    if (mounted) {
-      if (success) {
-        Navigator.of(context).pop();
-      } else {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('プロフィールの更新に失敗しました。')),
-        );
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final viewModelState = ref.watch(editProfileViewModelProvider);
+    final notifier = ref.read(editProfileViewModelProvider.notifier);
+
+    ref.listen<EditProfileState>(editProfileViewModelProvider, (previous, next) {
+      if (next.status == EditProfileStatus.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('更新に失敗しました: ${next.errorMessage}')),
+        );
+      }
+      if (next.status == EditProfileStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('プロフィールを更新しました')),
+        );
+        Navigator.of(context).pop();
+      }
+    });
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('プロフィール編集'),
-      ),
+      appBar: AppBar(title: const Text('プロフィール編集')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
+              CustomTextFormField(
                 controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'ユーザー名',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'ユーザー名を入力してください';
-                  }
-                  return null;
-                },
+                labelText: 'ユーザー名',
+                validator: (value) => (value == null || value.isEmpty) ? 'ユーザー名は必須です' : null,
               ),
-              const SizedBox(height: 16.0),
-              TextFormField(
+              const SizedBox(height: 16),
+              CustomTextFormField(
                 controller: _bioController,
-                decoration: const InputDecoration(
-                  labelText: '自己紹介',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
+                labelText: '自己紹介',
                 maxLines: 5,
                 maxLength: 200,
               ),
-              const SizedBox(height: 16.0),
-              TextFormField( // 追加
+              const SizedBox(height: 16),
+              CustomTextFormField(
                 controller: _twitterController,
-                decoration: const InputDecoration(
-                  labelText: 'X (Twitter) ID',
-                  border: OutlineInputBorder(),
-                  prefixText: '@',
-                ),
+                labelText: 'X (Twitter) ID',
+                prefixText: '@',
               ),
-              const SizedBox(height: 24.0),
-              ElevatedButton.icon(
-                onPressed: _isLoading ? null : _onSave,
-                icon: _isLoading
-                    ? Container(
-                        width: 24,
-                        height: 24,
-                        padding: const EdgeInsets.all(2.0),
-                        child: const CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 3,
-                        ),
-                      )
-                    : const Icon(Icons.save),
-                label: const Text('変更を保存'),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  textStyle: const TextStyle(fontSize: 16),
-                ),
-              ),
+              const SizedBox(height: 24),
+              PrimaryButton(
+                text: '変更を保存',
+                isLoading: viewModelState.status == EditProfileStatus.loading,
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    notifier.updateProfile(
+                      username: _usernameController.text,
+                      bio: _bioController.text,
+                      twitterId: _twitterController.text,
+                    );
+                  }
+                },
+              )
             ],
           ),
         ),

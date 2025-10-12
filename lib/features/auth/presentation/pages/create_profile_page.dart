@@ -2,146 +2,116 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../notifiers/auth_state_notifier.dart';
-import 'confirmation_page.dart';
+import 'package:my_madamis_app/common/widgets/custom_text_form_field.dart';
+import 'package:my_madamis_app/common/widgets/primary_button.dart';
+import 'package:my_madamis_app/features/auth/presentation/pages/confirmation_page.dart';
+import 'package:my_madamis_app/features/auth/presentation/viewmodels/create_profile_viewmodel.dart';
 
-class CreateProfilePage extends ConsumerStatefulWidget {
+import '../notifiers/auth_state_notifier.dart';
+
+class CreateProfilePage extends ConsumerWidget {
   final String email;
   const CreateProfilePage({super.key, required this.email});
 
   @override
-  ConsumerState<CreateProfilePage> createState() => _CreateProfilePageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final formKey = GlobalKey<FormState>();
+    final usernameController = TextEditingController();
+    final passwordController = TextEditingController();
+    final bioController = TextEditingController();
+    final twitterController = TextEditingController();
 
-class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
-  final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _bioController = TextEditingController();
-  final _twitterController = TextEditingController();
+    final viewModel = ref.watch(createProfileViewModelProvider);
+    final notifier = ref.read(createProfileViewModelProvider.notifier);
 
-  @override
-  void dispose() {
-    _usernameController.dispose();
-    _passwordController.dispose();
-    _bioController.dispose();
-    _twitterController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _onSaveProfile() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    
-    final notifier = ref.read(authStateNotifierProvider.notifier);
-    await notifier.createProfileAndSignUp(
-      email: widget.email,
-      password: _passwordController.text,
-      username: _usernameController.text,
-      bio: _bioController.text,
-      twitterId: _twitterController.text,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen(authStateNotifierProvider, (_, next) {
-      if (next.status == AuthStatus.confirmationRequired) {
-                if (next.errorMessage != null && next.errorMessage!.isNotEmpty) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(next.errorMessage!)),
-          );
-        }
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ConfirmationPage(
-              username: next.usernameForConfirmation!,
-              password: _passwordController.text,
-            ),
-          ),
-        );
-      } else if (next.status == AuthStatus.error) {
+  ref.listen<CreateProfileState>(createProfileViewModelProvider, (prev, next) {
+      if(next.status == CreateProfileStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('登録エラー: ${next.errorMessage}')),
         );
       }
+      // ★追加: ユーザーが既に確認済みでサインインに成功した場合
+      if(next.status == CreateProfileStatus.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('サインアップをスキップし、ログインしました。')),
+        );
+        // グローバルな認証状態を更新
+        ref.read(authStateNotifierProvider.notifier).setAuthenticated(next.username!);
+        // この時点でHomePageに遷移します（main.dartのロジックによる）
+      }
+      
+      if(next.status == CreateProfileStatus.requiresConfirmation) {
+         // ViewModelに保存されたパスワードを安全に使用する
+        final passwordForConfirmation = next.lastPassword;
+        if (passwordForConfirmation == null || passwordForConfirmation.isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('予期せぬエラー: パスワードが見つかりません。')),
+          );
+          notifier.state = notifier.state.copyWith(status: CreateProfileStatus.initial);
+          return;
+        }
+
+         // 確認画面へ遷移
+         Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ConfirmationPage(
+              email: email,
+              password: passwordForConfirmation,
+              username: usernameController.text,
+            ),
+          ),
+        );
+      }
     });
 
-    final authState = ref.watch(authStateNotifierProvider);
-
     return Scaffold(
-      appBar: AppBar(title: const Text('プロフィールとパスワードを設定')),
+      appBar: AppBar(title: const Text('プロフィール登録 (2/2)')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
-          key: _formKey,
+          key: formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text('次に、プロフィール情報とパスワードを設定します。'),
-              const SizedBox(height: 24),
-              TextFormField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'ユーザー名 *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'ユーザー名は必須です';
-                  }
-                  return null;
-                },
+              CustomTextFormField(
+                controller: usernameController,
+                labelText: 'ユーザー名 *',
+                validator: (v) => (v == null || v.isEmpty) ? 'ユーザー名は必須です' : null,
               ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                controller: _passwordController,
+              const SizedBox(height: 16),
+              CustomTextFormField(
+                controller: passwordController,
+                labelText: 'パスワード (8文字以上) *',
                 obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: 'パスワード (8文字以上) *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.length < 8) {
-                    return 'パスワードは8文字以上で入力してください';
-                  }
-                  return null;
-                },
+                validator: (v) => (v == null || v.length < 8) ? 'パスワードは8文字以上で入力してください' : null,
               ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                controller: _bioController,
-                decoration: const InputDecoration(
-                  labelText: '自己紹介 (任意)',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
+              const SizedBox(height: 16),
+              CustomTextFormField(
+                controller: bioController,
+                labelText: '自己紹介 (任意)',
                 maxLines: 5,
                 maxLength: 200,
               ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                controller: _twitterController,
-                decoration: const InputDecoration(
-                  labelText: 'X (Twitter) ID (任意)',
-                  border: OutlineInputBorder(),
-                  prefixText: '@',
-                ),
+               const SizedBox(height: 16),
+              CustomTextFormField(
+                controller: twitterController,
+                labelText: 'X (Twitter) ID (任意)',
+                prefixText: '@',
               ),
-              const SizedBox(height: 24.0),
-              ElevatedButton(
-                onPressed: authState.status == AuthStatus.loading ? null : _onSaveProfile,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                ),
-                child: authState.status == AuthStatus.loading
-                    ? const SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator(strokeWidth: 3, color: Colors.white),
-                      )
-                    : const Text('利用を開始する'),
+              const SizedBox(height: 24),
+              PrimaryButton(
+                text: '利用を開始する',
+                isLoading: viewModel.status == CreateProfileStatus.loading,
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    notifier.signUp(
+                      email: email,
+                      password: passwordController.text,
+                      username: usernameController.text,
+                      bio: bioController.text,
+                      twitterId: twitterController.text,
+                    );
+                  }
+                },
               ),
             ],
           ),

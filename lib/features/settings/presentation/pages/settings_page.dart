@@ -1,4 +1,4 @@
-// lib/features/settings/presentation/pages/settings_page.dart
+// ファイルパス: lib/features/settings/presentation/pages/settings_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:my_madamis_app/features/settings/presentation/pages/update_email_page.dart';

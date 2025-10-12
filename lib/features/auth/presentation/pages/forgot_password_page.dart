@@ -1,9 +1,10 @@
-// ファイルパス: lib/pages/forgot_password_page.dart
+// lib/features/auth/presentation/pages/forgot_password_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// 新しいパス構造に合わせる
+import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/reset_password_page.dart';
-import '../notifiers/auth_state_notifier.dart';
 
 // ConsumerWidget から ConsumerStatefulWidget に変更
 class ForgotPasswordPage extends ConsumerStatefulWidget {
