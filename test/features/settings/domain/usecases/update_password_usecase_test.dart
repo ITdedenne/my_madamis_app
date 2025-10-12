@@ -16,6 +16,7 @@ void main() {
   const oldPassword = 'oldPassword123';
   const newPassword = 'newPassword123';
 
+  // 正常系テスト
   test('正常なパスワード変更時にはリポジトリのupdatePasswordが呼ばれること', () async {
     // Arrange
     when(mockSettingsRepository.updatePassword(
@@ -33,15 +34,39 @@ void main() {
     )).called(1);
   });
 
-  test('新しいパスワードが8文字未満の場合、例外をスローすること', () async {
-    // Act & Assert
-    expect(
-      () => useCase(oldPassword: oldPassword, newPassword: 'short'),
-      throwsA(isA<Exception>()),
-    );
-    verifyNever(mockSettingsRepository.updatePassword(
-      oldPassword: anyNamed('oldPassword'),
-      newPassword: anyNamed('newPassword'),
-    ));
+  // 異常系・エッジケースのテスト
+  group('バリデーションとエッジケース', () {
+    test('古いパスワードが空の場合、例外をスローすること', () async {
+      // Act & Assert
+      expect(
+        () => useCase(oldPassword: '', newPassword: newPassword),
+        throwsA(isA<Exception>()),
+      );
+      verifyNever(mockSettingsRepository.updatePassword(
+          oldPassword: anyNamed('oldPassword'),
+          newPassword: anyNamed('newPassword')));
+    });
+
+    test('新しいパスワードが空の場合、例外をスローすること', () async {
+      // Act & Assert
+      expect(
+        () => useCase(oldPassword: oldPassword, newPassword: ''),
+        throwsA(isA<Exception>()),
+      );
+      verifyNever(mockSettingsRepository.updatePassword(
+          oldPassword: anyNamed('oldPassword'),
+          newPassword: anyNamed('newPassword')));
+    });
+
+    test('新しいパスワードが8文字未満の場合、例外をスローすること', () async {
+      // Act & Assert
+      expect(
+        () => useCase(oldPassword: oldPassword, newPassword: 'short'),
+        throwsA(isA<Exception>()),
+      );
+      verifyNever(mockSettingsRepository.updatePassword(
+          oldPassword: anyNamed('oldPassword'),
+          newPassword: anyNamed('newPassword')));
+    });
   });
 }
