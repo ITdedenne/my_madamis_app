@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/login_viewmodel.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart'; // Cognitoの例外クラスをインポート
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:my_madamis_app/providers.dart';
 
 import '../../../../mocks/mocks.mocks.dart';
@@ -29,9 +29,9 @@ void main() {
     const tPassword = 'password';
     const tUsername = 'test_user';
 
-    test('signIn 成功時、isAuthenticated が true になるべき', () async {
+    test('signInが成功した場合、isAuthenticatedがtrueになること', () async {
       // Arrange
-      when(mockAuthRepository.signOut()).thenAnswer((_) async {});
+      when(mockAuthRepository.signOut()).thenAnswer((_) async {}); // ログイン前のサインアウト処理
       when(mockAuthRepository.signIn(username: tEmail, password: tPassword))
           .thenAnswer((_) async => const SignInResult(isSignedIn: true, nextStep: AuthNextSignInStep(signInStep: AuthSignInStep.done)));
       when(mockAuthRepository.getCurrentUserAttributes()).thenAnswer((_) async => [
@@ -48,14 +48,12 @@ void main() {
       expect(state.isAuthenticated, isTrue);
       expect(state.username, tUsername);
       expect(state.isLoading, isFalse);
+      expect(state.errorMessage, isNull);
     });
 
-    test('signIn 失敗時(AuthException)、errorMessage が設定されるべき', () async {
+    test('signInが失敗した場合(UserNotFoundException)、errorMessageが設定されること', () async {
       // Arrange
-      // --- ▼▼▼ ここを修正 ▼▼▼ ---
-      // AuthExceptionの代わりに、具体的なUserNotFoundExceptionを使用する
-      const exception = UserNotFoundException('ログインに失敗しました');
-      // --- ▲▲▲ ここまで修正 ▲▲▲ ---
+      const exception = UserNotFoundException('User does not exist.');
       when(mockAuthRepository.signOut()).thenAnswer((_) async {});
       when(mockAuthRepository.signIn(username: tEmail, password: tPassword))
           .thenThrow(exception);

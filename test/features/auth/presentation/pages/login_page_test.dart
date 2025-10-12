@@ -6,44 +6,48 @@ import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/login_viewmodel.dart';
+import 'package:my_madamis_app/providers.dart';
 
 import '../../../../mocks/mocks.mocks.dart';
 
-// ★修正: StateNotifierのモックは、振る舞いを定義したいメソッドを持つシンプルなMockクラスで十分
-class MockLoginViewModel extends Mock implements LoginViewModel {
-  // stateをスタブするために、実際のStateNotifierのインスタンスを持つ
-  final StateNotifierProviderRef<LoginViewModel, LoginState> ref;
-  final _stateNotifier = LoginViewModel(MockAuthRepository()); // ダミーのリポジトリ
-  MockLoginViewModel(this.ref);
+// ViewModelのモッククラス
+class MockLoginViewModel extends StateNotifier<LoginState>
+    with Mock
+    implements LoginViewModel {
+  MockLoginViewModel(LoginState state) : super(state);
 
+  // signInメソッドの呼び出しを記録
   @override
-  LoginState get state => _stateNotifier.state;
+  Future<void> signIn(String email, String password) {
+    return super.noSuchMethod(
+      Invocation.method(#signIn, [email, password]),
+      returnValue: Future<void>.value(),
+      returnValueForMissingStub: Future<void>.value(),
+    );
+  }
 }
 
-// AuthStateNotifierも同様
-class MockAuthStateNotifier extends Mock implements AuthStateNotifier {}
-
 void main() {
-  // Providerをオーバーライドするためのモックインスタンスを保持する変数
+  late MockAuthRepository mockAuthRepository;
   late MockLoginViewModel mockLoginViewModel;
-  late MockAuthStateNotifier mockAuthStateNotifier;
+
+  setUp(() {
+    mockAuthRepository = MockAuthRepository();
+    // 初期状態を渡してモックを作成
+    mockLoginViewModel = MockLoginViewModel(LoginState());
+  });
 
   testWidgets('ログインボタンをタップすると、ViewModelのsignInが呼ばれること', (tester) async {
     // Arrange
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          // ★修正: .autoDisposeを外してProviderをオーバーライド
-          loginViewModelProvider.overrideWith((ref) {
-            mockLoginViewModel = MockLoginViewModel(ref);
-            // signInメソッドが呼ばれた際の振る舞いを定義
-            when(mockLoginViewModel.signIn(any, any)).thenAnswer((_) async {});
-            return mockLoginViewModel;
-          }),
-          authStateNotifierProvider.overrideWith((ref) {
-            mockAuthStateNotifier = MockAuthStateNotifier();
-            return mockAuthStateNotifier;
-          }),
+          // 各Providerをモックで上書き
+          authRepositoryProvider.overrideWithValue(mockAuthRepository),
+          loginViewModelProvider.overrideWith((ref) => mockLoginViewModel),
+          // authStateNotifierProviderも必要に応じてモック化
+          authStateNotifierProvider.overrideWith(
+              (ref) => AuthStateNotifier(mockAuthRepository)),
         ],
         child: const MaterialApp(home: LoginPage()),
       ),
@@ -52,13 +56,15 @@ void main() {
     const email = 'test@example.com';
     const password = 'password';
 
-    // Act
-    await tester.enterText(find.widgetWithText(TextFormField, 'メールアドレス'), email);
-    await tester.enterText(find.widgetWithText(TextFormField, 'パスワード'), password);
+    // Act: フォームに入力してボタンをタップ
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'メールアドレス'), email);
+    await tester.enterText(
+        find.widgetWithText(TextFormField, 'パスワード'), password);
     await tester.tap(find.widgetWithText(PrimaryButton, 'ログイン'));
     await tester.pump(); // stateの更新を反映
 
-    // Assert
+    // Assert: signInが正しい引数で1回呼ばれたことを確認
     verify(mockLoginViewModel.signIn(email, password)).called(1);
   });
 }
