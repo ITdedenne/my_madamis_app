@@ -35,7 +35,7 @@ class _SignUpPageState extends State<SignUpPage> {
         // エラーが発生しても処理は続行（セッションがない可能性が高いため）
       }
 
-      if (!context.mounted) return;
+      if (!mounted) return;
       
       Navigator.push(
         context,
