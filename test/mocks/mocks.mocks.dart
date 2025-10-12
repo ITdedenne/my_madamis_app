@@ -9,6 +9,8 @@ import 'package:amplify_flutter/amplify_flutter.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart'
     as _i3;
+import 'package:my_madamis_app/features/settings/domain/repositories/settings_repository.dart'
+    as _i5;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -207,4 +209,53 @@ class MockAuthRepository extends _i1.Mock implements _i3.AuthRepository {
         returnValue: _i4.Future<List<_i2.AuthUserAttribute>>.value(
             <_i2.AuthUserAttribute>[]),
       ) as _i4.Future<List<_i2.AuthUserAttribute>>);
+}
+
+/// A class which mocks [SettingsRepository].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockSettingsRepository extends _i1.Mock
+    implements _i5.SettingsRepository {
+  MockSettingsRepository() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i4.Future<void> updateEmail(String? newEmail) => (super.noSuchMethod(
+        Invocation.method(
+          #updateEmail,
+          [newEmail],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> confirmUpdateEmail(String? confirmationCode) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #confirmUpdateEmail,
+          [confirmationCode],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> updatePassword({
+    required String? oldPassword,
+    required String? newPassword,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updatePassword,
+          [],
+          {
+            #oldPassword: oldPassword,
+            #newPassword: newPassword,
+          },
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 }
