@@ -66,7 +66,8 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              ref.refresh(userScenarioStatusProvider);
+              // 状態をリフレッシュ
+              final _ = ref.refresh(userScenarioStatusProvider);
             },
             child: _buildBody(context),
           ),
@@ -78,11 +79,16 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
   Widget _buildBody(BuildContext context) {
     final pageState = ref.watch(myListPageStateProvider);
     final groupedScenariosAsync = ref.watch(filteredAndSortedMyListProvider);
-    
-    if (groupedScenariosAsync.isEmpty) {
-       final allScenariosAsync = ref.watch(allScenariosProvider);
-       if(allScenariosAsync.isLoading) return const Center(child: CircularProgressIndicator());
+    final allScenariosAsync = ref.watch(allScenariosProvider);
 
+    if (allScenariosAsync.isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (allScenariosAsync.hasError) {
+      return Center(child: Text('エラーが発生しました: ${allScenariosAsync.error}'));
+    }
+
+    if (groupedScenariosAsync.isEmpty) {
       final message = switch (pageState.filter) {
         MyListFilter.all => '記録されたシナリオはありません。\n「探す」タブから追加しましょう！',
         MyListFilter.played => '「通過済」のシナリオはありません。',
@@ -109,7 +115,7 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0,),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Text(
                 groupKey,
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),

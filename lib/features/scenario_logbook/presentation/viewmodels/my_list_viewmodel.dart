@@ -39,7 +39,6 @@ final filteredAndSortedMyListProvider = Provider<Map<String, List<UserScenario>>
           filtered = myList.where((s) => s.status.isPossessed).toList();
           break;
         case MyListFilter.all:
-        default:
           filtered = myList;
           break;
       }

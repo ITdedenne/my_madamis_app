@@ -79,6 +79,7 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   final GetScenariosUseCase _getScenarios;
   Timer? _debounce;
   static const int _limit = 50;
+  static const int _totalScenarios = 175;
 
   SearchScenariosViewModel(this._getScenarios) : super(SearchScenariosState()) {
     goToPage(1);
@@ -98,7 +99,7 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
       state = state.copyWith(
         isLoading: false,
         scenarios: newScenarios,
-        totalPages: (175 / _limit).ceil(),
+        totalPages: (_totalScenarios / _limit).ceil(),
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
