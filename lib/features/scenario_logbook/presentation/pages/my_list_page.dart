@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 
 class MyListPage extends ConsumerWidget {
@@ -13,24 +12,11 @@ class MyListPage extends ConsumerWidget {
     final state = ref.watch(myListViewModelProvider);
     final notifier = ref.read(myListViewModelProvider.notifier);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('マイリスト'),
-        actions: [
-          // TODO: 将来的に並び替え・絞り込み機能を実装する
-          IconButton(
-            icon: const Icon(Icons.sort),
-            tooltip: '並び替え',
-            onPressed: () {
-              // 並び替えメニューを表示するロジック
-            },
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => notifier.fetchMyList(),
-        child: _buildBody(context, state),
-      ),
+    // TabBarView内に配置するため、ScaffoldとAppBarは不要になります。
+    // 親の `scenario_logbook_page.dart` がScaffoldを持つためです。
+    return RefreshIndicator(
+      onRefresh: () => notifier.fetchMyList(),
+      child: _buildBody(context, state),
     );
   }
 
@@ -53,7 +39,6 @@ class MyListPage extends ConsumerWidget {
       );
     }
 
-    // `ScenarioListItem` を使うのが理想ですが、ここでは ListTile で代用します
     return ListView.builder(
       itemCount: state.userScenarios.length,
       itemBuilder: (context, index) {
@@ -63,9 +48,17 @@ class MyListPage extends ConsumerWidget {
           child: ListTile(
             title: Text(userScenario.scenario.title),
             subtitle: Text(userScenario.scenario.authorName),
-            trailing: Icon(
-              userScenario.status == UserScenarioStatus.played ? Icons.check_circle : Icons.book,
-              color: userScenario.status == UserScenarioStatus.played ? Colors.green : Theme.of(context).colorScheme.primary,
+            // trailing に複数のアイコンを表示するためのRowを配置
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (userScenario.status.isPlayed)
+                  const Icon(Icons.check_circle, color: Colors.green),
+                if (userScenario.status.isPlayed && userScenario.status.isPossessed)
+                  const SizedBox(width: 8), // アイコン間のスペース
+                if (userScenario.status.isPossessed)
+                  const Icon(Icons.book, color: Colors.blue),
+              ],
             ),
           ),
         );

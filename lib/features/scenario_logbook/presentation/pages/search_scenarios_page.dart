@@ -2,11 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
 
-// ▼▼▼ ConsumerWidget から ConsumerStatefulWidget に変更 ▼▼▼
-// (ScrollController と TextEditingController を使うため)
 class SearchScenariosPage extends ConsumerStatefulWidget {
   const SearchScenariosPage({super.key});
 
@@ -15,24 +14,10 @@ class SearchScenariosPage extends ConsumerStatefulWidget {
 }
 
 class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
-  final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
 
   @override
-  void initState() {
-    super.initState();
-    // スクロールを監視し、一番下まで来たら次のページを読み込む
-    _scrollController.addListener(() {
-      if (_scrollController.position.maxScrollExtent == _scrollController.position.pixels) {
-        final searchTerm = _searchController.text;
-        ref.read(searchScenariosViewModelProvider.notifier).fetchNextPage(searchTerm: searchTerm);
-      }
-    });
-  }
-
-  @override
   void dispose() {
-    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -42,71 +27,71 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     final state = ref.watch(searchScenariosViewModelProvider);
     final notifier = ref.read(searchScenariosViewModelProvider.notifier);
 
-    return Scaffold(
-      // AppBarをScaffoldの外に持つことで、タブ切り替え時にAppBarが再描画されない
-      // 今回は SearchScenariosPage の中にAppBarを移動
-      appBar: AppBar(
-        // titleに検索用のTextFieldを配置
-        title: TextField(
-          controller: _searchController,
-          decoration: const InputDecoration(
-            hintText: 'シナリオ名で検索...',
-            border: InputBorder.none,
-            icon: Icon(Icons.search),
+    // `TabBarView` 内では `Scaffold` は不要
+    return Column(
+      children: [
+        // 検索バー
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'シナリオ名で検索...',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              contentPadding: EdgeInsets.zero,
+            ),
+            onChanged: notifier.onSearchTermChanged,
           ),
-          onChanged: notifier.onSearchTermChanged,
         ),
-        actions: [
-          // TODO: 絞り込み機能を実装
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () { /* 絞り込みUIを表示 */ },
-          ),
-        ],
-      ),
-      body: _buildBody(state, notifier),
+        // 本体（リスト）
+        Expanded(child: _buildBody(state, notifier)),
+        // 【変更点①】ページネーションUI
+        if (!state.isLoading && state.scenarios.isNotEmpty)
+          _buildPaginationControls(state, notifier),
+      ],
     );
   }
 
   Widget _buildBody(SearchScenariosState state, SearchScenariosViewModel notifier) {
-    // 初期ロード中
-    if (state.isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    if (state.isLoading) return const Center(child: CircularProgressIndicator());
+    if (state.errorMessage != null) return Center(child: Text('エラー: ${state.errorMessage}'));
+    if (state.scenarios.isEmpty) return const Center(child: Text('シナリオが見つかりません。'));
 
-    // エラー発生時
-    if (state.errorMessage != null) {
-      return Center(child: Text('エラー: ${state.errorMessage}'));
-    }
-
-    // 検索結果が0件の場合
-    if (state.scenarios.isEmpty) {
-      return const Center(child: Text('シナリオが見つかりません。'));
-    }
-
-    // シナリオ一覧
     return ListView.builder(
-      controller: _scrollController,
-      // +1 は、追加読み込み中のインジケーター表示分
-      itemCount: state.scenarios.length + (state.isFetchingNextPage ? 1 : 0),
+      itemCount: state.scenarios.length,
       itemBuilder: (context, index) {
-        // リストの最後で、まだ次のページがある場合 -> ローディングインジケーターを表示
-        if (index == state.scenarios.length) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
         final scenario = state.scenarios[index];
         return ScenarioListItem(
           scenario: scenario,
-          status: state.myScenarioStatuses[scenario.id],
+          status: state.myScenarioStatuses[scenario.id] ?? const UserScenarioStatus(),
           onStatusChanged: (newStatus) {
             notifier.updateStatus(scenario.id, newStatus);
           },
         );
       },
+    );
+  }
+
+  // 【変更点②】ページ番号ボタンを生成するウィジェット
+  Widget _buildPaginationControls(SearchScenariosState state, SearchScenariosViewModel notifier) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: List.generate(state.totalPages, (index) {
+          final page = index + 1;
+          return ElevatedButton(
+            onPressed: state.currentPage == page ? null : () => notifier.goToPage(page),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: state.currentPage == page ? Colors.blue.shade100 : null,
+            ),
+            child: Text('$page'),
+          );
+        }),
+      ),
     );
   }
 }

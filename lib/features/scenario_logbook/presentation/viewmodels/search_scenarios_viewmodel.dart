@@ -5,137 +5,100 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/repositories/scenario_repository.dart';
+import 'package:my_madamis_app/providers.dart';
 
-import '../../../../providers.dart';
-
-// NOTE: 本来はこのファイルを `providers.dart` に移管します。
-// final scenarioRepositoryProvider = Provider<ScenarioRepository>((ref) => ScenarioRepositoryImpl());
-
-// 状態クラス
 class SearchScenariosState {
   final bool isLoading;
-  final bool isFetchingNextPage;
   final String? errorMessage;
   final List<Scenario> scenarios;
   final Map<String, UserScenarioStatus> myScenarioStatuses;
   final int currentPage;
-  final bool hasNextPage;
+  final int totalPages; // 総ページ数を保持
 
-  // コンストラクタ: 各プロパティの初期値を設定
   SearchScenariosState({
     this.isLoading = false,
-    this.isFetchingNextPage = false,
     this.errorMessage,
     this.scenarios = const [],
     this.myScenarioStatuses = const {},
-    this.currentPage = 0,
-    this.hasNextPage = true,
+    this.currentPage = 1,
+    this.totalPages = 1,
   });
 
-  // copyWith: 一部のプロパティのみを変更した新しいインスタンスを生成
   SearchScenariosState copyWith({
     bool? isLoading,
-    bool? isFetchingNextPage,
     String? errorMessage,
     List<Scenario>? scenarios,
     Map<String, UserScenarioStatus>? myScenarioStatuses,
     int? currentPage,
-    bool? hasNextPage,
+    int? totalPages,
   }) {
     return SearchScenariosState(
       isLoading: isLoading ?? this.isLoading,
-      isFetchingNextPage: isFetchingNextPage ?? this.isFetchingNextPage,
       errorMessage: errorMessage ?? this.errorMessage,
       scenarios: scenarios ?? this.scenarios,
       myScenarioStatuses: myScenarioStatuses ?? this.myScenarioStatuses,
       currentPage: currentPage ?? this.currentPage,
-      hasNextPage: hasNextPage ?? this.hasNextPage,
+      totalPages: totalPages ?? this.totalPages,
     );
   }
 }
 
-// ViewModel
 final searchScenariosViewModelProvider =
     StateNotifierProvider<SearchScenariosViewModel, SearchScenariosState>((ref) {
-  // NOTE: 本来はUseCaseを経由しますが、今回は直接Repositoryを呼び出します。
-  // final getScenariosUseCase = GetScenariosUseCase(ref.watch(scenarioRepositoryProvider));
-  // final updateUserScenarioUseCase = UpdateUserScenarioUseCase(ref.watch(scenarioRepositoryProvider));
   return SearchScenariosViewModel(ref.watch(scenarioRepositoryProvider));
 });
 
 class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   final ScenarioRepository _repository;
   Timer? _debounce;
+  static const int _limit = 50;
+  static const int _totalScenarios = 175; // データ総数をViewModelも知っておく
 
   SearchScenariosViewModel(this._repository) : super(SearchScenariosState()) {
-    // 初期データを読み込む
-    fetchInitialScenarios();
+    goToPage(1); // 初期表示は1ページ目
   }
 
-  // 1ページ目のデータを取得する
-  Future<void> fetchInitialScenarios({String? searchTerm}) async {
-    state = state.copyWith(isLoading: true, currentPage: 1, scenarios: []);
+  // 【変更点①】指定したページに移動するロジック
+  Future<void> goToPage(int page, {String? searchTerm}) async {
+    state = state.copyWith(isLoading: true, currentPage: page);
     try {
-      final newScenarios = await _repository.fetchScenarios(page: 1, searchTerm: searchTerm);
+      final newScenarios = await _repository.fetchScenarios(page: page, limit: _limit, searchTerm: searchTerm);
       state = state.copyWith(
         isLoading: false,
         scenarios: newScenarios,
-        hasNextPage: newScenarios.length == 50, // 50件未満なら次のページはない
+        totalPages: (_totalScenarios / _limit).ceil(),
       );
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
   }
 
-  // 検索処理（0.5秒のdebounce付き）
   void onSearchTermChanged(String term) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      fetchInitialScenarios(searchTerm: term);
+      goToPage(1, searchTerm: term); // 検索時は1ページ目に戻る
     });
   }
 
-  // 次のページのデータを取得する
-  Future<void> fetchNextPage({String? searchTerm}) async {
-    if (state.isFetchingNextPage || !state.hasNextPage) return;
-
-    state = state.copyWith(isFetchingNextPage: true);
-    final nextPage = state.currentPage + 1;
-    try {
-      final newScenarios = await _repository.fetchScenarios(page: nextPage, searchTerm: searchTerm);
-      state = state.copyWith(
-        isFetchingNextPage: false,
-        scenarios: [...state.scenarios, ...newScenarios],
-        currentPage: nextPage,
-        hasNextPage: newScenarios.length == 50,
-      );
-    } catch (e) {
-      state = state.copyWith(isFetchingNextPage: false, errorMessage: e.toString());
-    }
-  }
-
-  // ステータスを更新し、UIに即時反映させる
-  Future<void> updateStatus(String scenarioId, UserScenarioStatus? newStatus) async {
+  // 【変更点②】ステータス更新ロジック
+  Future<void> updateStatus(String scenarioId, UserScenarioStatus newStatus) async {
     final originalStatuses = Map<String, UserScenarioStatus>.from(state.myScenarioStatuses);
     
-    // UIを即時反映
     final newStatuses = Map<String, UserScenarioStatus>.from(state.myScenarioStatuses);
-    if (newStatus == null) {
+    if (newStatus.isUnregistered) {
       newStatuses.remove(scenarioId);
     } else {
       newStatuses[scenarioId] = newStatus;
     }
     state = state.copyWith(myScenarioStatuses: newStatuses);
 
-    // データベースへの更新処理
     try {
-      if (newStatus == null) {
+      if (newStatus.isUnregistered) {
         await _repository.removeUserScenarioStatus(scenarioId);
       } else {
         await _repository.updateUserScenarioStatus(scenarioId, newStatus);
       }
     } catch (e) {
-      // エラーが発生した場合はUIを元に戻す
       state = state.copyWith(
         myScenarioStatuses: originalStatuses,
         errorMessage: '更新に失敗しました: ${e.toString()}',

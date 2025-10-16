@@ -4,16 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 
-// シナリオ一覧の各行のUI
 class ScenarioListItem extends StatelessWidget {
   final Scenario scenario;
-  final UserScenarioStatus? status;
-  final Function(UserScenarioStatus? newStatus) onStatusChanged;
+  final UserScenarioStatus status; // null許容ではなく、デフォルト値を持つオブジェクトを受け取る
+  final Function(UserScenarioStatus newStatus) onStatusChanged;
 
   const ScenarioListItem({
     super.key,
     required this.scenario,
-    this.status,
+    this.status = const UserScenarioStatus(), // デフォルトは isPlayed/isPossessed が false
     required this.onStatusChanged,
   });
 
@@ -22,59 +21,92 @@ class ScenarioListItem extends StatelessWidget {
     return ListTile(
       title: Text(scenario.title),
       subtitle: Text('${scenario.authorName} / ${scenario.minPlayerCount}-${scenario.maxPlayerCount}人'),
-      trailing: _buildStatusButton(context),
+      trailing: _buildStatusIcons(context),
     );
   }
 
-  Widget _buildStatusButton(BuildContext context) {
-    if (status == null) {
-      // 未登録状態
-      return IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: () => _showStatusMenu(context));
-    } else if (status == UserScenarioStatus.played) {
-      // 通過済み
-      return IconButton(icon: const Icon(Icons.check_circle, color: Colors.green), onPressed: () => _showStatusMenu(context));
-    } else {
-      // 所持
-      return IconButton(icon: const Icon(Icons.book, color: Colors.blue), onPressed: () => _showStatusMenu(context));
-    }
+  // 【変更点①】ステータスアイコンの表示ロジック
+  Widget _buildStatusIcons(BuildContext context) {
+    return InkWell(
+      onTap: () => _showStatusMenu(context),
+      borderRadius: BorderRadius.circular(30),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (status.isPlayed) const Icon(Icons.check_circle, color: Colors.green, size: 28),
+            if (status.isPlayed && status.isPossessed) const SizedBox(width: 4),
+            if (status.isPossessed) const Icon(Icons.book, color: Colors.blue, size: 28),
+            if (status.isUnregistered) const Icon(Icons.add_circle_outline, color: Colors.grey, size: 28),
+          ],
+        ),
+      ),
+    );
   }
 
-  // ステータスを選択するボトムシートを表示
+  // 【変更点②】複数選択可能なボトムシート
   void _showStatusMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.check_circle_outline),
-            title: const Text('✅ 通過済にする'),
-            onTap: () {
-              onStatusChanged(UserScenarioStatus.played);
-              Navigator.pop(context);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.book_outlined),
-            title: const Text('📚 所持済にする'),
-            onTap: () {
-              onStatusChanged(UserScenarioStatus.possessed);
-              Navigator.pop(context);
-            },
-          ),
-          if (status != null) ...[
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.remove_circle_outline, color: Colors.red),
-              title: const Text('手帳から削除する'),
-              onTap: () {
-                onStatusChanged(null); // nullを渡して削除
-                Navigator.pop(context);
-              },
-            ),
-          ]
-        ],
+      builder: (_) => _StatusSelectionSheet(
+        initialStatus: status,
+        onStatusChanged: onStatusChanged,
       ),
+    );
+  }
+}
+
+// ボトムシートの中身をStatefulWidgetとして分離
+class _StatusSelectionSheet extends StatefulWidget {
+  final UserScenarioStatus initialStatus;
+  final Function(UserScenarioStatus newStatus) onStatusChanged;
+
+  const _StatusSelectionSheet({required this.initialStatus, required this.onStatusChanged});
+
+  @override
+  State<_StatusSelectionSheet> createState() => _StatusSelectionSheetState();
+}
+
+class _StatusSelectionSheetState extends State<_StatusSelectionSheet> {
+  late bool _isPlayed;
+  late bool _isPossessed;
+
+  @override
+  void initState() {
+    super.initState();
+    _isPlayed = widget.initialStatus.isPlayed;
+    _isPossessed = widget.initialStatus.isPossessed;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CheckboxListTile(
+          title: const Text('✅ 通過済'),
+          value: _isPlayed,
+          onChanged: (value) => setState(() => _isPlayed = value!),
+        ),
+        CheckboxListTile(
+          title: const Text('📚 所持'),
+          value: _isPossessed,
+          onChanged: (value) => setState(() => _isPossessed = value!),
+        ),
+        const Divider(),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 48)),
+            onPressed: () {
+              widget.onStatusChanged(UserScenarioStatus(isPlayed: _isPlayed, isPossessed: _isPossessed));
+              Navigator.pop(context);
+            },
+            child: const Text('保存'),
+          ),
+        )
+      ],
     );
   }
 }
