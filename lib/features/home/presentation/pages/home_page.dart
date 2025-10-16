@@ -7,6 +7,8 @@ import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_n
 import 'package:my_madamis_app/features/profile/presentation/pages/profile_page.dart';
 import 'package:my_madamis_app/features/settings/presentation/pages/settings_page.dart';
 
+import '../../../scenario_logbook/presentation/pages/scenario_logbook_page.dart';
+
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
@@ -30,6 +32,17 @@ class HomePage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('ホーム'),
         actions: [
+          IconButton(
+  icon: const Icon(Icons.menu_book),
+  tooltip: 'シナリオ手帳',
+  onPressed: () {
+    Navigator.push(
+      context,
+      // 作成したページへ遷移
+      MaterialPageRoute(builder: (_) => const ScenarioLogbookPage()),
+    );
+  },
+),
           IconButton(
             icon: const Icon(Icons.person_outline),
             tooltip: 'プロフィール',
