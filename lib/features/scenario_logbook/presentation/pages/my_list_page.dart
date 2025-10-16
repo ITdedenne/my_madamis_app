@@ -66,8 +66,8 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              // 状態をリフレッシュ
-              final _ = ref.refresh(userScenarioStatusProvider);
+              // Notifierにデータの再読み込みを依頼
+              await ref.read(userScenarioStatusProvider.notifier).refresh();
             },
             child: _buildBody(context),
           ),

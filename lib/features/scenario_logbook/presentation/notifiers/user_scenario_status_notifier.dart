@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_my_list_usecase.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/update_user_scenario_status_usecase.dart';
-import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/providers.dart';
 
 // UseCaseのProvider
@@ -27,32 +26,35 @@ class UserScenarioStatusNotifier extends StateNotifier<Map<String, UserScenarioS
   Future<void> _loadInitialStatuses() async {
     final myList = await _ref.read(getMyListUseCaseProvider)();
     final initialMap = {for (var item in myList) item.scenario.id: item.status};
-    state = initialMap;
+    if (mounted) {
+      state = initialMap;
+    }
   }
 
   // ステータスを更新する唯一の窓口
   Future<void> updateStatus(String scenarioId, UserScenarioStatus newStatus) async {
-    final originalState = state;
-    
-    // UIを即時反映
-    final newState = Map<String, UserScenarioStatus>.from(state);
-    if (newStatus.isUnregistered) {
-      newState.remove(scenarioId);
-    } else {
-      newState[scenarioId] = newStatus;
-    }
-    state = newState;
-
     try {
-      // Repository (DB) を更新
+      //先にRepository (DB) を更新
       await _ref.read(updateUserScenarioStatusUseCaseProvider)(scenarioId, newStatus);
-      // マイリスト画面の表示用データをリフレッシュして同期
-      final _ = _ref.refresh(filteredAndSortedMyListProvider);
+
+      // DB更新が成功したら、UI（state）を更新
+      final newState = Map<String, UserScenarioStatus>.from(state);
+      if (newStatus.isUnregistered) {
+        newState.remove(scenarioId);
+      } else {
+        newState[scenarioId] = newStatus;
+      }
+      if (mounted) {
+        state = newState;
+      }
     } catch (e) {
-      // 失敗したらUIを元に戻す
-      state = originalState;
       // TODO: エラーハンドリング (SnackBar表示など)
+      print('Failed to update status: $e');
     }
-    
+  }
+  
+  // データを再読み込みするためのメソッド
+  Future<void> refresh() async {
+    await _loadInitialStatuses();
   }
 }
