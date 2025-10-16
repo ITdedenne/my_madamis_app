@@ -6,13 +6,13 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_sc
 
 class ScenarioListItem extends StatelessWidget {
   final Scenario scenario;
-  final UserScenarioStatus status; // null許容ではなく、デフォルト値を持つオブジェクトを受け取る
+  final UserScenarioStatus status;
   final Function(UserScenarioStatus newStatus) onStatusChanged;
 
   const ScenarioListItem({
     super.key,
     required this.scenario,
-    this.status = const UserScenarioStatus(), // デフォルトは isPlayed/isPossessed が false
+    this.status = const UserScenarioStatus(),
     required this.onStatusChanged,
   });
 
@@ -25,7 +25,6 @@ class ScenarioListItem extends StatelessWidget {
     );
   }
 
-  // 【変更点①】ステータスアイコンの表示ロジック
   Widget _buildStatusIcons(BuildContext context) {
     return InkWell(
       onTap: () => _showStatusMenu(context),
@@ -45,7 +44,6 @@ class ScenarioListItem extends StatelessWidget {
     );
   }
 
-  // 【変更点②】複数選択可能なボトムシート
   void _showStatusMenu(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -57,7 +55,6 @@ class ScenarioListItem extends StatelessWidget {
   }
 }
 
-// ボトムシートの中身をStatefulWidgetとして分離
 class _StatusSelectionSheet extends StatefulWidget {
   final UserScenarioStatus initialStatus;
   final Function(UserScenarioStatus newStatus) onStatusChanged;

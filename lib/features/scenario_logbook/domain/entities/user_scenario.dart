@@ -3,7 +3,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 
-// 【変更点①】enumを廃止し、状態を管理するクラスに変更
+// 状態を管理するクラスに変更
 class UserScenarioStatus extends Equatable {
   final bool isPlayed;
   final bool isPossessed;
@@ -19,7 +19,6 @@ class UserScenarioStatus extends Equatable {
   @override
   List<Object?> get props => [isPlayed, isPossessed];
 }
-
 
 // UserScenarioクラスは変更なし（statusの型が新しいクラスになる）
 class UserScenario extends Equatable {

@@ -24,13 +24,23 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<SearchScenariosState>(searchScenariosViewModelProvider, (previous, next) {
+      if (next.successMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.successMessage!),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        ref.read(searchScenariosViewModelProvider.notifier).clearSuccessMessage();
+      }
+    });
+
     final state = ref.watch(searchScenariosViewModelProvider);
     final notifier = ref.read(searchScenariosViewModelProvider.notifier);
 
-    // `TabBarView` 内では `Scaffold` は不要
     return Column(
       children: [
-        // 検索バー
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: TextField(
@@ -44,9 +54,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
             onChanged: notifier.onSearchTermChanged,
           ),
         ),
-        // 本体（リスト）
         Expanded(child: _buildBody(state, notifier)),
-        // 【変更点①】ページネーションUI
         if (!state.isLoading && state.scenarios.isNotEmpty)
           _buildPaginationControls(state, notifier),
       ],
@@ -73,7 +81,6 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     );
   }
 
-  // 【変更点②】ページ番号ボタンを生成するウィジェット
   Widget _buildPaginationControls(SearchScenariosState state, SearchScenariosViewModel notifier) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),

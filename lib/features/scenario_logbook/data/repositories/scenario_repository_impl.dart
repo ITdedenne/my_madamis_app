@@ -2,7 +2,6 @@
 
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
-
 import '../../domain/repositories/scenario_repository.dart';
 
 class ScenarioRepositoryImpl implements ScenarioRepository {
@@ -17,7 +16,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 300));
 
-    // 【変更点①】4ページまでデータが存在するように変更 (175件 / 50件/ページ = 3.5 -> 4ページ)
+    // 4ページ目までデータが存在するように変更 (175件 / 50件/ページ = 3.5 -> 4ページ)
     final totalPages = (_totalScenarios / limit).ceil();
     if (page > totalPages) {
       return [];
@@ -39,28 +38,26 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       );
     });
   }
-  
-  // 【変更点②】statusの型を新しいクラスに合わせる
+
   @override
   Future<List<UserScenario>> fetchMyList() async {
     await Future.delayed(const Duration(milliseconds: 300));
     return [
       const UserScenario(
         scenario: Scenario(id: 'scenario_1', title: '通過済みのシナリオ', authorName: '作者A', minPlayerCount: 4, maxPlayerCount: 4, gmRequirement: GmRequirement.required),
-        status: UserScenarioStatus(isPlayed: true), // isPlayed: true
+        status: UserScenarioStatus(isPlayed: true),
       ),
       const UserScenario(
         scenario: Scenario(id: 'scenario_5', title: '所持しているシナリオ', authorName: '作者B', minPlayerCount: 5, maxPlayerCount: 5, gmRequirement: GmRequirement.none),
-        status: UserScenarioStatus(isPossessed: true), // isPossessed: true
+        status: UserScenarioStatus(isPossessed: true),
       ),
       const UserScenario(
         scenario: Scenario(id: 'scenario_8', title: '通過済みかつ所持', authorName: '作者C', minPlayerCount: 6, maxPlayerCount: 6, gmRequirement: GmRequirement.optional),
-        status: UserScenarioStatus(isPlayed: true, isPossessed: true), // 両方true
+        status: UserScenarioStatus(isPlayed: true, isPossessed: true),
       ),
     ];
   }
 
-  // 【変更点③】引数の型を新しいクラスに合わせる
   @override
   Future<void> updateUserScenarioStatus(String scenarioId, UserScenarioStatus status) async {
     print('Updating $scenarioId to isPlayed: ${status.isPlayed}, isPossessed: ${status.isPossessed}');
