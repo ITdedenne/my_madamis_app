@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
+import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
-
-import '../../domain/entities/user_scenario.dart';
 
 class SearchScenariosPage extends ConsumerStatefulWidget {
   const SearchScenariosPage({super.key});
@@ -40,6 +40,9 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
 
     final state = ref.watch(searchScenariosViewModelProvider);
     final notifier = ref.read(searchScenariosViewModelProvider.notifier);
+    
+    // ユーザーのステータス全体を監視
+    final userStatuses = ref.watch(userScenarioStatusProvider);
 
     return Column(
       children: [
@@ -77,13 +80,13 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           ),
         ),
         _buildFilterChips(state, notifier),
-        Expanded(child: _buildBody(state, notifier)),
+        Expanded(child: _buildBody(state, userStatuses)),
         if (!state.isLoading && state.scenarios.isNotEmpty)
           _buildPaginationControls(state, notifier),
       ],
     );
   }
-
+  
   Widget _buildFilterChips(SearchScenariosState state, SearchScenariosViewModel notifier) {
     if (state.filter.isInitial) {
       return const SizedBox(height: 8);
@@ -142,7 +145,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     );
   }
 
-  Widget _buildBody(SearchScenariosState state, SearchScenariosViewModel notifier) {
+  Widget _buildBody(SearchScenariosState state, Map<String, UserScenarioStatus> userStatuses) {
     if (state.isLoading) return const Center(child: CircularProgressIndicator());
     if (state.errorMessage != null) return Center(child: Text('エラー: ${state.errorMessage}'));
     if (state.scenarios.isEmpty) return const Center(child: Text('シナリオが見つかりません。'));
@@ -153,9 +156,10 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
         final scenario = state.scenarios[index];
         return ScenarioListItem(
           scenario: scenario,
-          status: state.myScenarioStatuses[scenario.id] ?? const UserScenarioStatus(),
+          status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
           onStatusChanged: (newStatus) {
-            notifier.updateStatus(scenario.id, newStatus);
+            // ステータス更新は一元管理されたNotifierに依頼
+            ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
           },
         );
       },
