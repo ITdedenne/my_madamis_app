@@ -46,12 +46,13 @@ class UserScenarioStatusNotifier extends StateNotifier<Map<String, UserScenarioS
     try {
       // Repository (DB) を更新
       await _ref.read(updateUserScenarioStatusUseCaseProvider)(scenarioId, newStatus);
-      // マイリスト画面のデータをリフレッシュして同期
-      _ref.refresh(filteredAndSortedMyListProvider);
+      // マイリスト画面の表示用データをリフレッシュして同期
+      final _ = _ref.refresh(filteredAndSortedMyListProvider);
     } catch (e) {
       // 失敗したらUIを元に戻す
       state = originalState;
       // TODO: エラーハンドリング (SnackBar表示など)
     }
+    
   }
 }

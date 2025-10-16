@@ -160,6 +160,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           onStatusChanged: (newStatus) {
             // ステータス更新は一元管理されたNotifierに依頼
             ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
+            ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
           },
         );
       },

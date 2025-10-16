@@ -40,7 +40,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     String? authorName,
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
-
     Iterable<Scenario> scenarios = _allScenarios;
 
     if (searchTerm != null && searchTerm.isNotEmpty) {
