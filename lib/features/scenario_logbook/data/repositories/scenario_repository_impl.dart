@@ -9,6 +9,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   static const int _totalScenarios = 175;
   late final List<Scenario> _allScenarios;
 
+  // Repository初期化時に全ダミーデータを生成
   ScenarioRepositoryImpl() {
     _allScenarios = List.generate(_totalScenarios, (index) {
       final id = index + 1;
@@ -16,8 +17,8 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         id: 'scenario_$id',
         title: 'シナリオ No.$id',
         authorName: '作者 ${(id % 10) + 1}',
-        minPlayerCount: (id % 4) + 3,
-        maxPlayerCount: (id % 4) + 5,
+        minPlayerCount: (id % 4) + 3, // 3-6人で変動
+        maxPlayerCount: (id % 4) + 5, // 5-8人で変動
         gmRequirement: GmRequirement.values[id % 3],
       );
     });
@@ -34,19 +35,24 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   }) async {
     await Future.delayed(const Duration(milliseconds: 400));
 
+    // --- 絞り込みと検索処理 ---
     Iterable<Scenario> scenarios = _allScenarios;
 
+    // 検索語（シナリオ名 or 作者名）
     if (searchTerm != null && searchTerm.isNotEmpty) {
       scenarios = scenarios.where((s) =>
           s.title.toLowerCase().contains(searchTerm.toLowerCase()) ||
           s.authorName.toLowerCase().contains(searchTerm.toLowerCase()));
     }
+    // 作者名（絞り込み）
     if (authorName != null && authorName.isNotEmpty) {
       scenarios = scenarios.where((s) => s.authorName == authorName);
     }
+    // GM要否
     if (gmRequirement != null) {
       scenarios = scenarios.where((s) => s.gmRequirement == gmRequirement);
     }
+    // プレイ人数
     if (playerCountRange != null) {
       scenarios = scenarios.where((s) {
         final start = playerCountRange.start.round();
@@ -57,8 +63,11 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     
     final filteredList = scenarios.toList();
     
+    // --- ページネーション処理 ---
     final startIndex = (page - 1) * limit;
-    if (startIndex >= filteredList.length) return [];
+    if (startIndex >= filteredList.length) {
+      return []; // そのページにはデータがない
+    }
     final endIndex = (startIndex + limit > filteredList.length) ? filteredList.length : startIndex + limit;
 
     return filteredList.sublist(startIndex, endIndex);
@@ -73,18 +82,19 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   @override
   Future<List<UserScenario>> fetchMyList() async {
     await Future.delayed(const Duration(milliseconds: 300));
+    // _allScenariosからダミーのマイリストデータを生成
     return [
-      const UserScenario(
-        scenario: Scenario(id: 'scenario_1', title: '通過済みのシナリオ', authorName: '作者A', minPlayerCount: 4, maxPlayerCount: 4, gmRequirement: GmRequirement.required),
-        status: UserScenarioStatus(isPlayed: true),
+      UserScenario(
+        scenario: _allScenarios[0], // シナリオ No.1
+        status: const UserScenarioStatus(isPlayed: true),
       ),
-      const UserScenario(
-        scenario: Scenario(id: 'scenario_5', title: '所持しているシナリオ', authorName: '作者B', minPlayerCount: 5, maxPlayerCount: 5, gmRequirement: GmRequirement.none),
-        status: UserScenarioStatus(isPossessed: true),
+      UserScenario(
+        scenario: _allScenarios[4], // シナリオ No.5
+        status: const UserScenarioStatus(isPossessed: true),
       ),
-      const UserScenario(
-        scenario: Scenario(id: 'scenario_8', title: '通過済みかつ所持', authorName: '作者C', minPlayerCount: 6, maxPlayerCount: 6, gmRequirement: GmRequirement.optional),
-        status: UserScenarioStatus(isPlayed: true, isPossessed: true),
+      UserScenario(
+        scenario: _allScenarios[7], // シナリオ No.8
+        status: const UserScenarioStatus(isPlayed: true, isPossessed: true),
       ),
     ];
   }

@@ -81,9 +81,9 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
       return Center(child: Text('エラーが発生しました: ${state.errorMessage}'));
     }
     
-    final list = state.filteredAndSortedScenarios;
+    final groupedScenarios = state.groupedScenarios;
 
-    if (list.isEmpty) {
+    if (groupedScenarios.isEmpty) {
       final message = switch (state.filter) {
         MyListFilter.all => '記録されたシナリオはありません。\n「探す」タブから追加しましょう！',
         MyListFilter.played => '「通過済」のシナリオはありません。',
@@ -98,27 +98,47 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
       );
     }
 
+    final groupKeys = groupedScenarios.keys.toList();
+
     return ListView.builder(
-      itemCount: list.length,
+      itemCount: groupKeys.length,
       itemBuilder: (context, index) {
-        final userScenario = list[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: ListTile(
-            title: Text(userScenario.scenario.title),
-            subtitle: Text(userScenario.scenario.authorName),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (userScenario.status.isPlayed)
-                  const Icon(Icons.check_circle, color: Colors.green),
-                if (userScenario.status.isPlayed && userScenario.status.isPossessed)
-                  const SizedBox(width: 8),
-                if (userScenario.status.isPossessed)
-                  const Icon(Icons.book, color: Colors.blue),
-              ],
+        final groupKey = groupKeys[index];
+        final scenariosInGroup = groupedScenarios[groupKey]!;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 頭文字ヘッダー
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Text(
+                groupKey,
+                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
+            // グループ内のシナリオリスト
+            ...scenariosInGroup.map((userScenario) {
+              return Card(
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ListTile(
+                  title: Text(userScenario.scenario.title),
+                  subtitle: Text(userScenario.scenario.authorName),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (userScenario.status.isPlayed)
+                        const Icon(Icons.check_circle, color: Colors.green),
+                      if (userScenario.status.isPlayed && userScenario.status.isPossessed)
+                        const SizedBox(width: 8),
+                      if (userScenario.status.isPossessed)
+                        const Icon(Icons.book, color: Colors.blue),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+          ],
         );
       },
     );

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_my_list_usecase.dart';
 import 'package:my_madamis_app/providers.dart';
+import 'package:collection/collection.dart'; // groupBy を使うために必要
 
 final getMyListUseCaseProvider = Provider((ref) => GetMyListUseCase(ref.watch(scenarioRepositoryProvider)));
 
@@ -25,7 +26,8 @@ class MyListState {
     this.sortOrder = SortOrder.byTitle,
   });
 
-  List<UserScenario> get filteredAndSortedScenarios {
+  // グループ化されたシナリオリストを返すgetter
+  Map<String, List<UserScenario>> get groupedScenarios {
     List<UserScenario> filtered;
     switch (filter) {
       case MyListFilter.played:
@@ -39,6 +41,7 @@ class MyListState {
         break;
     }
     
+    // 並び替え
     filtered.sort((a, b) {
       switch (sortOrder) {
         case SortOrder.byTitle:
@@ -47,7 +50,15 @@ class MyListState {
           return a.scenario.authorName.compareTo(b.scenario.authorName);
       }
     });
-    return filtered;
+
+    // グループ化
+    return groupBy(filtered, (UserScenario s) {
+      if (sortOrder == SortOrder.byTitle) {
+        return s.scenario.title.substring(0, 1).toUpperCase();
+      } else {
+        return s.scenario.authorName.substring(0, 1).toUpperCase();
+      }
+    });
   }
 
   MyListState copyWith({

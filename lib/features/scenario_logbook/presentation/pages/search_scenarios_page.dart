@@ -2,10 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
+
+import '../../domain/entities/user_scenario.dart';
 
 class SearchScenariosPage extends ConsumerStatefulWidget {
   const SearchScenariosPage({super.key});
@@ -43,14 +44,14 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
           child: Row(
             children: [
               Expanded(
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'シナリオ名で検索...',
+                    hintText: 'シナリオ名・作者名で検索...',
                     prefixIcon: const Icon(Icons.search),
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     contentPadding: EdgeInsets.zero,
@@ -64,6 +65,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
+                    isScrollControlled: true,
                     builder: (_) => FilterBottomSheet(
                       currentFilter: state.filter,
                       onApplyFilter: notifier.applyFilter,
@@ -74,10 +76,69 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
             ],
           ),
         ),
+        _buildFilterChips(state, notifier),
         Expanded(child: _buildBody(state, notifier)),
         if (!state.isLoading && state.scenarios.isNotEmpty)
           _buildPaginationControls(state, notifier),
       ],
+    );
+  }
+
+  Widget _buildFilterChips(SearchScenariosState state, SearchScenariosViewModel notifier) {
+    if (state.filter.isInitial) {
+      return const SizedBox(height: 8);
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: Wrap(
+        spacing: 6.0,
+        runSpacing: 4.0,
+        children: [
+          if (state.filter.playerCountRange.start != 1 || state.filter.playerCountRange.end != 15)
+            Chip(
+              label: Text('${state.filter.playerCountRange.start.round()}-${state.filter.playerCountRange.end.round()}人'),
+              onDeleted: () {
+                final newFilter = SearchFilter(
+                  playerCountRange: const RangeValues(1, 15),
+                  gmRequirement: state.filter.gmRequirement,
+                  authorName: state.filter.authorName,
+                );
+                notifier.applyFilter(newFilter);
+              },
+            ),
+          if (state.filter.gmRequirement != null)
+            Chip(
+              label: Text('GM: ${state.filter.gmRequirement!.displayName}'),
+              onDeleted: () {
+                 final newFilter = SearchFilter(
+                  playerCountRange: state.filter.playerCountRange,
+                  gmRequirement: null,
+                  authorName: state.filter.authorName,
+                );
+                notifier.applyFilter(newFilter);
+              },
+            ),
+          if (state.filter.authorName != null)
+            Chip(
+              label: Text('作者: ${state.filter.authorName}'),
+              onDeleted: () {
+                 final newFilter = SearchFilter(
+                  playerCountRange: state.filter.playerCountRange,
+                  gmRequirement: state.filter.gmRequirement,
+                  authorName: null,
+                );
+                notifier.applyFilter(newFilter);
+              },
+            ),
+          ActionChip(
+            label: const Text('全クリア'),
+            onPressed: () {
+              notifier.applyFilter(SearchFilter.initial());
+            },
+          )
+        ],
+      ),
     );
   }
 
