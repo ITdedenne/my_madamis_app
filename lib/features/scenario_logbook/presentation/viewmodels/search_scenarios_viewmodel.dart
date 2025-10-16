@@ -1,7 +1,6 @@
 // ファイルパス: lib/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart
 
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
@@ -11,19 +10,27 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/update_
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/providers.dart';
 
-// UseCaseのProvider定義
 final getScenariosUseCaseProvider = Provider((ref) => GetScenariosUseCase(ref.watch(scenarioRepositoryProvider)));
 final updateUserScenarioStatusUseCaseProvider = Provider((ref) => UpdateUserScenarioStatusUseCase(ref.watch(scenarioRepositoryProvider)));
 
-// 絞り込み条件を保持するクラス
 class SearchFilter {
   final RangeValues playerCountRange;
   final GmRequirement? gmRequirement;
+  final String? authorName;
 
-  SearchFilter({required this.playerCountRange, this.gmRequirement});
+  SearchFilter({
+    required this.playerCountRange,
+    this.gmRequirement,
+    this.authorName,
+  });
   
-  // 初期状態
   factory SearchFilter.initial() => SearchFilter(playerCountRange: const RangeValues(1, 15));
+
+  bool get isInitial =>
+      playerCountRange.start == 1 &&
+      playerCountRange.end == 15 &&
+      gmRequirement == null &&
+      authorName == null;
 }
 
 class SearchScenariosState {
@@ -98,6 +105,7 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
         searchTerm: searchTerm,
         playerCountRange: state.filter.playerCountRange,
         gmRequirement: state.filter.gmRequirement,
+        authorName: state.filter.authorName,
       );
       state = state.copyWith(
         isLoading: false,

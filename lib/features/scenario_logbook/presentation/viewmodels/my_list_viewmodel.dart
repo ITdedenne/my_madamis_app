@@ -5,13 +5,9 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_sc
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_my_list_usecase.dart';
 import 'package:my_madamis_app/providers.dart';
 
-// UseCaseのProvider
 final getMyListUseCaseProvider = Provider((ref) => GetMyListUseCase(ref.watch(scenarioRepositoryProvider)));
 
-// フィルターの状態を表すEnum
 enum MyListFilter { all, played, possessed }
-
-// 並び替え順のenum
 enum SortOrder { byTitle, byAuthor }
 
 class MyListState {
@@ -43,7 +39,6 @@ class MyListState {
         break;
     }
     
-    // 並び替え処理
     filtered.sort((a, b) {
       switch (sortOrder) {
         case SortOrder.byTitle:

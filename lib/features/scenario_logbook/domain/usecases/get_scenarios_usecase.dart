@@ -14,6 +14,7 @@ class GetScenariosUseCase {
     String? searchTerm,
     RangeValues? playerCountRange,
     GmRequirement? gmRequirement,
+    String? authorName,
   }) {
     return _repository.fetchScenarios(
       page: page,
@@ -21,6 +22,7 @@ class GetScenariosUseCase {
       searchTerm: searchTerm,
       playerCountRange: playerCountRange,
       gmRequirement: gmRequirement,
+      authorName: authorName,
     );
   }
 }

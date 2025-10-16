@@ -1,10 +1,14 @@
 // ファイルパス: lib/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
+import 'package:my_madamis_app/providers.dart';
 
-class FilterBottomSheet extends StatefulWidget {
+import '../pages/author_search_page.dart';
+
+class FilterBottomSheet extends ConsumerStatefulWidget {
   final SearchFilter currentFilter;
   final Function(SearchFilter newFilter) onApplyFilter;
 
@@ -15,18 +19,20 @@ class FilterBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<FilterBottomSheet> createState() => _FilterBottomSheetState();
+  ConsumerState<FilterBottomSheet> createState() => _FilterBottomSheetState();
 }
 
-class _FilterBottomSheetState extends State<FilterBottomSheet> {
+class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   late RangeValues _playerCountRange;
   late GmRequirement? _gmRequirement;
+  late String? _authorName;
 
   @override
   void initState() {
     super.initState();
     _playerCountRange = widget.currentFilter.playerCountRange;
     _gmRequirement = widget.currentFilter.gmRequirement;
+    _authorName = widget.currentFilter.authorName;
   }
 
   @override
@@ -78,13 +84,33 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
           ),
           const SizedBox(height: 24),
 
+          // --- 作者名 ---
+          const Text('作者'),
+          ListTile(
+            title: Text(_authorName ?? '指定なし'),
+            trailing: const Icon(Icons.arrow_forward_ios),
+            onTap: () async {
+              final allAuthors = await ref.read(scenarioRepositoryProvider).fetchAllAuthorNames();
+              final selectedAuthor = await Navigator.of(context).push<String>(
+                MaterialPageRoute(
+                  builder: (_) => AuthorSearchPage(allAuthors: allAuthors),
+                ),
+              );
+              if (selectedAuthor != null) {
+                setState(() {
+                  _authorName = selectedAuthor;
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 24),
+
           // --- ボタン ---
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    // リセット処理
                     widget.onApplyFilter(SearchFilter.initial());
                     Navigator.pop(context);
                   },
@@ -98,6 +124,7 @@ class _FilterBottomSheetState extends State<FilterBottomSheet> {
                     final newFilter = SearchFilter(
                       playerCountRange: _playerCountRange,
                       gmRequirement: _gmRequirement,
+                      authorName: _authorName,
                     );
                     widget.onApplyFilter(newFilter);
                     Navigator.pop(context);
