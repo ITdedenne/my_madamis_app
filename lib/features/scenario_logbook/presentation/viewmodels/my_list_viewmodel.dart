@@ -11,29 +11,48 @@ final getMyListUseCaseProvider = Provider((ref) => GetMyListUseCase(ref.watch(sc
 // フィルターの状態を表すEnum
 enum MyListFilter { all, played, possessed }
 
+// 並び替え順のenum
+enum SortOrder { byTitle, byAuthor }
+
 class MyListState {
   final bool isLoading;
   final String? errorMessage;
   final List<UserScenario> allUserScenarios;
   final MyListFilter filter;
+  final SortOrder sortOrder;
 
   MyListState({
     this.isLoading = false,
     this.errorMessage,
     this.allUserScenarios = const [],
     this.filter = MyListFilter.all,
+    this.sortOrder = SortOrder.byTitle,
   });
 
-  // フィルターされたリストを返すgetter
-  List<UserScenario> get filteredScenarios {
+  List<UserScenario> get filteredAndSortedScenarios {
+    List<UserScenario> filtered;
     switch (filter) {
       case MyListFilter.played:
-        return allUserScenarios.where((s) => s.status.isPlayed).toList();
+        filtered = allUserScenarios.where((s) => s.status.isPlayed).toList();
+        break;
       case MyListFilter.possessed:
-        return allUserScenarios.where((s) => s.status.isPossessed).toList();
+        filtered = allUserScenarios.where((s) => s.status.isPossessed).toList();
+        break;
       case MyListFilter.all:
-        return allUserScenarios;
+        filtered = allUserScenarios;
+        break;
     }
+    
+    // 並び替え処理
+    filtered.sort((a, b) {
+      switch (sortOrder) {
+        case SortOrder.byTitle:
+          return a.scenario.title.compareTo(b.scenario.title);
+        case SortOrder.byAuthor:
+          return a.scenario.authorName.compareTo(b.scenario.authorName);
+      }
+    });
+    return filtered;
   }
 
   MyListState copyWith({
@@ -41,12 +60,14 @@ class MyListState {
     String? errorMessage,
     List<UserScenario>? allUserScenarios,
     MyListFilter? filter,
+    SortOrder? sortOrder,
   }) {
     return MyListState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
       allUserScenarios: allUserScenarios ?? this.allUserScenarios,
       filter: filter ?? this.filter,
+      sortOrder: sortOrder ?? this.sortOrder,
     );
   }
 }
@@ -74,5 +95,9 @@ class MyListViewModel extends StateNotifier<MyListState> {
   
   void setFilter(MyListFilter newFilter) {
     state = state.copyWith(filter: newFilter);
+  }
+
+  void setSortOrder(SortOrder newOrder) {
+    state = state.copyWith(sortOrder: newOrder);
   }
 }

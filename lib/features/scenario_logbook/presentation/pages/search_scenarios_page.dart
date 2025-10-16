@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
+import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
 
 class SearchScenariosPage extends ConsumerStatefulWidget {
@@ -43,15 +44,34 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: TextField(
-            controller: _searchController,
-            decoration: InputDecoration(
-              hintText: 'シナリオ名で検索...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              contentPadding: EdgeInsets.zero,
-            ),
-            onChanged: notifier.onSearchTermChanged,
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'シナリオ名で検索...',
+                    prefixIcon: const Icon(Icons.search),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  onChanged: notifier.onSearchTermChanged,
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder: (_) => FilterBottomSheet(
+                      currentFilter: state.filter,
+                      onApplyFilter: notifier.applyFilter,
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
         Expanded(child: _buildBody(state, notifier)),

@@ -1,42 +1,70 @@
 // ファイルパス: lib/features/scenario_logbook/data/repositories/scenario_repository_impl.dart
 
+import 'package:flutter/material.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
+
 import '../../domain/repositories/scenario_repository.dart';
 
 class ScenarioRepositoryImpl implements ScenarioRepository {
-  // ダミーデータの総数を定義
   static const int _totalScenarios = 175;
+  late final List<Scenario> _allScenarios;
+
+  // Repository初期化時に全ダミーデータを生成
+  ScenarioRepositoryImpl() {
+    _allScenarios = List.generate(_totalScenarios, (index) {
+      final id = index + 1;
+      return Scenario(
+        id: 'scenario_$id',
+        title: 'シナリオ No.$id',
+        authorName: '作者 ${(id % 10) + 1}',
+        minPlayerCount: (id % 4) + 3, // 3-6人で変動
+        maxPlayerCount: (id % 4) + 5, // 5-8人で変動
+        gmRequirement: GmRequirement.values[id % 3],
+      );
+    });
+  }
 
   @override
   Future<List<Scenario>> fetchScenarios({
     required int page,
     int limit = 50,
     String? searchTerm,
+    RangeValues? playerCountRange,
+    GmRequirement? gmRequirement,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 400));
 
-    // 4ページ目までデータが存在するように変更 (175件 / 50件/ページ = 3.5 -> 4ページ)
-    final totalPages = (_totalScenarios / limit).ceil();
-    if (page > totalPages) {
-      return [];
+    // --- 絞り込みと検索処理 ---
+    Iterable<Scenario> scenarios = _allScenarios;
+
+    // 検索語
+    if (searchTerm != null && searchTerm.isNotEmpty) {
+      scenarios = scenarios.where((s) => s.title.toLowerCase().contains(searchTerm.toLowerCase()));
     }
-
-    // 取得するシナリオの数を計算（最終ページ対応）
+    // GM要否
+    if (gmRequirement != null) {
+      scenarios = scenarios.where((s) => s.gmRequirement == gmRequirement);
+    }
+    // プレイ人数
+    if (playerCountRange != null) {
+      scenarios = scenarios.where((s) {
+        final start = playerCountRange.start.round();
+        final end = playerCountRange.end.round();
+        return s.minPlayerCount >= start && s.maxPlayerCount <= end;
+      });
+    }
+    
+    final filteredList = scenarios.toList();
+    
+    // --- ページネーション処理 ---
     final startIndex = (page - 1) * limit;
-    final count = (startIndex + limit > _totalScenarios) ? (_totalScenarios - startIndex) : limit;
+    if (startIndex >= filteredList.length) {
+      return []; // そのページにはデータがない
+    }
+    final endIndex = (startIndex + limit > filteredList.length) ? filteredList.length : startIndex + limit;
 
-    return List.generate(count, (index) {
-      final id = startIndex + index + 1;
-      return Scenario(
-        id: 'scenario_$id',
-        title: 'シナリオ No.$id ${searchTerm != null && searchTerm.isNotEmpty ? ' (検索結果: $searchTerm)' : ''}',
-        authorName: '作者 $id',
-        minPlayerCount: (id % 4) + 3,
-        maxPlayerCount: (id % 4) + 5,
-        gmRequirement: GmRequirement.values[id % 3],
-      );
-    });
+    return filteredList.sublist(startIndex, endIndex);
   }
 
   @override

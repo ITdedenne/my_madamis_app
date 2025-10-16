@@ -37,13 +37,31 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
 
     return Column(
       children: [
-        TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'すべて'),
-            Tab(text: '通過済'),
-            Tab(text: '所持'),
-          ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: TabBar(
+                  controller: _tabController,
+                  tabs: const [
+                    Tab(text: 'すべて'),
+                    Tab(text: '通過済'),
+                    Tab(text: '所持'),
+                  ],
+                ),
+              ),
+              PopupMenuButton<SortOrder>(
+                icon: const Icon(Icons.sort),
+                tooltip: '並び替え',
+                onSelected: notifier.setSortOrder,
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: SortOrder.byTitle, child: Text('シナリオ名順')),
+                  const PopupMenuItem(value: SortOrder.byAuthor, child: Text('作者名順')),
+                ],
+              )
+            ],
+          ),
         ),
         Expanded(
           child: RefreshIndicator(
@@ -63,9 +81,9 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
       return Center(child: Text('エラーが発生しました: ${state.errorMessage}'));
     }
     
-    final filteredList = state.filteredScenarios;
+    final list = state.filteredAndSortedScenarios;
 
-    if (filteredList.isEmpty) {
+    if (list.isEmpty) {
       final message = switch (state.filter) {
         MyListFilter.all => '記録されたシナリオはありません。\n「探す」タブから追加しましょう！',
         MyListFilter.played => '「通過済」のシナリオはありません。',
@@ -81,9 +99,9 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
     }
 
     return ListView.builder(
-      itemCount: filteredList.length,
+      itemCount: list.length,
       itemBuilder: (context, index) {
-        final userScenario = filteredList[index];
+        final userScenario = list[index];
         return Card(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: ListTile(

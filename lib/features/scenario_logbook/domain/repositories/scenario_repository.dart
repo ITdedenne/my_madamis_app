@@ -1,5 +1,6 @@
 // ファイルパス: lib/features/scenario_logbook/domain/repositories/scenario_repository.dart
 
+import 'package:flutter/material.dart'; // RangeValuesのために必要
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 
@@ -7,10 +8,11 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_sc
 abstract class ScenarioRepository {
   /// 全てのシナリオをページネーションで取得する
   Future<List<Scenario>> fetchScenarios({
-    required int page, // ページ番号 (例: 1, 2, 3...)
-    int limit = 50, // 1ページあたりの件数
+    required int page,
+    int limit = 50,
     String? searchTerm,
-    // TODO: 絞り込み条件を引数に追加
+    RangeValues? playerCountRange, // 絞り込み条件
+    GmRequirement? gmRequirement,   // 絞り込み条件
   });
 
   /// ログインユーザーのマイリストを取得する

@@ -1,6 +1,8 @@
 // ファイルパス: lib/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart
 
 import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
@@ -13,6 +15,17 @@ import 'package:my_madamis_app/providers.dart';
 final getScenariosUseCaseProvider = Provider((ref) => GetScenariosUseCase(ref.watch(scenarioRepositoryProvider)));
 final updateUserScenarioStatusUseCaseProvider = Provider((ref) => UpdateUserScenarioStatusUseCase(ref.watch(scenarioRepositoryProvider)));
 
+// 絞り込み条件を保持するクラス
+class SearchFilter {
+  final RangeValues playerCountRange;
+  final GmRequirement? gmRequirement;
+
+  SearchFilter({required this.playerCountRange, this.gmRequirement});
+  
+  // 初期状態
+  factory SearchFilter.initial() => SearchFilter(playerCountRange: const RangeValues(1, 15));
+}
+
 class SearchScenariosState {
   final bool isLoading;
   final String? errorMessage;
@@ -20,7 +33,8 @@ class SearchScenariosState {
   final Map<String, UserScenarioStatus> myScenarioStatuses;
   final int currentPage;
   final int totalPages;
-  final String? successMessage; // SnackBar表示用
+  final String? successMessage;
+  final SearchFilter filter;
 
   SearchScenariosState({
     this.isLoading = false,
@@ -30,7 +44,8 @@ class SearchScenariosState {
     this.currentPage = 1,
     this.totalPages = 1,
     this.successMessage,
-  });
+    SearchFilter? filter,
+  }) : filter = filter ?? SearchFilter.initial();
 
   SearchScenariosState copyWith({
     bool? isLoading,
@@ -40,15 +55,17 @@ class SearchScenariosState {
     int? currentPage,
     int? totalPages,
     String? successMessage,
+    SearchFilter? filter,
   }) {
     return SearchScenariosState(
       isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage, // nullを許容するため ?? this.errorMessage は使わない
+      errorMessage: errorMessage,
       scenarios: scenarios ?? this.scenarios,
       myScenarioStatuses: myScenarioStatuses ?? this.myScenarioStatuses,
       currentPage: currentPage ?? this.currentPage,
       totalPages: totalPages ?? this.totalPages,
-      successMessage: successMessage, // nullを許容
+      successMessage: successMessage,
+      filter: filter ?? this.filter,
     );
   }
 }
@@ -75,7 +92,13 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   Future<void> goToPage(int page, {String? searchTerm}) async {
     state = state.copyWith(isLoading: true, currentPage: page, errorMessage: null);
     try {
-      final newScenarios = await _getScenarios(page: page, limit: _limit, searchTerm: searchTerm);
+      final newScenarios = await _getScenarios(
+        page: page,
+        limit: _limit,
+        searchTerm: searchTerm,
+        playerCountRange: state.filter.playerCountRange,
+        gmRequirement: state.filter.gmRequirement,
+      );
       state = state.copyWith(
         isLoading: false,
         scenarios: newScenarios,
@@ -93,6 +116,11 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
     });
   }
 
+  void applyFilter(SearchFilter newFilter) {
+    state = state.copyWith(filter: newFilter);
+    goToPage(1);
+  }
+
   Future<void> updateStatus(String scenarioId, UserScenarioStatus newStatus) async {
     final originalStatuses = Map<String, UserScenarioStatus>.from(state.myScenarioStatuses);
 
@@ -106,7 +134,6 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
 
     try {
       await _updateUserStatus(scenarioId, newStatus);
-      // ▼▼▼ 修正点: refreshの結果を未使用変数の `_` に代入 ▼▼▼
       final _ = _ref.refresh(myListViewModelProvider);
       state = state.copyWith(successMessage: '手帳を更新しました');
     } catch (e) {
