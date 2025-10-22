@@ -1,0 +1,201 @@
+{
+  "api": {
+    "mymadamisapp": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "UserPoolId"
+          ],
+          "category": "auth",
+          "resourceName": "mymadamisapp2c00b4e92c00b4e9"
+        }
+      ],
+      "output": {
+        "authConfig": {
+          "additionalAuthenticationProviders": [
+            {
+              "apiKeyConfig": {
+                "apiKeyExpirationDate": "2025-10-25T13:05:21.706Z",
+                "apiKeyExpirationDays": 7,
+                "description": ""
+              },
+              "authenticationType": "API_KEY"
+            }
+          ],
+          "defaultAuthentication": {
+            "authenticationType": "AMAZON_COGNITO_USER_POOLS",
+            "userPoolConfig": {
+              "userPoolId": "authmymadamisapp2c00b4e92c00b4e9"
+            }
+          }
+        }
+      },
+      "providerPlugin": "awscloudformation",
+      "service": "AppSync"
+    }
+  },
+  "auth": {
+    "mymadamisapp2c00b4e92c00b4e9": {
+      "customAuth": false,
+      "dependsOn": [
+        {
+          "attributes": [
+            "Arn",
+            "Name"
+          ],
+          "category": "function",
+          "resourceName": "mymadamisapp2c00b4e92c00b4e9PostConfirmation",
+          "triggerProvider": "Cognito"
+        }
+      ],
+      "frontendAuthConfig": {
+        "mfaConfiguration": "OFF",
+        "mfaTypes": [
+          "SMS"
+        ],
+        "passwordProtectionSettings": {
+          "passwordPolicyCharacters": [],
+          "passwordPolicyMinLength": 8
+        },
+        "signupAttributes": [
+          "EMAIL",
+          "PREFERRED_USERNAME"
+        ],
+        "socialProviders": [],
+        "usernameAttributes": [
+          "EMAIL"
+        ],
+        "verificationMechanisms": [
+          "EMAIL"
+        ]
+      },
+      "providerPlugin": "awscloudformation",
+      "service": "Cognito"
+    }
+  },
+  "custom": {
+    "s3EventBridgeRule": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "Region",
+            "LambdaExecutionRole",
+            "LambdaExecutionRoleArn"
+          ],
+          "category": "function",
+          "resourceName": "csvImporterFunction"
+        },
+        {
+          "attributes": [
+            "BucketName",
+            "Region"
+          ],
+          "category": "storage",
+          "resourceName": "myMadamisAppS3storage"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "customCDK"
+    }
+  },
+  "function": {
+    "csvImporterFunction": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput",
+            "GraphQLAPIKeyOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        },
+        {
+          "attributes": [
+            "BucketName"
+          ],
+          "category": "storage",
+          "resourceName": "myMadamisAppS3storage"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "mymadamisapp2c00b4e92c00b4e9PostConfirmation": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput",
+            "GraphQLAPIKeyOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_csvImporterFunction_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "csvImporterFunction"
+        }
+      ]
+    },
+    "AMPLIFY_function_csvImporterFunction_dummyVar1": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "csvImporterFunction"
+        }
+      ]
+    },
+    "AMPLIFY_function_csvImporterFunction_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "csvImporterFunction"
+        }
+      ]
+    },
+    "AMPLIFY_function_mymadamisapp2c00b4e92c00b4e9PostConfirmation_apiMymadamisappUsertableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisapp2c00b4e92c00b4e9PostConfirmation"
+        }
+      ]
+    },
+    "AMPLIFY_function_mymadamisapp2c00b4e92c00b4e9PostConfirmation_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisapp2c00b4e92c00b4e9PostConfirmation"
+        }
+      ]
+    },
+    "AMPLIFY_function_mymadamisapp2c00b4e92c00b4e9PostConfirmation_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisapp2c00b4e92c00b4e9PostConfirmation"
+        }
+      ]
+    }
+  },
+  "storage": {
+    "myMadamisAppS3storage": {
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "S3"
+    }
+  }
+}

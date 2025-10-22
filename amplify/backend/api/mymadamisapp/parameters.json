@@ -1,0 +1,11 @@
+{
+  "AppSyncApiName": "mymadamisapp",
+  "DynamoDBBillingMode": "PAY_PER_REQUEST",
+  "DynamoDBEnableServerSideEncryption": false,
+  "AuthCognitoUserPoolId": {
+    "Fn::GetAtt": [
+      "authmymadamisapp2c00b4e92c00b4e9",
+      "Outputs.UserPoolId"
+    ]
+  }
+}
