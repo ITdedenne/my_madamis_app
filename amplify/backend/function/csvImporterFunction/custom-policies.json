@@ -1,6 +1,32 @@
 [
+{
+    "Action": [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents"
+    ],
+    "Resource": [
+      "arn:aws:logs:${aws:region}:${aws:accountId}:log-group:/aws/lambda/csvImporterFunction-${env}:*"
+    ],
+    "Effect": "Allow"
+  },
   {
-    "Action": [],
-    "Resource": []
+    "Action": [
+      "s3:GetObject"
+    ],
+    "Resource": [
+      "arn:aws:s3:::${storagemyMadamisAppS3storageBucketName}/*"
+    ],
+    "Effect": "Allow"
+  },
+  {
+    "Action": [
+      "dynamodb:PutItem",
+      "dynamodb:BatchWriteItem"
+    ],
+    "Resource": [
+      "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/Scenario-${apimymadamisappGraphQLAPIIdOutput}-${env}",
+      "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/Author-${apimymadamisappGraphQLAPIIdOutput}-${env}"
+    ],
+    "Effect": "Allow"
   }
 ]
