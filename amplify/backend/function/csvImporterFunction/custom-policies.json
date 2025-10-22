@@ -1,11 +1,19 @@
 [
-{
+  {
     "Action": [
-      "logs:CreateLogStream",
-      "logs:PutLogEvents"
+      "logs:CreateLogStream"
     ],
     "Resource": [
       "arn:aws:logs:${aws:region}:${aws:accountId}:log-group:/aws/lambda/csvImporterFunction-${env}:*"
+    ],
+    "Effect": "Allow"
+  },
+  {
+    "Action": [
+      "logs:PutLogEvents"
+    ],
+    "Resource": [
+      "arn:aws:logs:${aws:region}:${aws:accountId}:log-group:/aws/lambda/csvImporterFunction-${env}:log-stream:*"
     ],
     "Effect": "Allow"
   },
