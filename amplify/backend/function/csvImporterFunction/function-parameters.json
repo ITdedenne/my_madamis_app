@@ -1,8 +1,8 @@
 {
   "apiMymadamisappScenarioTableName": {
-    "Ref": "apiMymadamisappScenarioTableName"
+    "Ref": "apimymadamisappScenarioTableName"
   },
   "apiMymadamisappAuthorTableName": {
-    "Ref": "apiMymadamisappAuthorTableName"
+    "Ref": "apimymadamisappAuthorTableName"
   }
 }

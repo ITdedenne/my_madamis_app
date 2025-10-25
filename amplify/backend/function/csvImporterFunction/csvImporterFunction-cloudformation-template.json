@@ -110,13 +110,13 @@
               "Ref": "storagemyMadamisAppS3storageBucketName"
             },
             "API_MYMADAMISAPP_SCENARIOTABLE_NAME": {
-              "Ref": "apiMymadamisappScenariotableName"
+              "Ref": "apimymadamisappScenarioTableName"
             },
             "DUMMY_VAR1": {
               "Ref": "dummyVar1"
             },
             "API_MYMADAMISAPP_AUTHORTABLE_NAME": {
-              "Ref": "apiMymadamisappAuthortableName"
+              "Ref": "apimymadamisappAuthorTableName"
             }
           }
         },
