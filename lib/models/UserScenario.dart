@@ -109,10 +109,10 @@ class UserScenario extends amplify_core.Model {
     buffer.write("UserScenario {");
     buffer.write("id=" + "$id" + ", ");
     buffer.write("status=" + "$_status" + ", ");
-    buffer.write("user=" + (_user != null ? _user!.toString() : "null") + ", ");
-    buffer.write("scenario=" + (_scenario != null ? _scenario!.toString() : "null") + ", ");
-    buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
-    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
+    buffer.write("user=" + (_user != null ? _user.toString() : "null") + ", ");
+    buffer.write("scenario=" + (_scenario != null ? _scenario.toString() : "null") + ", ");
+    buffer.write("createdAt=" + (_createdAt != null ? _createdAt.format() : "null") + ", ");
+    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt.format() : "null"));
     buffer.write("}");
     
     return buffer.toString();

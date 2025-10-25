@@ -138,13 +138,13 @@ class Scenario extends amplify_core.Model {
     buffer.write("Scenario {");
     buffer.write("id=" + "$id" + ", ");
     buffer.write("title=" + "$_title" + ", ");
-    buffer.write("minPlayerCount=" + (_minPlayerCount != null ? _minPlayerCount!.toString() : "null") + ", ");
-    buffer.write("maxPlayerCount=" + (_maxPlayerCount != null ? _maxPlayerCount!.toString() : "null") + ", ");
+    buffer.write("minPlayerCount=" + (_minPlayerCount != null ? _minPlayerCount.toString() : "null") + ", ");
+    buffer.write("maxPlayerCount=" + (_maxPlayerCount != null ? _maxPlayerCount.toString() : "null") + ", ");
     buffer.write("gmRequirement=" + "$_gmRequirement" + ", ");
     buffer.write("storeUrl=" + "$_storeUrl" + ", ");
-    buffer.write("author=" + (_author != null ? _author!.toString() : "null") + ", ");
-    buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
-    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
+    buffer.write("author=" + (_author != null ? _author.toString() : "null") + ", ");
+    buffer.write("createdAt=" + (_createdAt != null ? _createdAt.format() : "null") + ", ");
+    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt.format() : "null"));
     buffer.write("}");
     
     return buffer.toString();

@@ -135,8 +135,8 @@ class User extends amplify_core.Model {
     buffer.write("username=" + "$_username" + ", ");
     buffer.write("bio=" + "$_bio" + ", ");
     buffer.write("friendID=" + "$_friendID" + ", ");
-    buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
-    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
+    buffer.write("createdAt=" + (_createdAt != null ? _createdAt.format() : "null") + ", ");
+    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt.format() : "null"));
     buffer.write("}");
     
     return buffer.toString();

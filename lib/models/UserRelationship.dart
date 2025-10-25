@@ -92,10 +92,10 @@ class UserRelationship extends amplify_core.Model {
     
     buffer.write("UserRelationship {");
     buffer.write("id=" + "$id" + ", ");
-    buffer.write("followedUser=" + (_followedUser != null ? _followedUser!.toString() : "null") + ", ");
-    buffer.write("followerUser=" + (_followerUser != null ? _followerUser!.toString() : "null") + ", ");
-    buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
-    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
+    buffer.write("followedUser=" + (_followedUser != null ? _followedUser.toString() : "null") + ", ");
+    buffer.write("followerUser=" + (_followerUser != null ? _followerUser.toString() : "null") + ", ");
+    buffer.write("createdAt=" + (_createdAt != null ? _createdAt.format() : "null") + ", ");
+    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt.format() : "null"));
     buffer.write("}");
     
     return buffer.toString();
