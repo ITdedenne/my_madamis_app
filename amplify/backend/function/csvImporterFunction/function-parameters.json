@@ -3,10 +3,10 @@
     "Description": "...",
     "Tags": []
   },
-  "scenarioTableName": {
-    "Ref": "apiMymadamisappScenarioTableName"
+  "apiMymadamisappScenariotableName": {
+    "Ref": "apiMymadamisappScenariotableName"
   },
-  "authorTableName": {
-    "Ref": "apiMymadamisappAuthorTableName"
+  "apiMymadamisappAuthortableName": {
+    "Ref": "apiMymadamisappAuthortableName"
   }
 }
