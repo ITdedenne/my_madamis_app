@@ -65,10 +65,16 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       // ページネーションを考慮
       final offset = (page - 1) * limit;
 
+      // ★ 修正点（クエリ変数の構築方法をより安全に変更）
+      final Map<String, dynamic> queryVariables = {
+        'limit': limit,
+        'nextToken': page > 1 ? _calculateNextToken(offset) : null,
+      };
+      if (filter.isNotEmpty) {
+        queryVariables['filter'] = filter;
+      }
+
       // GraphQLリクエストの作成
-      // ▼▼▼ エラー修正 ▼▼▼
-      // 'amplify_models.PaginatedResult' -> 'PaginatedResult'
-      // 'amplify_models.PaginatedModelType' -> 'PaginatedModelType'
       final request = GraphQLRequest<PaginatedResult<amplify_models.Scenario>>(
         document: '''
           query ListScenarios(\$filter: ModelScenarioFilterInput, \$limit: Int, \$nextToken: String) {
@@ -90,14 +96,11 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           }
         ''',
         modelType: const PaginatedModelType(amplify_models.Scenario.classType),
-        // ▲▲▲ エラー修正 ▲▲▲
-        variables: {
-          'filter': filter.isNotEmpty ? filter : null,
-          'limit': limit,
-          'nextToken': page > 1 ? _calculateNextToken(offset) : null, // 仮のnextToken計算
-        },
+        variables: queryVariables, // ★ 修正点
         // decodePathを指定
         decodePath: 'listScenarios', 
+        // ★★★ 修正点: 認証エラー回避のためAPIキーを指定 ★★★
+        authorizationMode: APIAuthorizationType.apiKey,
       );
 
       safePrint('Executing GraphQL Query with variables: ${request.variables}');
@@ -173,15 +176,13 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
          }
        ''';
 
-      // ▼▼▼ エラー修正 ▼▼▼
-      // 'amplify_models.PaginatedResult' -> 'PaginatedResult'
-      // 'amplify_models.PaginatedModelType' -> 'PaginatedModelType'
       final request = GraphQLRequest<PaginatedResult<amplify_models.Author>>(
          document: graphQLDocument,
          modelType: const PaginatedModelType(amplify_models.Author.classType),
-         // ▲▲▲ エラー修正 ▲▲▲
          variables: {'limit': 1000}, // 仮に1000件まで取得
          decodePath: 'listAuthors',
+         // ★★★ 修正点: 認証エラー回避のためAPIキーを指定 ★★★
+         authorizationMode: APIAuthorizationType.apiKey,
       );
 
        final response = await Amplify.API.query(request: request).response;
