@@ -1,12 +1,22 @@
 {
-  "CloudFormationStackOptions": {
-    "Description": "...",
-    "Tags": []
+  "permissions": {
+    "api": {
+      "mymadamisapp": [
+        "Query",
+        "Mutation"
+      ]
+    },
+    "storage": {
+      "myMadamisAppS3storage": [
+        "read"
+      ]
+    }
   },
-  "apiMymadamisappScenariotableName": {
-    "Ref": "apiMymadamisappScenariotableName"
-  },
-  "apiMymadamisappAuthortableName": {
-    "Ref": "apiMymadamisappAuthortableName"
-  }
+  "lambdaLayers": [],
+  "environmentVariableList": [
+    {
+      "cloudFormationParameterName": "dummyVar1",
+      "environmentVariableName": "DUMMY_VAR1"
+    }
+  ]
 }

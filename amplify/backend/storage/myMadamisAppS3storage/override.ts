@@ -1,23 +1,19 @@
-// amplify/backend/storage/myMadamisAppS3storage/override.ts
 import { AmplifyS3ResourceTemplate } from '@aws-amplify/cli-extensibility-helper';
+// import { CfnBucket } from 'aws-cdk-lib/aws-s3'; // ★★★ CfnBucketのimportを削除します
 
 /**
  * @see https://docs.amplify.aws/cli/storage/override/
  */
 export function override(resources: AmplifyS3ResourceTemplate) {
-  // S3バケットリソース (L1 Cfn Construct) に直接プロパティを追加
-  // S3コンソールで「イベント通知」->「EventBridgeへ送信」を有効にするのと同じ設定
+  
+  // ★★★ 'as CfnBucket' の型キャストを削除します
+  // const s3Bucket = resources.s3Bucket as CfnBucket; 
+  
+  // resources.s3Bucket オブジェクトに直接プロパティを追加します
   resources.s3Bucket.addPropertyOverride('NotificationConfiguration', {
     EventBridgeConfiguration: {
-      EventBridgeEnabled: true, // これを true に設定
+      EventBridgeEnabled: true,
     },
   });
 
-  // 必要であれば他の S3 設定の override もここに追加できます
-  // 例: バケットポリシー、ライフサイクルルールなど
-  // resources.addCfnParameter(...);
-  // resources.addCfnOutput(...);
-  // resources.addCfnMapping(...);
-  // resources.addCfnCondition(...);
-  // resources.addCfnResource(...);
 }

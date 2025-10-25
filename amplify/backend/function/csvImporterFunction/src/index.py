@@ -1,4 +1,4 @@
-# amplify/backend/function/csvImporterFunction/src/index.py
+# /amplify/backend/function/csvImporterFunction/src/index.py
 
 import json
 import boto3
@@ -11,53 +11,45 @@ from datetime import datetime, timezone
 
 # --- Logger Setup ---
 logger = logging.getLogger()
-# ログレベルをINFOに設定 (デバッグ時はDEBUGに変更可能)
-logger.setLevel(os.environ.get('LOG_LEVEL', 'INFO').upper())
-
+logger.setLevel(logging.INFO)
 
 # --- AWS Client Initialization ---
 s3 = boto3.client('s3')
 dynamodb = boto3.resource('dynamodb')
 
 # --- Environment Variable Acquisition ---
-# backend-config.json で指定した Function の dependsOn から自動的に設定される
-# 環境変数名を確認するには amplify status -v を実行
-SCENARIO_TABLE_NAME = os.environ.get('API_MYMADAMISAPP_SCENARIOTABLE_NAME')
-AUTHOR_TABLE_NAME = os.environ.get('API_MYMADAMISAPP_AUTHORTABLE_NAME')
+API_NAME_UPPER = "MYMADAMISAPP" # ★もし 'amplify add api' で違う名前を付けたら、ここを修正
+
+#SCENARIO_TABLE_NAMEもAUTHOR_TABLE_NAMEも本当は直値ではなく、今コメントアウトしているように本当は変数で指定したい。
+#じゃないとIaCに反する上に、本番用にCloudFourmationを起動したときに直値で指定しないといけないため
+#SCENARIO_TABLE_NAME = os.environ.get(f'API_{API_NAME_UPPER}_SCENARIOTABLENAME')
+SCENARIO_TABLE_NAME = "Scenario-shn3ctad5ractaju4rvlsyxvge-dev"
+#AUTHOR_TABLE_NAME = os.environ.get(f'API_{API_NAME_UPPER}_AUTHORTABLENAME')
+AUTHOR_TABLE_NAME = "Author-shn3ctad5ractaju4rvlsyxvge-dev"
 
 if not SCENARIO_TABLE_NAME:
-    logger.error("Environment variable 'API_MYMADAMISAPP_SCENARIOTABLE_NAME' not found.")
-    # 必要に応じて raise ValueError(...) などでエラー終了させることも検討
+    logger.error(f"Environment variable 'API_{API_NAME_UPPER}_SCENARIOTABLENAME' not found.")
 if not AUTHOR_TABLE_NAME:
-    logger.error("Environment variable 'API_MYMADAMISAPP_AUTHORTABLE_NAME' not found.")
-    # 必要に応じて raise ValueError(...) などでエラー終了させることも検討
+    logger.error(f"Environment variable 'API_{API_NAME_UPPER}_AUTHORTABLENAME' not found.")
+# ------------------------------------
 
 def lambda_handler(event, context):
-    """
-    EventBridgeからS3のObject Createdイベントを受け取り、
-    CSVファイルを解析して適切なDynamoDBテーブルに書き込むLambda関数
-    """
-    logger.info(f"Received event: {json.dumps(event)}") # Log the received event
+    logger.info(f"Received event: {json.dumps(event)}")
 
     # 1. Get bucket and key from the EventBridge event (S3 Direct Notification)
     try:
-        # EventBridgeからのS3イベントの構造に合わせて取得
+        # ★★★ ここが修正箇所です ★★★
+        # S3ダイレクト通知イベント (detail-type: "Object Created") の構造に合わせます
         bucket = event['detail']['bucket']['name']
-        # オブジェクトキーはURLエンコードされている可能性があるためデコード
         key_raw = event['detail']['object']['key']
         key = urllib.parse.unquote_plus(key_raw)
-
+        # ---------------------
+        
         file_name = os.path.basename(key)
-        logger.info(f"Processing file: s3://{bucket}/{key}")
+        logger.info(f"Processing file: {file_name} from bucket: {bucket}")
     except KeyError as e:
-        logger.error(f"Failed to parse EventBridge S3 event structure: Missing key {e}")
-        logger.debug(f"Event detail: {event.get('detail', 'Not Found')}")
-        # 不正なイベント構造の場合、処理を中断
-        return {'statusCode': 400, 'body': json.dumps(f'Invalid EventBridge S3 event structure: Missing key {e}')}
-    except Exception as e:
-        logger.error(f"Unexpected error parsing event: {e}", exc_info=True)
-        return {'statusCode': 500, 'body': json.dumps(f'Unexpected error parsing event: {str(e)}')}
-
+        logger.error(f"Failed to parse S3 direct event structure: {e}")
+        return {'statusCode': 400, 'body': json.dumps('Failed to parse S3 direct event')}
 
     try:
         # 2. Get and parse the CSV file from S3
@@ -70,154 +62,146 @@ def lambda_handler(event, context):
         try:
             # ヘッダー行を取得し、不要な空白を除去
             header_raw = next(reader)
-            # ★ ヘッダー名をそのままDynamoDBのAttribute名として使用することを想定
             header = [h.strip() for h in header_raw if h.strip()]
-            if not header:
-                logger.warning("CSV header is empty or contains only whitespace.")
-                return {'statusCode': 400, 'body': json.dumps('CSV header is empty or invalid.')}
             logger.info(f"CSV Header: {header}")
         except StopIteration:
-            logger.warning("CSV file is empty (only header or completely empty).")
+            logger.warning("CSV file is empty.")
             return {'statusCode': 200, 'body': json.dumps('CSV file is empty')}
 
         # DynamoDB用のタイムスタンプ (ISO 8601形式, UTC, ミリ秒まで)
         now_iso = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
-        # DataStore用のUnixタイムスタンプ (秒)
-        now_unix_sec = int(datetime.now(timezone.utc).timestamp())
 
 
-        # 3. Determine target table based on filename and schema
+        # 3. Determine target table and process rows
         items_to_write = []
-        target_table = None
+        target_table_name = None
         target_typename = None
         processed_count = 0
-        skipped_count = 0
-        required_fields = []
 
-        # --- ファイル名に基づいて処理を分岐 ---
-        if 'Scenario' in file_name: # ファイル名に "Scenario" が含まれる場合
-            if not SCENARIO_TABLE_NAME:
-                 logger.error("Scenario table name is not configured. Cannot proceed.")
-                 return {'statusCode': 500, 'body': json.dumps('Configuration error: Scenario table name missing.')}
-            target_table = dynamodb.Table(SCENARIO_TABLE_NAME)
-            target_typename = 'Scenario' # GraphQLスキーマの型名
-            # ★ シナリオテーブルに必要な必須フィールド名をリストアップ (GraphQLスキーマに基づく)
-            required_fields = ['id', 'title', 'authorId']
-            logger.info(f"Target table: {SCENARIO_TABLE_NAME} ({target_typename})")
+        # --- Scenarios CSVの処理 ---
+        if 'Scenarios' in file_name:
+            target_table_name = SCENARIO_TABLE_NAME
+            target_typename = 'Scenario'
+            logger.info(f"Target table: {target_table_name}")
 
-        elif 'Author' in file_name: # ファイル名に "Author" が含まれる場合
-            if not AUTHOR_TABLE_NAME:
-                 logger.error("Author table name is not configured. Cannot proceed.")
-                 return {'statusCode': 500, 'body': json.dumps('Configuration error: Author table name missing.')}
-            target_table = dynamodb.Table(AUTHOR_TABLE_NAME)
-            target_typename = 'Author' # GraphQLスキーマの型名
-            # ★ 著者テーブルに必要な必須フィールド名をリストアップ (GraphQLスキーマに基づく)
-            required_fields = ['id', 'authorName']
-            logger.info(f"Target table: {AUTHOR_TABLE_NAME} ({target_typename})")
+            try:
+                # ヘッダー名から列のインデックス（位置）を取得
+                col_indices = {
+                    'id': header.index('scenarioId'),
+                    'title': header.index('title'),
+                    'minPlayerCount': header.index('minPlayerCount'),
+                    'maxPlayerCount': header.index('maxPlayerCount'),
+                    'gmRequirement': header.index('gmRequirement'),
+                    'authorId': header.index('authorId'),
+                    'storeUrl': header.index('storeUrl')
+                }
+            except ValueError as e:
+                logger.error(f"Scenarios CSV Header mismatch: {e}")
+                return {'statusCode': 400, 'body': json.dumps(f"Scenarios CSV Header mismatch: {e}")}
 
+            for i, row in enumerate(reader):
+                row_num = i + 2 # ヘッダーが1行目、データは2行目から
+                # 行の列数が不足している場合はスキップ
+                if len(row) <= max(col_indices.values()):
+                    logger.warning(f"Skipping malformed row {row_num}: {row}")
+                    continue
+
+                try:
+                    # 必須項目を取得
+                    scenario_id = row[col_indices['id']].strip()
+                    title = row[col_indices['title']].strip()
+                    author_id = row[col_indices['authorId']].strip()
+                    
+                    # 必須項目が空欄の行はスキップ
+                    if not all([scenario_id, title, author_id]):
+                        logger.warning(f"Skipping row {row_num} due to empty required fields: {row}")
+                        continue
+
+                    # DynamoDB Itemを作成
+                    item = {
+                        'id': scenario_id,
+                        'title': title,
+                        'minPlayerCount': int(row[col_indices['minPlayerCount']].strip()) if row[col_indices['minPlayerCount']].strip().isdigit() else None,
+                        'maxPlayerCount': int(row[col_indices['maxPlayerCount']].strip()) if row[col_indices['maxPlayerCount']].strip().isdigit() else None,
+                        'gmRequirement': row[col_indices['gmRequirement']].strip(),
+                        'authorId': author_id,
+                        'storeUrl': row[col_indices['storeUrl']].strip(),
+                        '__typename': target_typename,
+                        'createdAt': now_iso,
+                        'updatedAt': now_iso,
+                    }
+                    items_to_write.append(item)
+                    processed_count += 1
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Skipping row {row_num} due to data error: {e}. Row: {row}")
+
+        # --- Authors CSVの処理 ---
+        elif 'Authors' in file_name:
+            target_table_name = AUTHOR_TABLE_NAME
+            target_typename = 'Author'
+            logger.info(f"Target table: {target_table_name}")
+
+            try:
+                # ヘッダー名から列のインデックス（位置）を取得
+                col_indices = { 'id': header.index('authorId'), 'authorName': header.index('authorName') }
+            except ValueError as e:
+                logger.error(f"Authors CSV Header mismatch: {e}")
+                return {'statusCode': 400, 'body': json.dumps(f"Authors CSV Header mismatch: {e}")}
+
+            for i, row in enumerate(reader):
+                row_num = i + 2
+                if len(row) <= max(col_indices.values()):
+                    logger.warning(f"Skipping malformed row {row_num}: {row}")
+                    continue
+
+                try:
+                    author_id = row[col_indices['id']].strip()
+                    if not author_id:
+                        logger.warning(f"Skipping row {row_num} due to empty authorId: {row}")
+                        continue
+
+                    # DynamoDB Itemを作成
+                    item = {
+                        'id': author_id,
+                        'authorName': row[col_indices['authorName']].strip(),
+                        '__typename': target_typename,
+                        'createdAt': now_iso,
+                        'updatedAt': now_iso,
+                    }
+                    items_to_write.append(item)
+                    processed_count += 1
+                except (ValueError, IndexError) as e:
+                    logger.warning(f"Skipping row {row_num} due to data error: {e}. Row: {row}")
+        
         else:
-            logger.warning(f"Filename '{file_name}' does not contain 'Scenario' or 'Author'. Skipping.")
-            return {'statusCode': 200, 'body': json.dumps('File skipped based on filename.')}
-
-        # --- ヘッダーチェック ---
-        missing_headers = [rf for rf in required_fields if rf not in header]
-        if missing_headers:
-            logger.error(f"CSV header is missing required columns for {target_typename}: {', '.join(missing_headers)}")
-            return {'statusCode': 400, 'body': json.dumps(f"CSV header missing required columns: {', '.join(missing_headers)}")}
-
-        # --- 行データの処理 ---
-        for i, row in enumerate(reader):
-            row_num = i + 2 # ヘッダーが1行目、データは2行目から
-            # 空行をスキップ
-            if not any(row):
-                 logger.debug(f"Skipping empty row {row_num}")
-                 skipped_count += 1
-                 continue
-
-            # 列数がヘッダーと合わない行はスキップ
-            if len(row) != len(header):
-                logger.warning(f"Skipping row {row_num} due to incorrect column count ({len(row)} expected {len(header)}). Row: {row}")
-                skipped_count += 1
-                continue
-
-            item = {}
-            has_error = False
-            missing_required = []
-
-            # ヘッダーに基づいて item を作成
-            for idx, col_name in enumerate(header):
-                value = row[idx].strip()
-
-                # 必須フィールドが空かチェック
-                if col_name in required_fields and not value:
-                    missing_required.append(col_name)
-
-                # 型変換 (例: 数値型への変換) - 必要に応じて追加・修正
-                if target_typename == 'Scenario' and col_name in ['minPlayerCount', 'maxPlayerCount']:
-                    if value.isdigit():
-                        item[col_name] = int(value)
-                    elif value: # 空文字でなく、数字でもない場合
-                        logger.warning(f"Row {row_num}: Invalid integer value for {col_name}: '{value}'. Setting to null.")
-                        item[col_name] = None
-                    else: # 空文字の場合
-                         item[col_name] = None # 数値項目が空ならnull
-                else:
-                    # 文字列はそのまま、空文字は空文字として登録（または None にしたい場合は if value else None）
-                    item[col_name] = value
-
-            # 必須フィールドが欠けている場合はスキップ
-            if missing_required:
-                 logger.warning(f"Skipping row {row_num} due to missing required values for: {', '.join(missing_required)}. Row: {row}")
-                 skipped_count += 1
-                 continue
-
-            # Amplify @model 関連フィールドを追加
-            item['__typename'] = target_typename
-            item['createdAt'] = now_iso
-            item['updatedAt'] = now_iso
-            # DataStore連携用フィールド (GraphQLスキーマに合わせて自動生成される)
-            item['_version'] = 1
-            item['_lastChangedAt'] = now_unix_sec
-            item['_deleted'] = None # または False (スキーマ定義による)
-
-            items_to_write.append(item)
-            processed_count += 1
-
+            logger.warning(f"Filename '{file_name}' does not match 'Scenarios' or 'Authors'. Skipping.")
+            return {'statusCode': 200, 'body': json.dumps('File skipped.')}
 
         # 4. Batch write items to DynamoDB
-        written_count = 0
         if items_to_write:
+            if not target_table_name:
+                logger.error("Target table name could not be determined. Check Lambda environment variables.")
+                return {'statusCode': 500, 'body': json.dumps('Internal server error')}
+
+            table = dynamodb.Table(target_table_name)
+            written_count = 0
+            
+            # 25件ずつのバッチに分割 (batch_writerが自動で処理)
             try:
-                # DynamoDBのbatch_writerは25件ごとの書き込みを自動で処理
-                with target_table.batch_writer() as batch:
+                with table.batch_writer() as batch:
                     for item in items_to_write:
-                        logger.debug(f"Putting item: {json.dumps(item)}")
                         batch.put_item(Item=item)
-                written_count = len(items_to_write)
-                logger.info(f"Successfully wrote {written_count} items to {target_table.name}.")
-
+                    written_count = len(items_to_write) # batch_writerは自動で全件処理
+                logger.info(f"Wrote batch of {written_count} items successfully.")
             except Exception as e:
-                # バッチ書き込み中にエラーが発生した場合
-                logger.error(f"Error during batch write operation to {target_table.name}: {e}", exc_info=True)
-                # エラーが発生した場合、部分的に成功している可能性もある
-                # ここでは処理全体を失敗として扱うが、より詳細なエラーハンドリングも可能
-                # (例: unprocessed_items の処理など)
-                # raise e # エラーを再スローしてLambda実行を失敗させることも可能
+                logger.error(f"Error during batch write operation: {e}")
 
+            logger.info(f"Attempted to write {written_count} of {processed_count} processed rows to {target_table_name}.")
         else:
             logger.info("No valid items found in CSV to write.")
 
-        summary = f"Processing complete for {file_name}. Processed: {processed_count}, Skipped: {skipped_count}, Written: {written_count}."
-        logger.info(summary)
-        return {'statusCode': 200, 'body': json.dumps(summary)}
+        return {'statusCode': 200, 'body': json.dumps('Processing complete.')}
 
-    except boto3.exceptions.Boto3Error as e:
-        logger.error(f"AWS API Error accessing S3 or DynamoDB: {e}", exc_info=True)
-        return {'statusCode': 500, 'body': json.dumps(f'AWS API Error: {str(e)}')}
-    except UnicodeDecodeError as e:
-        logger.error(f"Error decoding file {key} as UTF-8 (with BOM): {e}. Ensure file encoding is correct.", exc_info=True)
-        return {'statusCode': 400, 'body': json.dumps(f'File encoding error: {str(e)}')}
     except Exception as e:
         logger.error(f"Unhandled error processing file {key}: {e}", exc_info=True)
-        # 予期せぬエラーの詳細をCloudWatch Logsに出力
-        return {'statusCode': 500, 'body': json.dumps(f'Unhandled internal server error.')}
+        return {'statusCode': 500, 'body': json.dumps(f'Unhandled error: {str(e)}')}
