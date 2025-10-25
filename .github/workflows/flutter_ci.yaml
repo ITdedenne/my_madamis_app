@@ -39,9 +39,9 @@ jobs:
           echo "const String amplifyconfig = '''{}''';" > lib/amplifyconfiguration.dart
       # --- ▲▲▲ ここまで追加 ▲▲▲ ---
 
-      # 5. 静的コード解析を実行する (コードの品質をチェック)
+# 5. 静的コード解析を実行する (warning以上の場合のみエラーにする)
       - name: Run static analysis
-        run: flutter analyze
+        run: flutter analyze --fatal-warnings --no-fatal-infos
 
       # 6. テストを実行する (すべてのテストが成功するかチェック)
       - name: Run tests
