@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "api": {
+      "mymadamisapp": [
+        "Query",
+        "Mutation"
+      ]
+    },
+    "storage": {
+      "myMadamisAppS3storage": [
+        "read"
+      ]
+    }
+  },
+  "lambdaLayers": [],
+  "environmentVariableList": [
+    {
+      "cloudFormationParameterName": "dummyVar1",
+      "environmentVariableName": "DUMMY_VAR1"
+    }
+  ]
+}

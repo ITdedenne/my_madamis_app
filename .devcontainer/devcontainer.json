@@ -11,7 +11,7 @@
     "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
   },
   // コンテナ起動後に各種セットアップを実行
-  "postCreateCommand": "npm install -g @aws-amplify/cli && sudo chown -R vscode /workspaces/flutter && flutter doctor && flutter config --enable-web",
+  "postCreateCommand": "npm install -g @aws-amplify/cli && sudo chown -R vscode /workspaces/flutter && flutter doctor && flutter config --enable-web && sudo apt-get update && sudo apt-get install -y python3-pip python3-venv && pip3 install --user pipenv",
   
   // VS Codeの拡張機能と設定
   "customizations": {
