@@ -1,0 +1,48 @@
+# ワークフローの名前
+name: Flutter CI
+
+# ワークフローが実行されるタイミングを定義
+on:
+  # 'dev'ブランチに対するプルリクエストが作成または更新された時
+  pull_request:
+    branches: [ dev ]
+
+# 実行される一連のタスク（ジョブ）を定義
+jobs:
+  # ジョブの名前（buildという名前にしています）
+  build:
+    # ジョブを実行するOS環境
+    runs-on: ubuntu-latest
+
+    # ジョブのステップ（実行されるコマンド）
+    steps:
+      # 1. リポジトリのコードをチェックアウトする
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Flutterの実行環境をセットアップする
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.2'
+          channel: 'stable'
+          cache: true
+
+      # 3. プロジェクトの依存関係をインストールする
+      - name: Install dependencies
+        run: flutter pub get
+      
+      # --- ▼▼▼ ここから追加 ▼▼▼ ---
+      # 4. (CI/CD用) ダミーのAmplify設定ファイルを作成する
+      - name: Create dummy amplifyconfiguration.dart for analysis
+        run: |
+          echo "const String amplifyconfig = '''{}''';" > lib/amplifyconfiguration.dart
+      # --- ▲▲▲ ここまで追加 ▲▲▲ ---
+
+      # 5. 静的コード解析を実行する (コードの品質をチェック)
+      - name: Run static analysis
+        run: flutter analyze
+
+      # 6. テストを実行する (すべてのテストが成功するかチェック)
+      - name: Run tests
+        run: flutter test
