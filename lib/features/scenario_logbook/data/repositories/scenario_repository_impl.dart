@@ -66,7 +66,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       final offset = (page - 1) * limit;
 
       // GraphQLリクエストの作成
-      final request = GraphQLRequest<amplify_models.PaginatedResult<amplify_models.Scenario>>(
+      // ▼▼▼ エラー修正 ▼▼▼
+      // 'amplify_models.PaginatedResult' -> 'PaginatedResult'
+      // 'amplify_models.PaginatedModelType' -> 'PaginatedModelType'
+      final request = GraphQLRequest<PaginatedResult<amplify_models.Scenario>>(
         document: '''
           query ListScenarios(\$filter: ModelScenarioFilterInput, \$limit: Int, \$nextToken: String) {
             listScenarios(filter: \$filter, limit: \$limit, nextToken: \$nextToken) {
@@ -86,7 +89,8 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
             }
           }
         ''',
-        modelType: const amplify_models.PaginatedModelType(amplify_models.Scenario.classType),
+        modelType: const PaginatedModelType(amplify_models.Scenario.classType),
+        // ▲▲▲ エラー修正 ▲▲▲
         variables: {
           'filter': filter.isNotEmpty ? filter : null,
           'limit': limit,
@@ -169,9 +173,13 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
          }
        ''';
 
-      final request = GraphQLRequest<amplify_models.PaginatedResult<amplify_models.Author>>(
+      // ▼▼▼ エラー修正 ▼▼▼
+      // 'amplify_models.PaginatedResult' -> 'PaginatedResult'
+      // 'amplify_models.PaginatedModelType' -> 'PaginatedModelType'
+      final request = GraphQLRequest<PaginatedResult<amplify_models.Author>>(
          document: graphQLDocument,
-         modelType: const amplify_models.PaginatedModelType(amplify_models.Author.classType),
+         modelType: const PaginatedModelType(amplify_models.Author.classType),
+         // ▲▲▲ エラー修正 ▲▲▲
          variables: {'limit': 1000}, // 仮に1000件まで取得
          decodePath: 'listAuthors',
       );
