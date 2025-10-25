@@ -1,8 +1,12 @@
 {
-  "apiMymadamisappScenarioTableName": {
-    "Ref": "apimymadamisappScenarioTableName"
+  "CloudFormationStackOptions": {
+    "Description": "...",
+    "Tags": []
   },
-  "apiMymadamisappAuthorTableName": {
-    "Ref": "apimymadamisappAuthorTableName"
+  "scenarioTableName": {
+    "Ref": "apiMymadamisappScenarioTableName"
+  },
+  "authorTableName": {
+    "Ref": "apiMymadamisappAuthorTableName"
   }
 }
