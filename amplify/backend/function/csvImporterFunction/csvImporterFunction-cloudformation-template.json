@@ -32,7 +32,13 @@
       "Type": "String",
       "Default": "storagemyMadamisAppS3storageBucketName"
     },
+    "apiMymadamisappScenariotableName": {
+      "Type": "String"
+    },
     "dummyVar1": {
+      "Type": "String"
+    },
+    "apiMymadamisappAuthortableName": {
       "Type": "String"
     }
   },
@@ -101,8 +107,14 @@
             "STORAGE_MYMADAMISAPPS3STORAGE_BUCKETNAME": {
               "Ref": "storagemyMadamisAppS3storageBucketName"
             },
+            "API_MYMADAMISAPP_SCENARIOTABLE_NAME": {
+              "Ref": "apiMymadamisappScenariotableName"
+            },
             "DUMMY_VAR1": {
               "Ref": "dummyVar1"
+            },
+            "API_MYMADAMISAPP_AUTHORTABLE_NAME": {
+              "Ref": "apiMymadamisappAuthortableName"
             }
           }
         },

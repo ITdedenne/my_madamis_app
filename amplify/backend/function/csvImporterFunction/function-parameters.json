@@ -15,8 +15,16 @@
   "lambdaLayers": [],
   "environmentVariableList": [
     {
+      "cloudFormationParameterName": "apiMymadamisappScenariotableName",
+      "environmentVariableName": "API_MYMADAMISAPP_SCENARIOTABLE_NAME"
+    },
+    {
       "cloudFormationParameterName": "dummyVar1",
       "environmentVariableName": "DUMMY_VAR1"
+    },
+    {
+      "cloudFormationParameterName": "apiMymadamisappAuthortableName",
+      "environmentVariableName": "API_MYMADAMISAPP_AUTHORTABLE_NAME"
     }
   ]
 }
