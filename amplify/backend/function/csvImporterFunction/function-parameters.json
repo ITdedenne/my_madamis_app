@@ -17,14 +17,6 @@
     {
       "cloudFormationParameterName": "dummyVar1",
       "environmentVariableName": "DUMMY_VAR1"
-    },
-    {
-      "cloudFormationParameterName": "scenarioTableName",
-      "environmentVariableName": "SCENARIO_TABLE_NAME"
-    },
-    {
-      "cloudFormationParameterName": "authorTableName",
-      "environmentVariableName": "AUTHOR_TABLE_NAME"
     }
   ]
 }

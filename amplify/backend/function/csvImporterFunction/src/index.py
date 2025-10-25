@@ -22,12 +22,10 @@ API_NAME_UPPER = "MYMADAMISAPP" # ★もし 'amplify add api' で違う名前を
 
 #SCENARIO_TABLE_NAMEもAUTHOR_TABLE_NAMEも本当は直値ではなく、今コメントアウトしているように本当は変数で指定したい。
 #じゃないとIaCに反する上に、本番用にCloudFourmationを起動したときに直値で指定しないといけないため
-SCENARIO_TABLE_NAME = os.environ.get(f'API_MYMADAMISAPP_SCENARIOTABLENAME')
 #SCENARIO_TABLE_NAME = os.environ.get(f'API_{API_NAME_UPPER}_SCENARIOTABLENAME')
-#SCENARIO_TABLE_NAME = "Scenario-shn3ctad5ractaju4rvlsyxvge-dev"
-AUTHOR_TABLE_NAME = os.environ.get(f'API_MYMADAMISAPP_AUTHORTABLENAME')
+SCENARIO_TABLE_NAME = "Scenario-shn3ctad5ractaju4rvlsyxvge-dev"
 #AUTHOR_TABLE_NAME = os.environ.get(f'API_{API_NAME_UPPER}_AUTHORTABLENAME')
-#AUTHOR_TABLE_NAME = "Author-shn3ctad5ractaju4rvlsyxvge-dev"
+AUTHOR_TABLE_NAME = "Author-shn3ctad5ractaju4rvlsyxvge-dev"
 
 if not SCENARIO_TABLE_NAME:
     logger.error(f"Environment variable 'API_{API_NAME_UPPER}_SCENARIOTABLENAME' not found.")

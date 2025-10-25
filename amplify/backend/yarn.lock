@@ -97,9 +97,9 @@
     graphql "^15.5.0"
 
 "@aws-cdk/asset-awscli-v1@^2.2.229":
-  version "2.2.256"
-  resolved "https://registry.yarnpkg.com/@aws-cdk/asset-awscli-v1/-/asset-awscli-v1-2.2.256.tgz#bd36300a45ffa34e96ac4a620f98ab074c779640"
-  integrity sha512-6BK41NOd12mGReSN6ooZZxnZcuSqL/Dc9E8htZDJnq/gaAaebxi09DFbLe6Q6Lo2aY4wySXeBrlquoDINxVGwQ==
+  version "2.2.257"
+  resolved "https://registry.yarnpkg.com/@aws-cdk/asset-awscli-v1/-/asset-awscli-v1-2.2.257.tgz#2c5bd5d3eba3463c6b4be6f40d96e45ab4d12ef5"
+  integrity sha512-8F3CfFWbaN1kgMpzCvqpLO948lEOvD5t++AGUnPNjNLPTkbdi1v8gY85HvrkXHvKkKjHrlo8u+twGmQb6le4FA==
 
 "@aws-cdk/asset-node-proxy-agent-v6@^2.1.0":
   version "2.1.0"

@@ -34,12 +34,6 @@
     },
     "dummyVar1": {
       "Type": "String"
-    },
-    "scenarioTableName": {
-      "Type": "String"
-    },
-    "authorTableName": {
-      "Type": "String"
     }
   },
   "Conditions": {
@@ -109,12 +103,6 @@
             },
             "DUMMY_VAR1": {
               "Ref": "dummyVar1"
-            },
-            "SCENARIO_TABLE_NAME": {
-              "Ref": "scenarioTableName"
-            },
-            "AUTHOR_TABLE_NAME": {
-              "Ref": "authorTableName"
             }
           }
         },
