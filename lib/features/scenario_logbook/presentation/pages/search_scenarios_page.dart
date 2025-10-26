@@ -8,6 +8,8 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
 
+import '../../../../providers.dart';
+
 class SearchScenariosPage extends ConsumerStatefulWidget {
   const SearchScenariosPage({super.key});
 
@@ -159,7 +161,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
           onStatusChanged: (newStatus) {
             // ステータス更新は一元管理されたNotifierに依頼
-            ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
+            ref.read(updateUserScenarioStatusUseCaseProvider)(scenario.id, newStatus);
             ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
           },
         );
