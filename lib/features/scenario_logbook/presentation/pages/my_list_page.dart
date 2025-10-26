@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart'; // MyListViewModel自体は必要
-import 'package:my_madamis_app/providers.dart' hide allScenariosProvider; // ★修正: providers.dartから全てのProviderを参照する
+import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
+import 'package:my_madamis_app/providers.dart' hide allScenariosProvider; // Providerを参照するために必要
 
 class MyListPage extends ConsumerStatefulWidget {
   const MyListPage({super.key});
@@ -70,7 +70,7 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
               ref.invalidate(myListFutureProvider); 
               ref.invalidate(initialStatusMapProvider); 
               
-              // データの再取得が完了するのを待つ 
+              // データの再取得が完了するのを待つ (UIがリロードするまで待機)
               await ref.read(myListFutureProvider.future);
             },
             child: _buildBody(context),
@@ -87,12 +87,15 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
     if (allScenariosAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
+    // ★修正: エラー時の処理を安全にする (errorがnullでないことを確認)
     if (allScenariosAsync.hasError) {
-      return Center(child: Text('エラーが発生しました: ${allScenariosAsync.error}'));
+      final error = allScenariosAsync.error;
+      return Center(child: Text('エラーが発生しました: ${error.toString()}'));
     }
     
     // データがロードされた後、ViewModelでフィルタリング・ソートされた結果を監視
     final pageState = ref.watch(myListPageStateProvider);
+    // filteredAndSortedMyListProvider は Map<String, List<UserScenario>> を返すと想定
     final groupedScenarios = ref.watch(filteredAndSortedMyListProvider);
 
 
@@ -129,7 +132,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
-            // ★Unnecessary use of 'toList' in a spread. を解消
             ...scenariosInGroup.map((userScenario) {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -149,7 +151,7 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                   ),
                 ),
               );
-            }), // .toList() を削除
+            }),
           ],
         );
       },

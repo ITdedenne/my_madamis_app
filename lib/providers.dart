@@ -15,8 +15,6 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/update_
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:my_madamis_app/features/settings/domain/repositories/settings_repository.dart'; 
-// ★MyListViewModelの依存関係は不要なため削除（Unused import）
-// import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart'; 
 
 // --- Repository Providers (既存) ---
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -40,8 +38,8 @@ final scenarioRepositoryProvider = Provider<ScenarioRepository>((ref) {
 // 1. GetMyListUseCase (同期的なロジックのみを保持するUseCase)
 final getMyListUseCaseSynchronousProvider = Provider((ref) => GetMyListUseCase(ref.watch(scenarioRepositoryProvider)));
 
-// 2. ★修正: DBからマイリストデータ（UserScenarioのリスト）を非同期で取得する FutureProvider
-// UIやViewModelはこれを監視し、DB更新後にinvalidateされるデータソースとなる。
+// 2. DBからマイリストデータ（UserScenarioのリスト）を非同期で取得する FutureProvider
+// DB更新時にこれをinvalidateすることで、データ再取得を強制する
 final myListFutureProvider = FutureProvider<List<UserScenario>>((ref) {
   return ref.watch(getMyListUseCaseSynchronousProvider).call();
 });
@@ -68,10 +66,11 @@ final updateUserScenarioStatusUseCaseProvider = Provider((ref) {
   return UpdateUserScenarioStatusUseCase(repository, notifier);
 });
 
-// 6. ★削除: 不要な reactiveUserScenariosProvider を削除
-
-// 7. MyListViewModelが直接参照する全シナリオのProvider (既存のViewModelへの互換性維持のため)
+// 6. MyListViewModelが参照する全シナリオのProvider (AsyncValue<List<UserScenario>>型)
 final allScenariosProvider = Provider<AsyncValue<List<UserScenario>>>((ref) {
-  // myListFutureProviderのAsyncValueをそのまま返す
+  // UIアイコンの状態マップを監視 (更新時にこのProviderも再実行される)
+  ref.watch(userScenarioStatusProvider);
+  
+  // DBからの最新データを保持する Future Provider の AsyncValue を返す
   return ref.watch(myListFutureProvider);
 });

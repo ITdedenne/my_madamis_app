@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
-// import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart'; // 不要
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
@@ -146,7 +145,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     );
   }
 
-  Widget _buildBody(SearchScenariosState state, Map<String, UserScenarioStatus> userStatuses) {
+Widget _buildBody(SearchScenariosState state, Map<String, UserScenarioStatus> userStatuses) {
     if (state.isLoading) return const Center(child: CircularProgressIndicator());
     if (state.errorMessage != null) return Center(child: Text('エラー: ${state.errorMessage}'));
     if (state.scenarios.isEmpty) return const Center(child: Text('シナリオが見つかりません。'));
@@ -162,9 +161,10 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
             // 1. DB更新とUIアイコンの状態更新を行うUseCaseを呼び出す
             await ref.read(updateUserScenarioStatusUseCaseProvider)(scenario.id, newStatus);
             
-            // 2. ★修正: マイリストのデータを保持している FutureProvider を無効化し、再取得を強制
+            // 2. ★修正: マイリストのデータソースを無効化し、再取得を強制
             ref.invalidate(myListFutureProvider); 
-            
+            ref.invalidate(initialStatusMapProvider); // Notifierの初期化元も更新
+
             ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
           },
         );
