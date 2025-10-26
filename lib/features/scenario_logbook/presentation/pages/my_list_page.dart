@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
-import 'package:my_madamis_app/providers.dart'; // ★修正: Providerを参照するために必要
+import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart'; // MyListViewModel自体は必要
+import 'package:my_madamis_app/providers.dart' hide allScenariosProvider; // ★修正: providers.dartから全てのProviderを参照する
 
 class MyListPage extends ConsumerStatefulWidget {
   const MyListPage({super.key});
@@ -66,12 +66,12 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              // ★修正: データを保持している FutureProvider を無効化し、再取得を強制
+              // データを保持している Future Provider を無効化し、再取得を強制
               ref.invalidate(myListFutureProvider); 
               ref.invalidate(initialStatusMapProvider); 
               
               // データの再取得が完了するのを待つ 
-              await ref.read(initialStatusMapProvider.future);
+              await ref.read(myListFutureProvider.future);
             },
             child: _buildBody(context),
           ),
@@ -81,13 +81,7 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
   }
 
   Widget _buildBody(BuildContext context) {
-    final pageState = ref.watch(myListPageStateProvider);
-    final groupedScenarios = ref.watch(filteredAndSortedMyListProvider);
-    // allScenariosProvider は filteredAndSortedMyListProvider の元データ（reactiveUserScenariosProvider）
-    // と同じ AsyncValue を監視していると想定。
-    // filteredAndSortedMyListProvider が Map を返すため、ここでは allScenariosProvider の代わりに
-    // reactiveUserScenariosProvider を使ってローディング状態を確認するのが適切だが、
-    // 既存のコードに合わせるため allScenariosProvider を監視します。
+    // allScenariosProvider (myListFutureProviderのラッパー) を監視してローディング状態を見る
     final allScenariosAsync = ref.watch(allScenariosProvider);
 
     if (allScenariosAsync.isLoading) {
@@ -96,6 +90,11 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
     if (allScenariosAsync.hasError) {
       return Center(child: Text('エラーが発生しました: ${allScenariosAsync.error}'));
     }
+    
+    // データがロードされた後、ViewModelでフィルタリング・ソートされた結果を監視
+    final pageState = ref.watch(myListPageStateProvider);
+    final groupedScenarios = ref.watch(filteredAndSortedMyListProvider);
+
 
     if (groupedScenarios.isEmpty) {
       final message = switch (pageState.filter) {
@@ -130,7 +129,8 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
-            ...List.from(scenariosInGroup.map((userScenario) {
+            // ★Unnecessary use of 'toList' in a spread. を解消
+            ...scenariosInGroup.map((userScenario) {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: ListTile(
@@ -149,7 +149,7 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                   ),
                 ),
               );
-            })),
+            }), // .toList() を削除
           ],
         );
       },
