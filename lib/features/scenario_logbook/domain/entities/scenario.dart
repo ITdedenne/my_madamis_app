@@ -40,9 +40,10 @@ class Scenario extends Equatable {
       ];
 
   // ★ 追加: Amplifyモデルからドメインエンティティへの変換メソッド
+  // ★ 修正後の factory Scenario.fromModel
   factory Scenario.fromModel(
       amplify_models.Scenario scenarioModel, String authorName) {
-    // GmRequirementのマッピング (AmplifyモデルのStringからEnumへ)
+    // GmRequirementのマッピング (変更なし)
     GmRequirement gmReq;
     switch (scenarioModel.gmRequirement?.toLowerCase()) {
       case 'required':
@@ -60,10 +61,11 @@ class Scenario extends Equatable {
     return Scenario(
       id: scenarioModel.id,
       title: scenarioModel.title,
-      authorName: authorName, // 引数で受け取る
-      authorId: scenarioModel.author?.id ?? '', // AuthorモデルからIDを取得
-      minPlayerCount: scenarioModel.minPlayerCount ?? 0, // nullの場合は0にフォールバック
-      maxPlayerCount: scenarioModel.maxPlayerCount ?? 0, // nullの場合は0にフォールバック
+      // nullの場合は空文字を渡し、String! (非Null許容)のコンストラクタ要件を満たす
+      authorName: authorName ?? '', 
+      authorId: scenarioModel.author?.id ?? '', 
+      minPlayerCount: scenarioModel.minPlayerCount ?? 0, 
+      maxPlayerCount: scenarioModel.maxPlayerCount ?? 0, 
       gmRequirement: gmReq,
       storeUrl: scenarioModel.storeUrl,
     );

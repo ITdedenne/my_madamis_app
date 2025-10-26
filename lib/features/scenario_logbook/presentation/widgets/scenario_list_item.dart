@@ -16,11 +16,22 @@ class ScenarioListItem extends StatelessWidget {
     required this.onStatusChanged,
   });
 
-  @override
+@override
   Widget build(BuildContext context) {
+    // authorNameがStringとして定義されていますが、念のためnull安全なアクセスに修正します。
+    // Dartのテンプレートリテラルは通常nullを 'null' 文字列に変換しますが、
+    // エラーがNull Safetyのチェックポイントで発生している可能性があります。
+    
+    final authorName = scenario.authorName; // String! のため通常は問題ないが...
+
     return ListTile(
       title: Text(scenario.title),
-      subtitle: Text('${scenario.authorName} / ${scenario.minPlayerCount}-${scenario.maxPlayerCount}人'),
+      subtitle: Text(
+        // Nullアウェア演算子を使用し、念のための安全性を確保
+        // String! (非Null許容)として定義されているため、実際には !. で安全にアクセスできるはずですが、
+        // データの不整合が原因である場合に対応するため、より防御的に記述します。
+        '${authorName.isNotEmpty ? authorName : '不明な作者'} / ${scenario.minPlayerCount}-${scenario.maxPlayerCount}人'
+      ),
       trailing: _buildStatusIcons(context),
     );
   }
