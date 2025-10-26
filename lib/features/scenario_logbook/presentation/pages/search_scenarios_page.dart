@@ -3,11 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
-import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
-import 'package:my_madamis_app/providers.dart'; // ★修正: Providerを参照するために必要
+import 'package:my_madamis_app/providers.dart'; // Providerを参照するために必要
 
 class SearchScenariosPage extends ConsumerStatefulWidget {
   const SearchScenariosPage({super.key});
@@ -158,9 +157,13 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
         return ScenarioListItem(
           scenario: scenario,
           status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
-          onStatusChanged: (newStatus) {
-            // ★修正: DB更新と状態更新を行うUseCaseを呼び出す
-            ref.read(updateUserScenarioStatusUseCaseProvider)(scenario.id, newStatus);
+          onStatusChanged: (newStatus) async {
+            // 1. DB更新とUIアイコンの状態更新を行うUseCaseを呼び出す
+            await ref.read(updateUserScenarioStatusUseCaseProvider)(scenario.id, newStatus);
+            
+            // 2. ★修正: マイリストのデータを保持している FutureProvider を無効化し、再取得を強制
+            ref.invalidate(myListFutureProvider); 
+            
             ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
           },
         );
