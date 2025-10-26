@@ -6,6 +6,9 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenari
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/providers.dart';
 
+// ★★★ 修正: search_scenarios_page.dart をインポートして displayName を利用する ★★★
+import 'package:my_madamis_app/features/scenario_logbook/presentation/pages/search_scenarios_page.dart';
+
 import '../pages/author_search_page.dart';
 
 class FilterBottomSheet extends ConsumerStatefulWidget {
@@ -72,6 +75,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             spacing: 8.0,
             children: GmRequirement.values.map((req) {
               return ChoiceChip(
+                // ★★★ ここでインポートした displayName が使われる ★★★
                 label: Text(req.displayName),
                 selected: _gmRequirement == req,
                 onSelected: (selected) {
@@ -140,16 +144,16 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
   }
 }
 
-// GmRequirement に表示名を追加するための extension
-extension GmRequirementExtension on GmRequirement {
-  String get displayName {
-    switch (this) {
-      case GmRequirement.required:
-        return '必須';
-      case GmRequirement.optional:
-        return '任意';
-      case GmRequirement.none:
-        return '不要';
-    }
-  }
-}
+// ★★★ 修正: このファイル内の重複した extension を削除 ★★★
+// extension GmRequirementExtension on GmRequirement {
+//   String get displayName {
+//     switch (this) {
+//       case GmRequirement.required:
+//         return '必須';
+//       case GmRequirement.optional:
+//         return '任意';
+//       case GmRequirement.none:
+//         return '不要';
+//     }
+//   }
+// }

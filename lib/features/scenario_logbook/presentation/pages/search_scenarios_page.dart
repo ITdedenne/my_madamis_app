@@ -8,6 +8,8 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
 
+import '../../domain/entities/scenario.dart';
+
 class SearchScenariosPage extends ConsumerStatefulWidget {
   const SearchScenariosPage({super.key});
 
@@ -36,13 +38,23 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
         );
         ref.read(searchScenariosViewModelProvider.notifier).clearSuccessMessage();
       }
+      // ★エラーメッセージのスナックバー表示を追加（任意）
+      if (next.errorMessage != null && previous?.errorMessage != next.errorMessage) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(
+             content: Text('エラー: ${next.errorMessage}'),
+             backgroundColor: Colors.red,
+             duration: const Duration(seconds: 3),
+           ),
+         );
+      }
     });
 
     final state = ref.watch(searchScenariosViewModelProvider);
     final notifier = ref.read(searchScenariosViewModelProvider.notifier);
-    
-    // ユーザーのステータス全体を監視
-    final userStatuses = ref.watch(userScenarioStatusProvider);
+
+    // ★★★ 修正: AsyncValue<Map<String, UserScenarioStatus>> を watch する ★★★
+    final userStatusesAsync = ref.watch(userScenarioStatusProvider);
 
     return Column(
       children: [
@@ -80,18 +92,19 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           ),
         ),
         _buildFilterChips(state, notifier),
-        Expanded(child: _buildBody(state, userStatuses)),
+        // ★★★ 修正: Expanded 内の _buildBody に AsyncValue を渡す ★★★
+        Expanded(child: _buildBody(state, userStatusesAsync)),
         if (!state.isLoading && state.scenarios.isNotEmpty)
           _buildPaginationControls(state, notifier),
       ],
     );
   }
-  
+
   Widget _buildFilterChips(SearchScenariosState state, SearchScenariosViewModel notifier) {
     if (state.filter.isInitial) {
       return const SizedBox(height: 8);
     }
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
       child: Wrap(
@@ -145,25 +158,37 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     );
   }
 
-  Widget _buildBody(SearchScenariosState state, Map<String, UserScenarioStatus> userStatuses) {
-    if (state.isLoading) return const Center(child: CircularProgressIndicator());
-    if (state.errorMessage != null) return Center(child: Text('エラー: ${state.errorMessage}'));
-    if (state.scenarios.isEmpty) return const Center(child: Text('シナリオが見つかりません。'));
+  // ★★★ 修正: 引数の型を AsyncValue<Map<String, UserScenarioStatus>> に変更 ★★★
+  Widget _buildBody(SearchScenariosState searchState, AsyncValue<Map<String, UserScenarioStatus>> userStatusesAsync) {
+    // searchState (シナリオリスト自体) のロード中・エラー表示
+    if (searchState.isLoading) return const Center(child: CircularProgressIndicator());
+    if (searchState.errorMessage != null) return Center(child: Text('シナリオ取得エラー: ${searchState.errorMessage}'));
+    if (searchState.scenarios.isEmpty) return const Center(child: Text('シナリオが見つかりません。'));
 
-    return ListView.builder(
-      itemCount: state.scenarios.length,
-      itemBuilder: (context, index) {
-        final scenario = state.scenarios[index];
-        return ScenarioListItem(
-          scenario: scenario,
-          status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
-          onStatusChanged: (newStatus) {
-            // ステータス更新は一元管理されたNotifierに依頼
-            ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
-            ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
+    // userStatusesAsync (ステータスマップ) のロード中・エラー表示
+    return userStatusesAsync.when(
+      data: (userStatuses) {
+        // ★★★ データがある場合は Map を使って ListView を構築 ★★★
+        return ListView.builder(
+          itemCount: searchState.scenarios.length,
+          itemBuilder: (context, index) {
+            final scenario = searchState.scenarios[index];
+            return ScenarioListItem(
+              scenario: scenario,
+              status: userStatuses[scenario.id] ?? const UserScenarioStatus(), // Map からステータスを取得
+              onStatusChanged: (newStatus) {
+                // ステータス更新は一元管理されたNotifierに依頼
+                ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
+                ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
+              },
+            );
           },
         );
       },
+      // ★★★ ローディング中の表示 ★★★
+      loading: () => const Center(child: CircularProgressIndicator()),
+      // ★★★ エラー時の表示 ★★★
+      error: (err, stack) => Center(child: Text('ステータス取得エラー: $err')),
     );
   }
 
@@ -186,5 +211,16 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
         }),
       ),
     );
+  }
+}
+
+// FilterBottomSheetで使うため、同ファイル内に移動またはimport
+extension GmRequirementExtension on GmRequirement {
+  String get displayName {
+    switch (this) {
+      case GmRequirement.required: return '必須';
+      case GmRequirement.optional: return '任意';
+      case GmRequirement.none: return '不要';
+    }
   }
 }

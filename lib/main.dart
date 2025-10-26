@@ -25,12 +25,12 @@ Future<void> _configureAmplify() async {
   try {
     // 認証プラグイン
     final auth = AmplifyAuthCognito();
-    
+
     // ★ 3. APIプラグインを初期化 (モデル定義を渡す!)
-    final api = AmplifyAPI(modelProvider: ModelProvider.instance); 
+    final api = AmplifyAPI(modelProvider: ModelProvider.instance); //
 
     // ★ 4. 両方のプラグインをAmplifyに追加
-    await Amplify.addPlugins([auth, api]);
+    await Amplify.addPlugins([auth, api]); //
 
     // Amplifyを設定
     await Amplify.configure(amplifyconfig);
