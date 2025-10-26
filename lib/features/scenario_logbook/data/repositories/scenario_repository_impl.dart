@@ -1,7 +1,6 @@
 // ファイルパス: lib/features/scenario_logbook/data/repositories/scenario_repository_impl.dart
 
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:amplify_api/amplify_api.dart'; // ModelMutationsとGraphQLRequestを明確に参照
 import 'package:flutter/material.dart'; // RangeValuesのために必要
 import 'package:my_madamis_app/models/ModelProvider.dart' as amplify_models;
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
@@ -11,15 +10,16 @@ import '../../domain/repositories/scenario_repository.dart';
 class ScenarioRepositoryImpl implements ScenarioRepository {
   
   ScenarioRepositoryImpl() {
-    // コンストラクタ内のダミーデータ生成ロジックを削除しました。
+    // コンストラクタ内のダミーデータ生成ロジックは削除済み
   }
 
   // --- 共通ヘルパー関数: 現在認証済みのユーザーIDを取得 ---
   Future<String> _getCurrentUserId() async {
     try {
       final attributes = await Amplify.Auth.fetchUserAttributes();
+      // CognitoのUser ID (sub) を取得
       return attributes
-          .firstWhere((a) => a.userAttributeKey == AuthUserAttributeKey.sub) // ★修正: userId -> sub (CognitoのユーザーID)
+          .firstWhere((a) => a.userAttributeKey == AuthUserAttributeKey.sub) 
           .value;
     } on Exception catch (e) {
        safePrint('Failed to get current userId: $e');
@@ -27,16 +27,15 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     }
   }
 
-  // ヘルパー関数: UserScenarioをFilterで検索 (userIdとscenarioIdで検索し、既存レコードのidを取得)
+  // ヘルパー関数: UserScenarioをFilterで検索し、既存レコードのIDを取得
   Future<amplify_models.UserScenario?> _findExistingUserScenario(String userId, String scenarioId) async {
-      // DynamoDBのGSI (byUserまたはbyScenario) に対応するGraphQLフィルタを使用
+      // Raw GraphQL Queryを使用し、userIdとscenarioIdでレコードを検索
       const queryDoc = r'''
         query ListUserScenarios($filter: ModelUserScenarioFilterInput, $limit: Int) {
           listUserScenarios(filter: $filter, limit: $limit) {
             items {
               id
               status
-              # userId, scenarioIdはリゾルバが解決するため、ここでは不要だが、フィルタ変数で必要
             }
           }
         }
@@ -56,7 +55,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           authorizationMode: APIAuthorizationType.userPools,
       );
 
-      // ★修正: Amplify.API.queryの引数はnamed parameterのrequestのみ
       final response = await Amplify.API.query(request: queryRequest).response;
 
       if (response.data == null || response.data!.items.isEmpty || response.hasErrors) {
@@ -65,6 +63,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       return response.data!.items.firstOrNull;
   }
 
+  // --- fetchScenarios, _calculateNextToken, fetchAllAuthorNames は変更なし ---
   @override
   Future<List<Scenario>> fetchScenarios({
     required int page,
@@ -74,25 +73,21 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     GmRequirement? gmRequirement,
     String? authorName,
   }) async {
-    // ... (前回の回答のfetchScenariosメソッドはそのまま。修正不要) ...
     try {
       // 1. GraphQLクエリの準備 (既存のロジックを維持)
       final Map<String, dynamic> filter = {};
       final List<Map<String, dynamic>> orConditions = [];
 
-      // 検索語 (タイトル or 作者名)
       if (searchTerm != null && searchTerm.isNotEmpty) {
         orConditions.add({
           'title': {'contains': searchTerm}
         });
       }
 
-      // GM要否
       if (gmRequirement != null) {
         filter['gmRequirement'] = {'eq': gmRequirement.toGraphQLString()};
       }
 
-      // プレイ人数
       if (playerCountRange != null) {
         final start = playerCountRange.start.round();
         final end = playerCountRange.end.round();
@@ -101,12 +96,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         filter['maxPlayerCount'] = {'ge': start};
       }
 
-      // 'or' 条件を追加
       if (orConditions.isNotEmpty) {
         filter['or'] = orConditions;
       }
 
-      // ページネーションを考慮
       final offset = (page - 1) * limit;
 
       final Map<String, dynamic> queryVariables = {
@@ -186,17 +179,13 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     }
   }
 
-  // nextTokenの計算（既存のロジックを維持）
   String _calculateNextToken(int offset) {
     return '{"offset":$offset}'; 
   }
 
-
   @override
   Future<List<String>> fetchAllAuthorNames() async {
-     // ... (既存のロジックを維持) ...
      try {
-       // Authorテーブルの全件を取得
        const graphQLDocument = '''
          query ListAuthors(\$limit: Int) {
            listAuthors(limit: \$limit) {
@@ -223,7 +212,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
          throw Exception('Failed to fetch authors: ${response.errors}');
        }
 
-       // AuthorNameのリストを抽出して返す
        return data.items
            .where((author) => author != null && author.authorName.isNotEmpty)
            .map((author) => author!.authorName)
@@ -239,17 +227,12 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
        rethrow;
      }
   }
-
-  // -----------------------------------------------------------
-  // ▼▼▼ UserScenario関連のメソッド (DB連携に変更 - 修正版) ▼▼▼
-
-
+  
+  // --- fetchMyList (変更なし) ---
   @override
   Future<List<UserScenario>> fetchMyList() async {
-    // 自身の全 UserScenario データを取得（シナリオ情報もネストして取得）
     final userId = await _getCurrentUserId();
 
-    // UserScenarioとScenarioをネストして取得するGraphQLクエリ
     final request = GraphQLRequest<PaginatedResult<amplify_models.UserScenario>>(
       document: '''
         query ListUserScenarios(\$filter: ModelUserScenarioFilterInput, \$limit: Int) {
@@ -257,7 +240,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
             items {
               id
               status
-              scenario { # Scenarioオブジェクトをネストして取得
+              scenario {
                 id
                 title
                 minPlayerCount
@@ -275,7 +258,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       modelType: const PaginatedModelType(amplify_models.UserScenario.classType),
       variables: {
         'filter': {
-          'userId': {'eq': userId}, // フィルタのキー名はスキーマのフィールド名を使用
+          'userId': {'eq': userId}, 
         },
         'limit': 2000, 
       },
@@ -289,7 +272,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       throw Exception('Failed to fetch my list: ${response.errors}');
     }
 
-    // Amplifyモデルをドメインエンティティに変換
     return response.data!.items
       .whereType<amplify_models.UserScenario>()
       .where((us) => us.scenario != null) 
@@ -306,60 +288,124 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       }).toList();
   }
 
+  // --- updateUserScenarioStatus (Raw GraphQL Mutationに修正) ---
   @override
   Future<void> updateUserScenarioStatus(
       String scenarioId, UserScenarioStatus status) async {
     final userId = await _getCurrentUserId();
     final statusString = status.toStringValue();
 
-    // 1. レコードが未登録になる場合は削除を実行
     if (status.isUnregistered) {
+      // 未登録状態に戻す場合はレコードを削除
       await removeUserScenarioStatus(scenarioId);
       return;
     }
     
-    // 2. 既存のレコードを検索 (新しく作ったヘルパー関数を使用)
+    // 1. 既存レコードを検索してIDを取得
     final existing = await _findExistingUserScenario(userId, scenarioId);
 
     if (existing != null) {
-      // 3. 既存レコードを更新
-      final updatedModel = existing.copyWith(
-        status: statusString,
+      // 2. 既存レコードを更新
+      const updateDoc = r'''
+        mutation UpdateUserScenario($input: UpdateUserScenarioInput!) {
+          updateUserScenario(input: $input) {
+            id
+            status
+          }
+        }
+      ''';
+      
+      final updateRequest = GraphQLRequest<amplify_models.UserScenario>(
+        document: updateDoc,
+        modelType: amplify_models.UserScenario.classType,
+        variables: {
+          'input': {
+            'id': existing.id, // 既存レコードのIDは必須
+            'status': statusString,
+          }
+        },
+        authorizationMode: APIAuthorizationType.userPools,
       );
-      // ★修正: ModelMutationsを使用し、Amplify.API.mutateにrequestのみを渡す
-      await Amplify.API.mutate(
-        request: ModelMutations.update(updatedModel),
-      ).response;
-      safePrint('Updated UserScenario for $scenarioId to $statusString');
+
+      final response = await Amplify.API.mutate(request: updateRequest).response;
+      if (response.hasErrors) {
+          safePrint('GraphQL Error updating UserScenario: ${response.errors}');
+          throw Exception('Failed to update user scenario status: ${response.errors}');
+      }
+      safePrint('Updated UserScenario for $scenarioId to $statusString (ID: ${existing.id})');
+      
     } else {
-      // 4. 新規レコードを作成
-      final newUserScenario = amplify_models.UserScenario(
-        id: userId, // userIdをここで明示的に渡す
-        // scenarioId: scenarioId, // scenarioIdをここで明示的に渡す
-        status: statusString,
+      // 3. 新規レコードを作成
+      const createDoc = r'''
+        mutation CreateUserScenario($input: CreateUserScenarioInput!) {
+          createUserScenario(input: $input) {
+            id
+            userId
+            scenarioId
+            status
+          }
+        }
+      ''';
+      
+      final newId =  UUID.getUUID();
+
+      final createRequest = GraphQLRequest<amplify_models.UserScenario>(
+        document: createDoc,
+        modelType: amplify_models.UserScenario.classType,
+        variables: {
+          'input': {
+            'id': newId,
+            'userId': userId, // ★重要: userIdを直接渡す
+            'scenarioId': scenarioId, // ★重要: scenarioIdを直接渡す
+            'status': statusString,
+          }
+        },
+        authorizationMode: APIAuthorizationType.userPools,
       );
-      // ★修正: ModelMutationsを使用し、Amplify.API.mutateにrequestのみを渡す
-      await Amplify.API.mutate(
-        request: ModelMutations.create(newUserScenario),
-      ).response;
-      safePrint('Created new UserScenario for $scenarioId with status $statusString');
+
+      final response = await Amplify.API.mutate(request: createRequest).response;
+      if (response.hasErrors) {
+          safePrint('GraphQL Error creating UserScenario: ${response.errors}');
+          throw Exception('Failed to create user scenario status: ${response.errors}');
+      }
+      safePrint('Created new UserScenario for $scenarioId with status $statusString (ID: $newId)');
     }
   }
 
+  // --- removeUserScenarioStatus (Raw GraphQL Mutationに修正) ---
   @override
   Future<void> removeUserScenarioStatus(String scenarioId) async {
     final userId = await _getCurrentUserId();
 
-    // 1. 既存のレコードを検索 (新しく作ったヘルパー関数を使用)
     final existing = await _findExistingUserScenario(userId, scenarioId);
 
     if (existing != null) {
       // 2. 既存レコードを削除
-      // ★修正: ModelMutationsを使用し、Amplify.API.mutateにrequestのみを渡す
-      await Amplify.API.mutate(
-        request: ModelMutations.delete(existing),
-      ).response;
-      safePrint('Removed UserScenario for $scenarioId');
+      const deleteDoc = r'''
+        mutation DeleteUserScenario($input: DeleteUserScenarioInput!) {
+          deleteUserScenario(input: $input) {
+            id
+          }
+        }
+      ''';
+
+      final deleteRequest = GraphQLRequest<amplify_models.UserScenario>(
+        document: deleteDoc,
+        modelType: amplify_models.UserScenario.classType,
+        variables: {
+          'input': {
+            'id': existing.id, // 削除にはIDが必須
+          }
+        },
+        authorizationMode: APIAuthorizationType.userPools,
+      );
+
+      final response = await Amplify.API.mutate(request: deleteRequest).response;
+      if (response.hasErrors) {
+          safePrint('GraphQL Error deleting UserScenario: ${response.errors}');
+          throw Exception('Failed to delete user scenario status: ${response.errors}');
+      }
+      safePrint('Removed UserScenario for $scenarioId (ID: ${existing.id})');
     } else {
       safePrint('UserScenario for $scenarioId not found, nothing to remove.');
     }
