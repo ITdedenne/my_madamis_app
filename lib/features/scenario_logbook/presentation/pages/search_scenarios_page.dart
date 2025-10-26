@@ -7,8 +7,7 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
-
-import '../../../../providers.dart';
+import 'package:my_madamis_app/providers.dart'; // ★修正: Providerを参照するために必要
 
 class SearchScenariosPage extends ConsumerStatefulWidget {
   const SearchScenariosPage({super.key});
@@ -43,7 +42,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     final state = ref.watch(searchScenariosViewModelProvider);
     final notifier = ref.read(searchScenariosViewModelProvider.notifier);
     
-    // ユーザーのステータス全体を監視
+    // ユーザーのステータス全体を監視。このProviderが更新されると、リストアイテムが再構築される
     final userStatuses = ref.watch(userScenarioStatusProvider);
 
     return Column(
@@ -160,7 +159,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           scenario: scenario,
           status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
           onStatusChanged: (newStatus) {
-            // ステータス更新は一元管理されたNotifierに依頼
+            // ★修正: DB更新と状態更新を行うUseCaseを呼び出す
             ref.read(updateUserScenarioStatusUseCaseProvider)(scenario.id, newStatus);
             ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
           },

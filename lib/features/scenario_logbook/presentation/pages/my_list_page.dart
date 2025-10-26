@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
-
-import '../../../../providers.dart';
+import 'package:my_madamis_app/providers.dart'; // ★修正: Providerを参照するために必要
 
 class MyListPage extends ConsumerStatefulWidget {
   const MyListPage({super.key});
@@ -68,8 +67,13 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              // Notifierにデータの再読み込みを依頼
-              await ref.read(userScenarioStatusProvider.notifier).refresh();
+              // ★修正: DBから初期データを読み込むFutureProviderを強制的に無効化し、再読み込みをトリガー
+              ref.invalidate(initialStatusMapProvider);
+              // マイリストの本体データも無効化し、最新のDBデータを再取得させる
+              ref.invalidate(getMyListUseCaseProvider); 
+              
+              // データの再取得が完了するのを待つ (UIの更新はNotifierとFutureProviderの監視に任せる)
+              await ref.read(initialStatusMapProvider.future);
             },
             child: _buildBody(context),
           ),
@@ -80,16 +84,22 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
 
   Widget _buildBody(BuildContext context) {
     final pageState = ref.watch(myListPageStateProvider);
+    // ★修正: filteredAndSortedMyListProvider は、DBの最新データに依存する Providerである必要があります。
+    // UserScenarioStatusProviderが更新されたタイミングで、 filteredAndSortedMyListProvider が
+    // 依存しているデータソース（例: getMyListUseCaseProvider）が再実行されるように、
+    // lib/providers.dart での定義が必要です。ここでは、そのリアクティブなデータソースを監視していると仮定します。
     final groupedScenariosAsync = ref.watch(filteredAndSortedMyListProvider);
     final allScenariosAsync = ref.watch(allScenariosProvider);
 
+    // allScenariosProvider が最新のデータを持っていると仮定し、loadingとerrorをチェックします。
     if (allScenariosAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     if (allScenariosAsync.hasError) {
       return Center(child: Text('エラーが発生しました: ${allScenariosAsync.error}'));
     }
-
+    
+    // データはAsyncValueではないMap/Listの形を想定
     if (groupedScenariosAsync.isEmpty) {
       final message = switch (pageState.filter) {
         MyListFilter.all => '記録されたシナリオはありません。\n「探す」タブから追加しましょう！',
