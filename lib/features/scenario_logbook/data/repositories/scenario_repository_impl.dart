@@ -21,6 +21,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     GmRequirement? gmRequirement,
     String? authorName,
   }) async {
+    // ... (変更なし) ...
     try {
       final Map<String, dynamic> filter = {};
       final List<Map<String, dynamic>> andConditions = []; // AND条件用
@@ -120,6 +121,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
   @override
   Future<List<String>> fetchAllAuthorNames() async {
+     // ... (変更なし) ...
      try {
        const graphQLDocument = '''
          query ListAuthors(\$limit: Int, \$nextToken: String) {
@@ -161,7 +163,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
        } while (nextToken != null);
 
-       return allNames.toSet().toList();
+       return allNames.toSet().toList()..sort();
 
      } on ApiException catch (e) {
        safePrint('Failed to fetch author names: ${e.message}');
@@ -202,7 +204,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     try {
       final userId = await _getCurrentUserId();
 
-       // ★★★ 修正: クエリ名を userScenariosByUserId に変更 ★★★
+       // ★★★ 修正: クエリ名を userScenariosByUserId に修正 ★★★
        const graphQLDocument = '''
          query UserScenariosByUserId(\$userId: ID!, \$limit: Int, \$nextToken: String) {
            userScenariosByUserId(userId: \$userId, limit: \$limit, nextToken: \$nextToken) {
@@ -237,7 +239,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
             document: graphQLDocument,
             modelType: const PaginatedModelType(amplify_models.UserScenario.classType),
             variables: {'userId': userId, 'limit': 100, 'nextToken': nextToken},
-            // ★★★ 修正: decodePath も userScenariosByUserId に変更 ★★★
+            // ★★★ 修正: decodePath も userScenariosByUserId に修正 ★★★
             decodePath: 'userScenariosByUserId',
             authorizationMode: APIAuthorizationType.userPools,
           );
@@ -249,6 +251,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
           if (data == null || response.hasErrors) {
             safePrint('GraphQL Errors fetching user scenarios: ${response.errors}');
+            // エラーの詳細を投げるように変更
             throw Exception('Failed to fetch user scenarios: ${response.errors}');
           }
 
@@ -280,12 +283,14 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       throw Exception('マイリストの取得に失敗しました: ${e.message}');
     } catch (e) {
        safePrint('An unexpected error occurred during fetchMyList: $e');
-      rethrow;
+      rethrow; // 元の例外を再スロー
     }
   }
 
+  // --- updateUserScenarioStatus と removeUserScenarioStatus は変更なし ---
   @override
   Future<void> updateUserScenarioStatus(String scenarioId, UserScenarioStatus status) async {
+     // ... (変更なし) ...
      try {
        final userId = await _getCurrentUserId();
        final statusString = _statusToString(status);
@@ -379,6 +384,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
    @override
   Future<void> removeUserScenarioStatus(String scenarioId) async {
+      // ... (変更なし) ...
      try {
        final userId = await _getCurrentUserId();
        final entryToDelete = await _findUserScenarioEntry(userId, scenarioId);
@@ -427,9 +433,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
      }
   }
 
+
    /// userId と scenarioId で UserScenario を検索するヘルパー関数
    Future<amplify_models.UserScenario?> _findUserScenarioEntry(String userId, String scenarioId) async {
-      // ★★★ 修正: クエリ名を userScenariosByUserId に変更 ★★★
+      // ★★★ 修正: クエリ名を userScenariosByUserId に修正 ★★★
       const graphQLDocument = '''
         query UserScenariosByUserIdAndScenarioId(\$userId: ID!, \$scenarioId: ModelIDKeyConditionInput) {
           userScenariosByUserId(userId: \$userId, scenarioId: \$scenarioId, limit: 1) {
@@ -454,7 +461,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           'userId': userId,
           'scenarioId': scenarioIdCondition,
         },
-        // ★★★ 修正: decodePath も userScenariosByUserId に変更 ★★★
+        // ★★★ 修正: decodePath も userScenariosByUserId に修正 ★★★
         decodePath: 'userScenariosByUserId',
         authorizationMode: APIAuthorizationType.userPools,
      );
