@@ -137,7 +137,7 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: ListTile(
                   title: Text(userScenario.scenario.title),
-                  subtitle: Text(userScenario.scenario.authorName),
+                  subtitle: Text(userScenario.scenario.authorName?? '不明な作者'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

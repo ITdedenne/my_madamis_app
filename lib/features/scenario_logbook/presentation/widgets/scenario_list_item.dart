@@ -22,7 +22,7 @@ class ScenarioListItem extends StatelessWidget {
     // Dartのテンプレートリテラルは通常nullを 'null' 文字列に変換しますが、
     // エラーがNull Safetyのチェックポイントで発生している可能性があります。
     
-    final authorName = scenario.authorName; // String! のため通常は問題ないが...
+    final authorName = scenario.authorName?? '不明な作者'; // String! のため通常は問題ないが...
 
     return ListTile(
       title: Text(scenario.title),
