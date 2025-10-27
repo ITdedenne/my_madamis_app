@@ -5,6 +5,7 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenari
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 
 abstract class ScenarioRepository {
+  // ★★★ 変更なし: List<Scenario> を返すままにする ★★★
   Future<List<Scenario>> fetchScenarios({
     required int page,
     int limit = 50,

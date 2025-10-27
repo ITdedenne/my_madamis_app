@@ -41,7 +41,6 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     final state = ref.watch(searchScenariosViewModelProvider);
     final notifier = ref.read(searchScenariosViewModelProvider.notifier);
     
-    // ユーザーのステータス全体を監視
     final userStatuses = ref.watch(userScenarioStatusProvider);
 
     return Column(
@@ -64,7 +63,10 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: const Icon(Icons.filter_list),
+                icon: Icon(
+                  Icons.filter_list,
+                  color: state.filter.isInitial ? Colors.grey : Theme.of(context).primaryColor, 
+                ),
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
@@ -81,7 +83,9 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
         ),
         _buildFilterChips(state, notifier),
         Expanded(child: _buildBody(state, userStatuses)),
-        if (!state.isLoading && state.scenarios.isNotEmpty)
+        
+        // ★★★ 修正箇所: データが空でも、総ページ数が1より大きければPaginationControlsを表示 ★★★
+        if (state.totalPages > 1 || state.currentPage > 1) 
           _buildPaginationControls(state, notifier),
       ],
     );
@@ -148,7 +152,14 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
   Widget _buildBody(SearchScenariosState state, Map<String, UserScenarioStatus> userStatuses) {
     if (state.isLoading) return const Center(child: CircularProgressIndicator());
     if (state.errorMessage != null) return Center(child: Text('エラー: ${state.errorMessage}'));
-    if (state.scenarios.isEmpty) return const Center(child: Text('シナリオが見つかりません。'));
+    
+    if (state.scenarios.isEmpty) {
+        // ★修正: 2ページ目以降でデータがない場合のメッセージを調整 ★
+        if (state.currentPage > 1) {
+             return const Center(child: Text('このページにはシナリオがありません。\n戻るか、フィルターを変更してください。'));
+        }
+        return const Center(child: Text('シナリオが見つかりません。'));
+    }
 
     return ListView.builder(
       itemCount: state.scenarios.length,
@@ -158,7 +169,6 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           scenario: scenario,
           status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
           onStatusChanged: (newStatus) {
-            // ステータス更新は一元管理されたNotifierに依頼
             ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
             ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
           },
@@ -168,22 +178,28 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
   }
 
   Widget _buildPaginationControls(SearchScenariosState state, SearchScenariosViewModel notifier) {
+    // totalPagesが1以上のときに表示される
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 8,
-        runSpacing: 8,
-        children: List.generate(state.totalPages, (index) {
-          final page = index + 1;
-          return ElevatedButton(
-            onPressed: state.currentPage == page ? null : () => notifier.goToPage(page),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: state.currentPage == page ? Colors.blue.shade100 : null,
-            ),
-            child: Text('$page'),
-          );
-        }),
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // 戻るボタン
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: state.currentPage > 1 ? () => notifier.goToPage(state.currentPage - 1) : null,
+          ),
+          const SizedBox(width: 16),
+          // ページ番号表示（現在のページ / 総ページ数）
+          Text('${state.currentPage} / ${state.totalPages}'),
+          const SizedBox(width: 16),
+          // 進むボタン
+          IconButton(
+            icon: const Icon(Icons.arrow_forward),
+            // ★修正: 現在のページがtotalPages未満で、かつViewModelに次のページのトークンが残っている場合に有効にする
+            onPressed: state.currentPage < state.totalPages ? () => notifier.goToPage(state.currentPage + 1) : null,
+          ),
+        ],
       ),
     );
   }
