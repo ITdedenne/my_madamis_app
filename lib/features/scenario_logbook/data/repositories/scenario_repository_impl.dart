@@ -16,8 +16,15 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   // --- 共通ヘルパー関数: 現在認証済みのユーザーIDを取得 ---
   Future<String> _getCurrentUserId() async {
     try {
+      // ログイン状態を確認
+      final authSession = await Amplify.Auth.fetchAuthSession();
+      if (!authSession.isSignedIn) {
+         throw Exception('Authentication required: User is not signed in.');
+      }
+      
       final attributes = await Amplify.Auth.fetchUserAttributes();
       // CognitoのUser ID (sub) を取得
+      // UserテーブルのPK(id)はCognitoのsubと同じです
       return attributes
           .firstWhere((a) => a.userAttributeKey == AuthUserAttributeKey.sub) 
           .value;
@@ -30,6 +37,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   // ヘルパー関数: UserScenarioをFilterで検索し、既存レコードのIDを取得
   Future<amplify_models.UserScenario?> _findExistingUserScenario(String userId, String scenarioId) async {
       // Raw GraphQL Queryを使用し、userIdとscenarioIdでレコードを検索
+      // UserScenarioのプライマリーインデックス(byUser)を利用
       const queryDoc = r'''
         query ListUserScenarios($filter: ModelUserScenarioFilterInput, $limit: Int) {
           listUserScenarios(filter: $filter, limit: $limit) {
@@ -114,7 +122,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       final request = GraphQLRequest<PaginatedResult<amplify_models.Scenario>>(
         document: '''
           query ListScenarios(\$filter: ModelScenarioFilterInput, \$limit: Int, \$nextToken: String) {
-            listScenarios(filter: \$filter, limit: \$limit, nextToken: \$nextToken) {
+            listScenarios(filter: \$filter, limit: \$limit, \$nextToken: String) {
               items {
                 id
                 title
@@ -228,11 +236,14 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
      }
   }
   
-  // --- fetchMyList (変更なし) ---
+  // --- fetchMyList: userIdでフィルタリングするGraphQLクエリ ---
   @override
   Future<List<UserScenario>> fetchMyList() async {
-    final userId = await _getCurrentUserId();
+    // ログインユーザーのIDを取得
+    final userId = await _getCurrentUserId(); // ★ログインが必須
 
+    // GraphQLクエリ: UserScenarioをuserIdでフィルタリング
+    // DynamoDBのGSIまたはPK(byUser)を利用
     final request = GraphQLRequest<PaginatedResult<amplify_models.UserScenario>>(
       document: '''
         query ListUserScenarios(\$filter: ModelUserScenarioFilterInput, \$limit: Int) {
@@ -258,7 +269,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       modelType: const PaginatedModelType(amplify_models.UserScenario.classType),
       variables: {
         'filter': {
-          'userId': {'eq': userId}, 
+          'userId': {'eq': userId}, // ★★★ ここでログインユーザーのIDでフィルタリング ★★★
         },
         'limit': 2000, 
       },
@@ -272,6 +283,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       throw Exception('Failed to fetch my list: ${response.errors}');
     }
 
+    // 取得したAmplifyモデルをドメインエンティティに変換
     return response.data!.items
       .whereType<amplify_models.UserScenario>()
       .where((us) => us.scenario != null) 
@@ -288,7 +300,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       }).toList();
   }
 
-  // --- updateUserScenarioStatus (Raw GraphQL Mutationに修正) ---
+  // --- updateUserScenarioStatus (変更なし) ---
   @override
   Future<void> updateUserScenarioStatus(
       String scenarioId, UserScenarioStatus status) async {
@@ -372,7 +384,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     }
   }
 
-  // --- removeUserScenarioStatus (Raw GraphQL Mutationに修正) ---
+  // --- removeUserScenarioStatus (変更なし) ---
   @override
   Future<void> removeUserScenarioStatus(String scenarioId) async {
     final userId = await _getCurrentUserId();
