@@ -27,14 +27,12 @@ class UserScenarioStatusNotifier extends StateNotifier<Map<String, UserScenarioS
   // 初期データをRepositoryから読み込む
   Future<void> _loadInitialStatuses() async {
     try {
-      // RepositoryImplのfetchMyList()はログイン中のユーザーIDでフィルタリングしている
       final myList = await _ref.read(getMyListUseCaseProvider)(); 
       final initialMap = {for (var item in myList) item.scenario.id: item.status};
       if (mounted) {
         state = initialMap; // 状態を新しいデータで置き換え
       }
     } catch (e) {
-      // 認証エラーなどでデータが取得できない場合は空のマップにする
       print('Failed to load initial statuses (MyList): $e');
       if (mounted) {
         state = {};
@@ -60,19 +58,19 @@ class UserScenarioStatusNotifier extends StateNotifier<Map<String, UserScenarioS
       }
       
       if (mounted) {
-        state = newState; // ★★★ これにより、このProviderを監視しているUI（MyListPage）が自動更新されます ★★★
+        state = newState; // ★★★ MyListPageの再計算をトリガー ★★★
       }
     } catch (e) {
-      // TODO: エラーハンドリング (SnackBar表示など)
+      // エラーハンドリング
       print('Failed to update status: $e');
-      // 念のため、エラーが発生した場合は最新のDB状態を再読み込みするのも手
+      // エラー時は最新のDB状態を再読み込みし、UIを同期
       refresh();
+      rethrow;
     }
   }
   
   // データを再読み込みするためのメソッド（Pull-to-Refresh用）
   Future<void> refresh() async {
-    // DBから最新データを再取得
     await _loadInitialStatuses();
   }
 }

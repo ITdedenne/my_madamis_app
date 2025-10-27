@@ -49,9 +49,9 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                     Tab(text: '通過済'),
                     Tab(text: '所持'),
                   ],
-                  labelColor: Theme.of(context).primaryColor, // UI調整
-                  unselectedLabelColor: Colors.grey, // UI調整
-                  indicatorColor: Theme.of(context).primaryColor, // UI調整
+                  labelColor: Theme.of(context).primaryColor,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: Theme.of(context).primaryColor,
                 ),
               ),
               PopupMenuButton<SortOrder>(
@@ -69,11 +69,12 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              // ★修正: allScenariosProviderも明示的に再取得を依頼
+              // 全シナリオマスターデータとユーザーシナリオステータスの両方をリフレッシュ
+              // fetchScenariosのページングエラーを回避するため、まずallScenariosProviderを無効化
               ref.invalidate(allScenariosProvider);
-              // userScenarioStatusProviderは内部でfetchMyListを呼ぶので、こちらもリフレッシュ
+              // userScenarioStatusProviderをリフレッシュ（fetchMyListを再実行）
               await ref.read(userScenarioStatusProvider.notifier).refresh();
-              // allScenariosProviderの解決を待つ
+              // allScenariosProviderの再解決を待つ
               await ref.read(allScenariosProvider.future);
             },
             child: _buildBody(context),
@@ -85,23 +86,22 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
 
   Widget _buildBody(BuildContext context) {
     final pageState = ref.watch(myListPageStateProvider);
-    // Providerの型をAsyncValueで監視
     final groupedScenariosAsync = ref.watch(filteredAndSortedMyListProvider);
     final allScenariosAsync = ref.watch(allScenariosProvider);
 
-    // allScenariosProviderがロード中の場合
+    // ロード中
     if (allScenariosAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
     
-    // allScenariosProviderがエラーの場合（このエラーがユーザーが遭遇しているエラー）
+    // エラー処理（探すタブのページングエラーがここに伝播している可能性）
     if (allScenariosAsync.hasError) {
       return Center(child: Text('シナリオデータのロード中にエラーが発生しました: ${allScenariosAsync.error}'));
     }
     
-    // ここから先はデータがロードされた後
-    final groupedScenarios = groupedScenariosAsync; // Map<String, List<UserScenario>>
+    final groupedScenarios = groupedScenariosAsync;
 
+    // フィルタリング後に結果が空の場合のメッセージ
     if (groupedScenarios.isEmpty) {
       final message = switch (pageState.filter) {
         MyListFilter.all => '記録されたシナリオはありません。\n「探す」タブから追加しましょう！',
@@ -117,6 +117,7 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
       );
     }
 
+    // リスト表示
     final groupKeys = groupedScenarios.keys.toList();
 
     return ListView.builder(
