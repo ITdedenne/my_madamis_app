@@ -18,14 +18,10 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    // 3つのタブ (すべて, 通過済, 所持)
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
-      
-      // タブのインデックス (0, 1, 2) を MyListFilter enum にマッピングし、状態を更新
-      final newFilter = MyListFilter.values[_tabController.index];
-      ref.read(myListPageStateProvider.notifier).update((state) => state.copyWith(filter: newFilter));
+      ref.read(myListPageStateProvider.notifier).update((state) => state.copyWith(filter: MyListFilter.values[_tabController.index]));
     });
   }
 
@@ -53,9 +49,9 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                     Tab(text: '通過済'),
                     Tab(text: '所持'),
                   ],
-                  labelColor: Theme.of(context).primaryColor,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: Theme.of(context).primaryColor,
+                  labelColor: Theme.of(context).primaryColor, // UI調整
+                  unselectedLabelColor: Colors.grey, // UI調整
+                  indicatorColor: Theme.of(context).primaryColor, // UI調整
                 ),
               ),
               PopupMenuButton<SortOrder>(
@@ -73,9 +69,11 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              // データの再読み込み処理
-              await ref.read(userScenarioStatusProvider.notifier).refresh();
+              // ★修正: allScenariosProviderも明示的に再取得を依頼
               ref.invalidate(allScenariosProvider);
+              // userScenarioStatusProviderは内部でfetchMyListを呼ぶので、こちらもリフレッシュ
+              await ref.read(userScenarioStatusProvider.notifier).refresh();
+              // allScenariosProviderの解決を待つ
               await ref.read(allScenariosProvider.future);
             },
             child: _buildBody(context),
@@ -87,19 +85,23 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
 
   Widget _buildBody(BuildContext context) {
     final pageState = ref.watch(myListPageStateProvider);
-    final groupedScenarios = ref.watch(filteredAndSortedMyListProvider);
+    // Providerの型をAsyncValueで監視
+    final groupedScenariosAsync = ref.watch(filteredAndSortedMyListProvider);
     final allScenariosAsync = ref.watch(allScenariosProvider);
 
-    // ロード中
+    // allScenariosProviderがロード中の場合
     if (allScenariosAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-    // エラー処理
+    
+    // allScenariosProviderがエラーの場合（このエラーがユーザーが遭遇しているエラー）
     if (allScenariosAsync.hasError) {
       return Center(child: Text('シナリオデータのロード中にエラーが発生しました: ${allScenariosAsync.error}'));
     }
+    
+    // ここから先はデータがロードされた後
+    final groupedScenarios = groupedScenariosAsync; // Map<String, List<UserScenario>>
 
-    // フィルタリング後に結果が空の場合のメッセージ
     if (groupedScenarios.isEmpty) {
       final message = switch (pageState.filter) {
         MyListFilter.all => '記録されたシナリオはありません。\n「探す」タブから追加しましょう！',
@@ -115,7 +117,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
       );
     }
 
-    // リスト表示
     final groupKeys = groupedScenarios.keys.toList();
 
     return ListView.builder(
@@ -127,7 +128,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // グループ見出し
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: Text(
@@ -135,7 +135,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
-            // グループ内のシナリオリストアイテム
             ...scenariosInGroup.map((userScenario) {
               return Card(
                 margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
