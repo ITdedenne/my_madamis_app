@@ -8,6 +8,10 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_sc
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/providers.dart';
 
+// ★追加: ScenarioPageをインポート
+import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario_page.dart';
+
+
 // --- 状態とフィルターの定義 ---
 
 enum MyListFilter { all, played, possessed } // 0:すべて, 1:通過済, 2:所持
@@ -35,13 +39,17 @@ final myListPageStateProvider = StateProvider<MyListPageState>((ref) {
   return MyListPageState();
 });
 
+// ★★★ allScenariosProvider を修正 ★★★
 // 全シナリオデータを保持するProvider（Scenarioマスターデータ）
 final allScenariosProvider = FutureProvider<List<Scenario>>((ref) async {
   try {
     final repo = ref.watch(scenarioRepositoryProvider);
-    // AmplifyのGraphQLクエリでMalformedHttpRequestExceptionが出る原因となる可能性があったため、
-    // 前回修正したリポジトリのfetchScenariosを呼び出す
-    return repo.fetchScenarios(page: 1, limit: 200); 
+    
+    // 1. 'page: 1' を 'nextToken: null' に修正
+    // 2. 戻り値が ScenarioPage になったため、await して .scenarios を返す
+    final ScenarioPage scenarioPage = await repo.fetchScenarios(nextToken: null, limit: 200); 
+    return scenarioPage.scenarios;
+
   } catch (e) {
     debugPrint('Error loading all scenarios: $e');
     // エラー時はrethrowする

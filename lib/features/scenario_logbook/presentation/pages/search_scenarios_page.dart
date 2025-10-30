@@ -1,4 +1,5 @@
 // ファイルパス: lib/features/scenario_logbook/presentation/pages/search_scenarios_page.dart
+// 内容: 【修正】
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +24,8 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     _searchController.dispose();
     super.dispose();
   }
+  
+  // ★リッスンとNotifierの取得ロジックを build メソッド内に移動（StatelessWidgetの作法に準拠）
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +38,11 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           ),
         );
         ref.read(searchScenariosViewModelProvider.notifier).clearSuccessMessage();
+      }
+
+      // ★ 検索条件がリセットされたら、テキストフィールドもクリアする
+      if (previous?.currentSearchTerm != next.currentSearchTerm && next.currentSearchTerm.isEmpty) {
+        _searchController.clear();
       }
     });
 
@@ -63,17 +71,20 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
               ),
               const SizedBox(width: 8),
               IconButton(
-                icon: Icon(
-                  Icons.filter_list,
-                  color: state.filter.isInitial ? Colors.grey : Theme.of(context).primaryColor, 
-                ),
+                icon: const Icon(Icons.filter_list),
                 onPressed: () {
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
                     builder: (_) => FilterBottomSheet(
                       currentFilter: state.filter,
-                      onApplyFilter: notifier.applyFilter,
+                      onApplyFilter: (newFilter) {
+                        // ★ 検索コントローラーのクリアを applyFilter に委ねる
+                        if (_searchController.text.isNotEmpty) {
+                          _searchController.clear();
+                        }
+                        notifier.applyFilter(newFilter);
+                      },
                     ),
                   );
                 },
@@ -83,14 +94,14 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
         ),
         _buildFilterChips(state, notifier),
         Expanded(child: _buildBody(state, userStatuses)),
-        
-        // ★★★ 修正箇所: データが空でも、総ページ数が1より大きければPaginationControlsを表示 ★★★
-        if (state.totalPages > 1 || state.currentPage > 1) 
+        // ★ ページネーションコントロールの表示条件を変更
+        if (!state.isLoading && state.scenarios.isNotEmpty && (state.currentPageIndex > 0 || state.pageTokens.isNotEmpty))
           _buildPaginationControls(state, notifier),
       ],
     );
   }
   
+  // _buildFilterChips メソッドは変更なし
   Widget _buildFilterChips(SearchScenariosState state, SearchScenariosViewModel notifier) {
     if (state.filter.isInitial) {
       return const SizedBox(height: 8);
@@ -141,6 +152,10 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           ActionChip(
             label: const Text('全クリア'),
             onPressed: () {
+              // ★ 検索コントローラーのクリアも行う
+              if (_searchController.text.isNotEmpty) {
+                _searchController.clear();
+              }
               notifier.applyFilter(SearchFilter.initial());
             },
           )
@@ -149,17 +164,11 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     );
   }
 
+  // _buildBody メソッドは変更なし
   Widget _buildBody(SearchScenariosState state, Map<String, UserScenarioStatus> userStatuses) {
     if (state.isLoading) return const Center(child: CircularProgressIndicator());
     if (state.errorMessage != null) return Center(child: Text('エラー: ${state.errorMessage}'));
-    
-    if (state.scenarios.isEmpty) {
-        // ★修正: 2ページ目以降でデータがない場合のメッセージを調整 ★
-        if (state.currentPage > 1) {
-             return const Center(child: Text('このページにはシナリオがありません。\n戻るか、フィルターを変更してください。'));
-        }
-        return const Center(child: Text('シナリオが見つかりません。'));
-    }
+    if (state.scenarios.isEmpty) return const Center(child: Text('シナリオが見つかりません。'));
 
     return ListView.builder(
       itemCount: state.scenarios.length,
@@ -169,6 +178,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           scenario: scenario,
           status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
           onStatusChanged: (newStatus) {
+            // ステータス更新は一元管理されたNotifierに依頼
             ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
             ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
           },
@@ -177,29 +187,30 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     );
   }
 
+  // ★★★ _buildPaginationControls を大幅に修正 ★★★
   Widget _buildPaginationControls(SearchScenariosState state, SearchScenariosViewModel notifier) {
-    // totalPagesが1以上のときに表示される
+    
+    // ページボタンの総数 = 1ページ目 + トークンの数
+    int totalButtons = state.pageTokens.length + 1;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // 戻るボタン
-          IconButton(
-            icon: const Icon(Icons.arrow_back),
-            onPressed: state.currentPage > 1 ? () => notifier.goToPage(state.currentPage - 1) : null,
-          ),
-          const SizedBox(width: 16),
-          // ページ番号表示（現在のページ / 総ページ数）
-          Text('${state.currentPage} / ${state.totalPages}'),
-          const SizedBox(width: 16),
-          // 進むボタン
-          IconButton(
-            icon: const Icon(Icons.arrow_forward),
-            // ★修正: 現在のページがtotalPages未満で、かつViewModelに次のページのトークンが残っている場合に有効にする
-            onPressed: state.currentPage < state.totalPages ? () => notifier.goToPage(state.currentPage + 1) : null,
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: 8,
+        runSpacing: 8,
+        children: List.generate(totalButtons, (index) {
+          final page = index + 1;
+          final bool isCurrentPage = state.currentPageIndex == index;
+
+          return ElevatedButton(
+            onPressed: isCurrentPage ? null : () => notifier.goToPage(index),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isCurrentPage ? Colors.blue.shade100 : null,
+            ),
+            child: Text('$page'),
+          );
+        }),
       ),
     );
   }

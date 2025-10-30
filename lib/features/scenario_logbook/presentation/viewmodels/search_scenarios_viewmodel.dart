@@ -1,15 +1,20 @@
 // ファイルパス: lib/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart
+// 内容: 【修正】
 
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
-// ★修正: UseCaseの戻り値型 ScenarioFetchResult をインポート
-import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_scenarios_usecase.dart'; 
+import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_scenarios_usecase.dart';
 import 'package:my_madamis_app/providers.dart';
+
+// ★追加
+import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario_page.dart';
+
 
 final getScenariosUseCaseProvider = Provider((ref) => GetScenariosUseCase(ref.watch(scenarioRepositoryProvider)));
 
+// SearchFilter クラスは変更なし
 class SearchFilter {
   final RangeValues playerCountRange;
   final GmRequirement? gmRequirement;
@@ -30,47 +35,56 @@ class SearchFilter {
       authorName == null;
 }
 
+// ★★★ SearchScenariosState を大幅に修正 ★★★
 class SearchScenariosState {
   final bool isLoading;
   final String? errorMessage;
-  final List<Scenario> scenarios;
-  final int currentPage;
-  final int totalPages;
+  final List<Scenario> scenarios; // 現在表示中のページのシナリオ
+  final int currentPageIndex; // 0始まりのページインデックス
+  
+  // 各ページの *次* のトークンを保持するリスト
+  // pageTokens[0] = 2ページ目のトークン
+  // pageTokens[1] = 3ページ目のトークン
+  final List<String?> pageTokens; 
+  
   final String? successMessage;
   final SearchFilter filter;
-  // nextTokenはViewModel内部で Map<_pageTokens> として管理するため、Stateから削除 (UIは直接使用しないため)
-  // final String? nextToken; 
+  final String currentSearchTerm; // 検索クエリも状態として保持
 
   SearchScenariosState({
     this.isLoading = false,
     this.errorMessage,
     this.scenarios = const [],
-    this.currentPage = 1,
-    this.totalPages = 1,
+    this.currentPageIndex = 0,
+    this.pageTokens = const [], // 初期値は空リスト
     this.successMessage,
     SearchFilter? filter,
-    // this.nextToken, // 削除
+    this.currentSearchTerm = '',
   }) : filter = filter ?? SearchFilter.initial();
 
   SearchScenariosState copyWith({
     bool? isLoading,
     String? errorMessage,
     List<Scenario>? scenarios,
-    int? currentPage,
-    int? totalPages,
+    int? currentPageIndex,
+    List<String?>? pageTokens,
     String? successMessage,
     SearchFilter? filter,
-    bool resetPagination = false,
+    String? currentSearchTerm,
+    bool? resetPagination, // ページネーションをリセットするフラグ
   }) {
+    // ページネーションリセットがtrueの場合、関連する値を初期化
+    final bool doReset = resetPagination ?? false;
+
     return SearchScenariosState(
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
-      scenarios: scenarios ?? this.scenarios,
-      currentPage: currentPage ?? this.currentPage,
-      totalPages: totalPages ?? this.totalPages,
+      scenarios: doReset ? [] : (scenarios ?? this.scenarios),
+      currentPageIndex: doReset ? 0 : (currentPageIndex ?? this.currentPageIndex),
+      pageTokens: doReset ? [] : (pageTokens ?? this.pageTokens),
       successMessage: successMessage,
       filter: filter ?? this.filter,
-      // nextTokenのロジックを削除
+      currentSearchTerm: currentSearchTerm ?? this.currentSearchTerm,
     );
   }
 }
@@ -81,70 +95,50 @@ final searchScenariosViewModelProvider =
   return SearchScenariosViewModel(getScenarios);
 });
 
+// ★★★ SearchScenariosViewModel を大幅に修正 ★★★
 class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   final GetScenariosUseCase _getScenarios;
   Timer? _debounce;
-  static const int _limit = 50;
-  static const int _totalScenarios = 175; // 仮の合計シナリオ数 (修正済み)
-
-  // ★★★ 修正: ページングの状態管理 (page number -> nextToken) ★★★
-  Map<int, String?> _pageTokens = {}; 
+  static const int _limit = 50; // 1ページの表示件数 (要件)
 
   SearchScenariosViewModel(this._getScenarios) : super(SearchScenariosState()) {
-    // totalPagesを初期化時に計算し、状態に含める
-    final calculatedTotalPages = (_totalScenarios / _limit).ceil();
-    state = state.copyWith(totalPages: calculatedTotalPages);
-    
-    // 初期ロード
-    _pageTokens = {1: null}; // 1ページ目の開始トークンはnull
-    goToPage(1);
+    goToPage(0); // 最初のページ (インデックス0) を読み込む
   }
 
-  Future<void> goToPage(int page, {String? searchTerm}) async {
-    // ページング範囲チェック (totalPages <= page のチェックを緩和し、nextTokenがnullになるまで進める)
-    if (page < 1 || (page > state.currentPage && !_pageTokens.containsKey(page))) {
-        // 次のページボタンを押したが、トークンがなければ終了
-        return;
-    }
-
-    // 読み込み中の場合は中断
-    if (state.isLoading) return;
+  Future<void> goToPage(int pageIndex) async {
+    state = state.copyWith(isLoading: true, currentPageIndex: pageIndex, errorMessage: null);
     
-    // 取得開始トークンを設定
-    final startToken = _pageTokens[page]; 
+    // ページ1 (index 0) をリクエストする場合は token は null
+    // ページ2 (index 1) をリクエストする場合は pageTokens[0] を使う
+    final String? token = (pageIndex == 0) ? null : state.pageTokens[pageIndex - 1];
 
-    state = state.copyWith(isLoading: true, currentPage: page, errorMessage: null);
     try {
-      // ★★★ 修正: UseCaseの戻り値の型と引数に合わせる ★★★
-      final result = await _getScenarios.call(
-        page: page,
+      final ScenarioPage result = await _getScenarios(
+        nextToken: token,
         limit: _limit,
-        searchTerm: searchTerm,
+        searchTerm: state.currentSearchTerm.isEmpty ? null : state.currentSearchTerm,
         playerCountRange: state.filter.playerCountRange,
         gmRequirement: state.filter.gmRequirement,
         authorName: state.filter.authorName,
-        startToken: startToken, 
       );
-      
-      // 次のページのトークンを保存
-      final nextToken = result.nextToken;
-      if (nextToken != null) {
-          _pageTokens[page + 1] = nextToken;
-      } else {
-          // 次のページがない場合、総ページ数を更新
-          _pageTokens.remove(page + 1);
-      }
-      
-      // ★修正: nextTokenに基づいて totalPages を更新
-      final actualTotalPages = nextToken == null ? page : state.totalPages;
 
+      List<String?> newPageTokens = List.from(state.pageTokens);
+
+      // ページトークンリストを更新
+      if (pageIndex == newPageTokens.length) {
+        // まだリストにない新しいページの結果の場合
+        if (result.nextToken != null) {
+          newPageTokens.add(result.nextToken); // 次のトークンを追加
+        }
+      } else {
+        // 既存のページ (例: 1ページ目に戻る) の場合はトークンリストは変更しない
+      }
 
       state = state.copyWith(
         isLoading: false,
         scenarios: result.scenarios,
-        totalPages: actualTotalPages,
+        pageTokens: newPageTokens,
       );
-
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
     }
@@ -153,22 +147,19 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   void onSearchTermChanged(String term) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      // 検索・フィルタ変更時はページング情報をリセット
-      _pageTokens = {1: null}; 
-      final calculatedTotalPages = (_totalScenarios / _limit).ceil(); // 検索結果総数は不明だが、仮の最大値に戻す
-      state = state.copyWith(totalPages: calculatedTotalPages, currentPage: 1, filter: state.filter, resetPagination: true); 
-      goToPage(1, searchTerm: term);
+      // 検索条件が変わったら、ページネーションをリセットして1ページ目から再検索
+      state = state.copyWith(currentSearchTerm: term, resetPagination: true);
+      goToPage(0);
     });
   }
 
   void applyFilter(SearchFilter newFilter) {
-    // フィルタ変更時はページング情報をリセット
-    _pageTokens = {1: null}; 
-    final calculatedTotalPages = (_totalScenarios / _limit).ceil();
-    state = state.copyWith(filter: newFilter, totalPages: calculatedTotalPages, currentPage: 1, resetPagination: true);
-    goToPage(1);
+    // フィルターが変わったら、ページネーションをリセットして1ページ目から再検索
+    state = state.copyWith(filter: newFilter, resetPagination: true);
+    goToPage(0);
   }
 
+  // --- メッセージ関連は変更なし ---
   void showSuccessMessage(String message) {
     state = state.copyWith(successMessage: message);
   }
