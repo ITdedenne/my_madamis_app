@@ -1,3 +1,6 @@
+// ファイルパス: lib/models/UserScenario.dart
+// 内容: 【修正】
+
 /*
 * Copyright 2021 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 *
@@ -5,7 +8,7 @@
 * You may not use this file except in compliance with the License.
 * A copy of the License is located at
 *
-*  http://aws.amazon.com/apache2.0
+* http://aws.amazon.com/apache2.0
 *
 * or in the "license" file accompanying this file. This file is distributed
 * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
@@ -46,17 +49,10 @@ class UserScenario extends amplify_core.Model {
       );
   }
   
-  String get status {
-    try {
-      return _status!;
-    } catch(e) {
-      throw amplify_core.AmplifyCodeGenModelException(
-          amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
-          recoverySuggestion:
-            amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastRecoverySuggestion,
-          underlyingException: e.toString()
-          );
-    }
+  // ★★★ 修正点 ★★★
+  // String get status { ... } を変更
+  String? get status {
+    return _status;
   }
   
   User? get user {

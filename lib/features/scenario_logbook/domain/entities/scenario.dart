@@ -1,4 +1,6 @@
 // ファイルパス: lib/features/scenario_logbook/domain/entities/scenario.dart
+// 内容: 【修正】
+
 import 'package:equatable/equatable.dart';
 // Amplifyモデルを参照するためにインポートエイリアスを使用
 import 'package:my_madamis_app/models/ModelProvider.dart' as amplify_models;
@@ -10,21 +12,21 @@ class Scenario extends Equatable {
   final String id;
   final String title;
   final String authorName;
-  final String authorId; // ★ 追加: Authorテーブルとの連携用
+  final String authorId; 
   final int minPlayerCount;
   final int maxPlayerCount;
   final GmRequirement gmRequirement;
-  final String? storeUrl; // ★ 追加: storeUrlも表示等で使う可能性を考慮
+  final String? storeUrl; 
 
   const Scenario({
     required this.id,
     required this.title,
     required this.authorName,
-    required this.authorId, // ★ 追加
+    required this.authorId, 
     required this.minPlayerCount,
     required this.maxPlayerCount,
     required this.gmRequirement,
-    this.storeUrl, // ★ 追加
+    this.storeUrl, 
   });
 
   @override
@@ -32,18 +34,22 @@ class Scenario extends Equatable {
         id,
         title,
         authorName,
-        authorId, // ★ 追加
+        authorId, 
         minPlayerCount,
         maxPlayerCount,
         gmRequirement,
-        storeUrl, // ★ 追加
+        storeUrl, 
       ];
 
-  // ★ 追加: Amplifyモデルからドメインエンティティへの変換メソッド
+  // ★★★ 修正点: `fromModel` のシグネチャと実装を修正 ★★★
   factory Scenario.fromModel(
-      amplify_models.Scenario scenarioModel, String authorName) {
+      amplify_models.Scenario scenarioModel, 
+      String authorName,
+      String title, // title を引数で受け取る
+  ) {
     // GmRequirementのマッピング (AmplifyモデルのStringからEnumへ)
     GmRequirement gmReq;
+    // ★ 修正: scenarioModel.gmRequirement は String? のため null チェック
     switch (scenarioModel.gmRequirement?.toLowerCase()) {
       case 'required':
         gmReq = GmRequirement.required;
@@ -59,7 +65,7 @@ class Scenario extends Equatable {
 
     return Scenario(
       id: scenarioModel.id,
-      title: scenarioModel.title,
+      title: title, // ★ 修正: 引数の title を使用
       authorName: authorName, // 引数で受け取る
       authorId: scenarioModel.author?.id ?? '', // AuthorモデルからIDを取得
       minPlayerCount: scenarioModel.minPlayerCount ?? 0, // nullの場合は0にフォールバック
