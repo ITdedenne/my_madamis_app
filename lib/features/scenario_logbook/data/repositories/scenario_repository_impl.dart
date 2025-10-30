@@ -14,7 +14,7 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenari
 class ScenarioRepositoryImpl implements ScenarioRepository {
   
   ScenarioRepositoryImpl() {
-    // コンストラクタ内のダミーデータ生成ロジックは削除済み
+    // コンストラクタ
   }
 
   // --- _getCurrentUserId と _findExistingUserScenario は変更なし ---
@@ -66,10 +66,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   }
   // ---
 
-  // ★★★ fetchScenarios を大幅に修正 ★★★
+  // ★★★ fetchScenarios を修正 ★★★
   @override
   Future<ScenarioPage> fetchScenarios({
-    String? nextToken, // ★ page から nextToken に変更
+    String? nextToken, 
     int limit = 50,
     String? searchTerm,
     RangeValues? playerCountRange,
@@ -103,12 +103,9 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         filter['or'] = orConditions;
       }
 
-      // ★ offsetの計算を削除
-      // final offset = (page - 1) * limit;
-
       final Map<String, dynamic> queryVariables = {
         'limit': limit,
-        'nextToken': nextToken, // ★ 自作のnextTokenをやめ、引数をそのまま渡す
+        'nextToken': nextToken,
       };
       if (filter.isNotEmpty) {
         queryVariables['filter'] = filter;
@@ -138,7 +135,9 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         modelType: const PaginatedModelType(amplify_models.Scenario.classType),
         variables: queryVariables, 
         decodePath: 'listScenarios', 
-        authorizationMode: APIAuthorizationType.apiKey,
+        // ★★★ 修正点 ★★★
+        // authorizationMode: APIAuthorizationType.apiKey, // 古い設定
+        authorizationMode: APIAuthorizationType.userPools, // ★ ログインユーザーの権限(Cognito)で実行
       );
 
       safePrint('Executing GraphQL Query with variables: ${request.variables}');
@@ -172,10 +171,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
          ).toList();
       }
 
-      // 3. ★ ScenarioPage でラップして返す
+      // 3. ScenarioPage でラップして返す
       return ScenarioPage(
         scenarios: scenarios,
-        nextToken: data.nextToken, // ★ AmplifyからのnextTokenをそのまま返す
+        nextToken: data.nextToken, 
       );
 
     } on ApiException catch (e) {
@@ -187,9 +186,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     }
   }
 
-  // ★ _calculateNextToken は不要なため削除
-
-  // --- fetchAllAuthorNames, fetchMyList, updateUserScenarioStatus, removeUserScenarioStatus は変更なし ---
+  // ★★★ fetchAllAuthorNames を修正 ★★★
   @override
   Future<List<String>> fetchAllAuthorNames() async {
      try {
@@ -208,7 +205,9 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
          modelType: const PaginatedModelType(amplify_models.Author.classType),
          variables: {'limit': 1000},
          decodePath: 'listAuthors',
-         authorizationMode: APIAuthorizationType.apiKey,
+         // ★★★ 修正点 ★★★
+         // authorizationMode: APIAuthorizationType.apiKey, // 古い設定
+         authorizationMode: APIAuthorizationType.userPools, // ★ ログインユーザーの権限(Cognito)で実行
       );
 
        final response = await Amplify.API.query(request: request).response;
@@ -234,6 +233,9 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
        rethrow;
      }
   }
+  
+  // --- fetchMyList, updateUserScenarioStatus, removeUserScenarioStatus は変更なし ---
+  // (これらは元から userPools を使っていたため問題ありません)
   
   @override
   Future<List<UserScenario>> fetchMyList() async {
