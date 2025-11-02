@@ -1,28 +1,24 @@
-// ファイルパス: lib/features/scenario_logbook/domain/usecases/get_scenarios_usecase.dart
+// lib/features/scenario_logbook/domain/usecases/get_scenarios_usecase.dart
 
-import 'package:flutter/material.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/repositories/scenario_repository.dart';
+import 'package:my_madamis_app/models/ModelProvider.dart';
 
-class GetScenariosUseCase {
-  final ScenarioRepository _repository;
-  GetScenariosUseCase(this._repository);
+class GetScenariosUsecase {
+  final ScenarioRepository repository;
 
-  Future<List<Scenario>> call({
-    required int page,
-    int limit = 50,
-    String? searchTerm,
-    RangeValues? playerCountRange,
-    GmRequirement? gmRequirement,
-    String? authorName,
+  GetScenariosUsecase(this.repository);
+
+  Future<ScenarioWithMyStatusConnection> call({
+    required String userId,
+    Map<String, dynamic>? filter,
+    int? limit,
+    String? nextToken,
   }) {
-    return _repository.fetchScenarios(
-      page: page,
+    return repository.listScenariosWithMyStatus(
+      userId: userId,
+      filter: filter,
       limit: limit,
-      searchTerm: searchTerm,
-      playerCountRange: playerCountRange,
-      gmRequirement: gmRequirement,
-      authorName: authorName,
+      nextToken: nextToken,
     );
   }
 }

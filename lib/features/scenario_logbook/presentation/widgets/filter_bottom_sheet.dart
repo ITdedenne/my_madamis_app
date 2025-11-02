@@ -1,118 +1,102 @@
-// ファイルパス: lib/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart
+// lib/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
-import 'package:my_madamis_app/providers.dart';
-
-import '../pages/author_search_page.dart';
 
 class FilterBottomSheet extends ConsumerStatefulWidget {
-  final SearchFilter currentFilter;
-  final Function(SearchFilter newFilter) onApplyFilter;
-
-  const FilterBottomSheet({
-    super.key,
-    required this.currentFilter,
-    required this.onApplyFilter,
-  });
+  const FilterBottomSheet({super.key});
 
   @override
   ConsumerState<FilterBottomSheet> createState() => _FilterBottomSheetState();
 }
 
 class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
-  late RangeValues _playerCountRange;
-  late GmRequirement? _gmRequirement;
-  late String? _authorName;
+  // Widgetのローカルステートとして、現在のProviderの値を初期値に持つ
+  // これにより、ユーザーが「適用」を押すまでProviderを更新しない
+  late int? _minPlayers;
+  late int? _maxPlayers;
+  // TODO: 他のフィルタ項目もローカルステートとして定義
 
   @override
   void initState() {
     super.initState();
-    _playerCountRange = widget.currentFilter.playerCountRange;
-    _gmRequirement = widget.currentFilter.gmRequirement;
-    _authorName = widget.currentFilter.authorName;
+    // 現在のProviderの値を読み込む
+    final currentFilter = ref.read(searchFilterProvider);
+    _minPlayers = currentFilter.minPlayerCount;
+    _maxPlayers = currentFilter.maxPlayerCount;
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(24.0),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('絞り込み', style: Theme.of(context).textTheme.titleLarge),
-          const Divider(),
-          const SizedBox(height: 16),
-
-          // --- プレイ人数 ---
-          Text('プレイ人数: ${_playerCountRange.start.round()}人 〜 ${_playerCountRange.end.round()}人'),
-          RangeSlider(
-            values: _playerCountRange,
-            min: 1,
-            max: 15,
-            divisions: 14,
-            labels: RangeLabels(
-              _playerCountRange.start.round().toString(),
-              _playerCountRange.end.round().toString(),
-            ),
-            onChanged: (values) {
-              setState(() {
-                _playerCountRange = values;
-              });
-            },
-          ),
+          Text('絞り込み', style: Theme.of(context).textTheme.headlineSmall),
           const SizedBox(height: 24),
-
-          // --- GM要否 ---
-          const Text('GM要否'),
-          Wrap(
-            spacing: 8.0,
-            children: GmRequirement.values.map((req) {
-              return ChoiceChip(
-                label: Text(req.displayName),
-                selected: _gmRequirement == req,
-                onSelected: (selected) {
-                  setState(() {
-                    _gmRequirement = selected ? req : null;
-                  });
-                },
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 24),
-
-          // --- 作者名 ---
-          const Text('作者'),
-          ListTile(
-            title: Text(_authorName ?? '指定なし'),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () async {
-              final allAuthors = await ref.read(scenarioRepositoryProvider).fetchAllAuthorNames();
-              final selectedAuthor = await Navigator.of(context).push<String>(
-                MaterialPageRoute(
-                  builder: (_) => AuthorSearchPage(allAuthors: allAuthors),
+          
+          // 人数フィルタ (例)
+          Text('プレイ人数', style: Theme.of(context).textTheme.titleMedium),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButton<int?>(
+                  value: _minPlayers,
+                  hint: const Text('下限'),
+                  isExpanded: true,
+                  items: [null, 1, 2, 3, 4, 5, 6, 7, 8]
+                      .map((val) => DropdownMenuItem<int?>(
+                            value: val,
+                            child: Text(val == null ? '下限なし' : '$val 人'),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _minPlayers = val;
+                    });
+                  },
                 ),
-              );
-              if (selectedAuthor != null) {
-                setState(() {
-                  _authorName = selectedAuthor;
-                });
-              }
-            },
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text('〜'),
+              ),
+              Expanded(
+                child: DropdownButton<int?>(
+                  value: _maxPlayers,
+                  hint: const Text('上限'),
+                  isExpanded: true,
+                  items: [null, 1, 2, 3, 4, 5, 6, 7, 8]
+                      .map((val) => DropdownMenuItem<int?>(
+                            value: val,
+                            child: Text(val == null ? '上限なし' : '$val 人'),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _maxPlayers = val;
+                    });
+                  },
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 24),
 
-          // --- ボタン ---
+          // TODO: 他のフィルタ項目 (GM要件、時間など) をここに追加
+
+          const SizedBox(height: 24),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
                   onPressed: () {
-                    widget.onApplyFilter(SearchFilter.initial());
-                    Navigator.pop(context);
+                    // フィルタをリセット
+                    ref.read(searchFilterProvider.notifier).state =
+                        SearchFilterState();
+                    Navigator.pop(context); // シートを閉じる
                   },
                   child: const Text('リセット'),
                 ),
@@ -121,35 +105,23 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    final newFilter = SearchFilter(
-                      playerCountRange: _playerCountRange,
-                      gmRequirement: _gmRequirement,
-                      authorName: _authorName,
-                    );
-                    widget.onApplyFilter(newFilter);
-                    Navigator.pop(context);
+                    // フィルタを適用
+                    ref.read(searchFilterProvider.notifier).update(
+                          (state) => state.copyWith(
+                            minPlayerCount: _minPlayers,
+                            maxPlayerCount: _maxPlayers,
+                            // TODO: 他のフィルタ項目もここでセット
+                          ),
+                        );
+                    Navigator.pop(context); // シートを閉じる
                   },
                   child: const Text('適用'),
                 ),
               ),
             ],
-          ),
+          )
         ],
       ),
     );
-  }
-}
-
-// GmRequirement に表示名を追加するための extension
-extension GmRequirementExtension on GmRequirement {
-  String get displayName {
-    switch (this) {
-      case GmRequirement.required:
-        return '必須';
-      case GmRequirement.optional:
-        return '任意';
-      case GmRequirement.none:
-        return '不要';
-    }
   }
 }

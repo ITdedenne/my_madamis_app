@@ -1,134 +1,163 @@
-// ファイルパス: lib/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart
+// lib/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart
 
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
+import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_scenarios_usecase.dart';
+import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/update_user_scenario_status_usecase.dart';
+import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
+import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
 
-final getScenariosUseCaseProvider = Provider((ref) => GetScenariosUseCase(ref.watch(scenarioRepositoryProvider)));
+// 検索・フィルタ条件を保持するデータクラス
+class SearchFilterState {
+  final String? keyword;
+  final int? minPlayerCount;
+  final int? maxPlayerCount;
+  // TODO: 他のフィルタ条件（時間、GM要件など）もここに追加
 
-class SearchFilter {
-  final RangeValues playerCountRange;
-  final GmRequirement? gmRequirement;
-  final String? authorName;
-
-  SearchFilter({
-    required this.playerCountRange,
-    this.gmRequirement,
-    this.authorName,
+  SearchFilterState({
+    this.keyword,
+    this.minPlayerCount,
+    this.maxPlayerCount,
   });
-  
-  factory SearchFilter.initial() => SearchFilter(playerCountRange: const RangeValues(1, 15));
 
-  bool get isInitial =>
-      playerCountRange.start == 1 &&
-      playerCountRange.end == 15 &&
-      gmRequirement == null &&
-      authorName == null;
+  SearchFilterState copyWith({
+    String? keyword,
+    int? minPlayerCount,
+    int? maxPlayerCount,
+  }) {
+    return SearchFilterState(
+      keyword: keyword ?? this.keyword,
+      minPlayerCount: minPlayerCount ?? this.minPlayerCount,
+      maxPlayerCount: maxPlayerCount ?? this.maxPlayerCount,
+    );
+  }
+
+  // Amplifyの filter マップに変換
+  Map<String, dynamic>? toFilterMap() {
+    final Map<String, dynamic> filter = {};
+
+    // キーワード検索 (タイトル or 作者名)
+    if (keyword != null && keyword!.isNotEmpty) {
+      filter['or'] = [
+        {'title': {'contains': keyword}},
+        {'author': {'authorName': {'contains': keyword}}},
+      ];
+    }
+    
+    // 人数
+    if (minPlayerCount != null) {
+      filter['minPlayerCount'] = {'ge': minPlayerCount};
+    }
+    if (maxPlayerCount != null) {
+      filter['maxPlayerCount'] = {'le': maxPlayerCount};
+    }
+
+    // TODO: 他のフィルタ条件もここに追加
+
+    return filter.isEmpty ? null : filter;
+  }
 }
 
+// フィルタ状態を管理するProvider
+final searchFilterProvider =
+    StateProvider<SearchFilterState>((ref) => SearchFilterState());
+
+// StateNotifier の状態クラス
 class SearchScenariosState {
-  final bool isLoading;
-  final String? errorMessage;
-  final List<Scenario> scenarios;
-  final int currentPage;
-  final int totalPages;
-  final String? successMessage;
-  final SearchFilter filter;
+  final AsyncValue<List<ScenarioWithMyStatus>> scenarios;
+  // TODO: ページネーション用の nextToken をここに保持
+  // final String? nextToken;
 
   SearchScenariosState({
-    this.isLoading = false,
-    this.errorMessage,
-    this.scenarios = const [],
-    this.currentPage = 1,
-    this.totalPages = 1,
-    this.successMessage,
-    SearchFilter? filter,
-  }) : filter = filter ?? SearchFilter.initial();
+    this.scenarios = const AsyncValue.loading(),
+    // this.nextToken,
+  });
 
   SearchScenariosState copyWith({
-    bool? isLoading,
-    String? errorMessage,
-    List<Scenario>? scenarios,
-    int? currentPage,
-    int? totalPages,
-    String? successMessage,
-    SearchFilter? filter,
+    AsyncValue<List<ScenarioWithMyStatus>>? scenarios,
+    // String? nextToken,
   }) {
     return SearchScenariosState(
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
       scenarios: scenarios ?? this.scenarios,
-      currentPage: currentPage ?? this.currentPage,
-      totalPages: totalPages ?? this.totalPages,
-      successMessage: successMessage,
-      filter: filter ?? this.filter,
+      // nextToken: nextToken ?? this.nextToken,
     );
   }
 }
 
-final searchScenariosViewModelProvider =
-    StateNotifierProvider<SearchScenariosViewModel, SearchScenariosState>((ref) {
-  final getScenarios = ref.watch(getScenariosUseCaseProvider);
-  return SearchScenariosViewModel(getScenarios);
-});
-
+// StateNotifier
 class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
-  final GetScenariosUseCase _getScenarios;
-  Timer? _debounce;
-  static const int _limit = 50;
-  static const int _totalScenarios = 175;
-
-  SearchScenariosViewModel(this._getScenarios) : super(SearchScenariosState()) {
-    goToPage(1);
+  SearchScenariosViewModel(this._ref) : super(SearchScenariosState()) {
+    // フィルタ条件が変更されたら自動でフェッチする
+    _ref.listen<SearchFilterState>(searchFilterProvider, (_, __) {
+      fetch();
+    });
+    fetch(); // 初期データ取得
   }
 
-  Future<void> goToPage(int page, {String? searchTerm}) async {
-    state = state.copyWith(isLoading: true, currentPage: page, errorMessage: null);
+  final Ref _ref;
+
+  // データ取得
+  Future<void> fetch() async {
+    state = state.copyWith(scenarios: const AsyncValue.loading());
     try {
-      final newScenarios = await _getScenarios(
-        page: page,
-        limit: _limit,
-        searchTerm: searchTerm,
-        playerCountRange: state.filter.playerCountRange,
-        gmRequirement: state.filter.gmRequirement,
-        authorName: state.filter.authorName,
+      final authState = _ref.read(authStateNotifierProvider);
+      final user = authState.cognitoUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      // 現在のフィルタ条件を取得
+      final filterState = _ref.read(searchFilterProvider);
+      final getScenariosUsecase = _ref.read(getScenariosUsecaseProvider);
+
+      // BEにクエリ実行
+      final connection = await getScenariosUsecase(
+        userId: user.userId,
+        filter: filterState.toFilterMap(),
+        limit: 50, // ページネーション (まずは50件)
       );
+
       state = state.copyWith(
-        isLoading: false,
-        scenarios: newScenarios,
-        totalPages: (_totalScenarios / _limit).ceil(),
+        scenarios: AsyncValue.data(connection.items),
+        // nextToken: connection.nextToken,
       );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    } catch (e, s) {
+      state = state.copyWith(scenarios: AsyncValue.error(e, s));
     }
   }
 
-  void onSearchTermChanged(String term) {
-    if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      goToPage(1, searchTerm: term);
-    });
-  }
+  // ステータスを更新するメソッド
+  Future<void> updateScenarioStatus(
+      String scenarioId, bool isPlayed, bool isPossessed) async {
+    final user = _ref.read(authStateNotifierProvider).cognitoUser;
+    if (user == null) return;
 
-  void applyFilter(SearchFilter newFilter) {
-    state = state.copyWith(filter: newFilter);
-    goToPage(1);
-  }
+    final usecase = _ref.read(updateUserScenarioStatusUsecaseProvider);
 
-  void showSuccessMessage(String message) {
-    state = state.copyWith(successMessage: message);
-  }
+    try {
+      await usecase(
+        userId: user.userId,
+        scenarioId: scenarioId,
+        isPlayed: isPlayed,
+        isPossessed: isPossessed,
+      );
 
-  void clearSuccessMessage() {
-    state = state.copyWith(successMessage: null);
-  }
+      // データを再フェッチ
+      await fetch();
+      
+      // マイリスト側も更新を反映させるために再フェッチをキック
+      _ref.read(myListViewModelProvider.notifier).fetch();
 
-  @override
-  void dispose() {
-    _debounce?.cancel();
-    super.dispose();
+    } catch (e) {
+      // エラーハンドリング
+    }
   }
 }
+
+// StateNotifierProvider
+final searchScenariosViewModelProvider =
+    StateNotifierProvider<SearchScenariosViewModel, SearchScenariosState>(
+  (ref) => SearchScenariosViewModel(ref),
+);

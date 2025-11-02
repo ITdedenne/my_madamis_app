@@ -1,4 +1,4 @@
-// ファイルパス: lib/features/scenario_logbook/presentation/pages/scenario_logbook_page.dart
+// lib/features/scenario_logbook/presentation/pages/scenario_logbook_page.dart
 
 import 'package:flutter/material.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/pages/my_list_page.dart';
@@ -9,30 +9,22 @@ class ScenarioLogbookPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TabController を使ってタブの状態を管理
     return DefaultTabController(
-      length: 2, // タブの数
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('シナリオ手帳'),
           bottom: const TabBar(
             tabs: [
-              Tab(
-                icon: Icon(Icons.search),
-                text: '探す',
-              ),
-              Tab(
-                icon: Icon(Icons.book),
-                text: 'マイリスト',
-              ),
+              Tab(text: '探す'),
+              Tab(text: 'マイリスト'),
             ],
           ),
         ),
-        // TabBarView を使ってタブに応じた画面を表示
         body: const TabBarView(
           children: [
-            SearchScenariosPage(), // 0番目のタブ
-            MyListPage(),          // 1番目のタブ
+            SearchScenariosPage(), // 修正後のPage
+            MyListPage(),          // 修正後のPage
           ],
         ),
       ),

@@ -1,11 +1,14 @@
-import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
+// lib/features/scenario_logbook/domain/usecases/get_my_list_usecase.dart
+
 import 'package:my_madamis_app/features/scenario_logbook/domain/repositories/scenario_repository.dart';
+import 'package:my_madamis_app/models/ModelProvider.dart';
 
-class GetMyListUseCase {
-  final ScenarioRepository _repository;
-  GetMyListUseCase(this._repository);
+class GetMyListUsecase {
+  final ScenarioRepository repository;
 
-  Future<List<UserScenario>> call() {
-    return _repository.fetchMyList();
+  GetMyListUsecase(this.repository);
+
+  Future<List<ScenarioLogbookEntry>> call(String userId) {
+    return repository.getMyScenarioLogbook(userId);
   }
 }
