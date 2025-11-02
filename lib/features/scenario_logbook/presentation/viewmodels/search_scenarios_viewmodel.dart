@@ -65,7 +65,7 @@ final searchFilterProvider =
 
 // StateNotifier の状態クラス
 class SearchScenariosState {
-  final AsyncValue<List<ScenarioWithMyStatus>> scenarios;
+  final AsyncValue<List<Scenario>> scenarios;
   // TODO: ページネーション用の nextToken をここに保持
   // final String? nextToken;
 
@@ -75,7 +75,7 @@ class SearchScenariosState {
   });
 
   SearchScenariosState copyWith({
-    AsyncValue<List<ScenarioWithMyStatus>>? scenarios,
+    AsyncValue<List<Scenario>>? scenarios,
     // String? nextToken,
   }) {
     return SearchScenariosState(
@@ -121,7 +121,7 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
 
       state = state.copyWith(
         // 'List<...>?' can't be assigned エラーを修正
-        scenarios: AsyncValue.data(connection.items ?? []), 
+        scenarios: AsyncValue.data([]), 
         // nextToken: connection.nextToken,
       );
     } catch (e, s) {
