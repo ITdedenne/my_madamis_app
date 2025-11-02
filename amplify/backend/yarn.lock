@@ -2,12 +2,12 @@
 # yarn lockfile v1
 
 
-"@aws-amplify/amplify-category-custom@3.1.30":
-  version "3.1.30"
-  resolved "https://registry.yarnpkg.com/@aws-amplify/amplify-category-custom/-/amplify-category-custom-3.1.30.tgz#81fdcc77b36ed73974d331bb524f50029ec5fa6a"
-  integrity sha512-TVmn9usCqRzUy6OM8rqGzX8dXMRtPlkr/N17fyutxr4Tf95/5TiTcs+hkGz/JcYUURgvp5csggYg1L2uu3TvrQ==
+"@aws-amplify/amplify-category-custom@3.1.31":
+  version "3.1.31"
+  resolved "https://registry.yarnpkg.com/@aws-amplify/amplify-category-custom/-/amplify-category-custom-3.1.31.tgz#795c6710cd4b8ab2f277a26128ff17332c57628e"
+  integrity sha512-w3j1M6S4Q7qdiRPUoxw/9YFaDp1hkdyTOl/Xn7QsTGeJxYe0U0KKDBzVY8lRs+l4AaIVgaxEkdJyo6wjyGYBaA==
   dependencies:
-    "@aws-amplify/amplify-cli-core" "4.4.3"
+    "@aws-amplify/amplify-cli-core" "4.4.4"
     "@aws-amplify/amplify-prompts" "2.8.7"
     aws-cdk-lib "~2.189.1"
     execa "^5.1.1"
@@ -16,16 +16,16 @@
     ora "^4.0.3"
     uuid "^8.3.2"
 
-"@aws-amplify/amplify-cli-core@4.4.3":
-  version "4.4.3"
-  resolved "https://registry.yarnpkg.com/@aws-amplify/amplify-cli-core/-/amplify-cli-core-4.4.3.tgz#57dff684701b9c3e25928ad08d886315f24c72ba"
-  integrity sha512-lOqa2bUQEl6q1NkdsRoQFzkIGxpGU433hMrpKsExI2wmDAqgQWsOv9K4BCCDGs6YeooMB8IIAdKIm1jRC+mmGg==
+"@aws-amplify/amplify-cli-core@4.4.4":
+  version "4.4.4"
+  resolved "https://registry.yarnpkg.com/@aws-amplify/amplify-cli-core/-/amplify-cli-core-4.4.4.tgz#c075a3617a713219569743d06976de6b2f8c3b43"
+  integrity sha512-8YhyiEcfN9kbcoztTxF9s0DCaodRs5McV/saz41TK6Z8BjYi+LVvNGBkFDqdLRVZnUsY16eGvG78to+W6CFWQQ==
   dependencies:
     "@aws-amplify/amplify-cli-logger" "1.3.8"
     "@aws-amplify/amplify-function-plugin-interface" "1.12.1"
     "@aws-amplify/amplify-prompts" "2.8.7"
     "@aws-amplify/graphql-transformer-interfaces" "^3.12.1"
-    "@aws-sdk/util-arn-parser" "^3.310.0"
+    "@aws-sdk/util-arn-parser" "^3.893.0"
     "@yarnpkg/lockfile" "^1.1.0"
     ajv "^6.12.6"
     aws-cdk-lib "~2.189.1"
@@ -81,12 +81,12 @@
     enquirer "^2.3.6"
 
 "@aws-amplify/cli-extensibility-helper@^3.0.0":
-  version "3.0.40"
-  resolved "https://registry.yarnpkg.com/@aws-amplify/cli-extensibility-helper/-/cli-extensibility-helper-3.0.40.tgz#8011d694b6ec15f8d5ad11bdac3f4184d8a3c17d"
-  integrity sha512-HZEJRGiOqNXmBskS0VXH5gpVxvBW0U3TXtHoKWMUoqBA4hbLLAw6BuQnLD9t07zgK0BshgXZcYsFn+zoUsF4/A==
+  version "3.0.41"
+  resolved "https://registry.yarnpkg.com/@aws-amplify/cli-extensibility-helper/-/cli-extensibility-helper-3.0.41.tgz#145405c40084f2ebcb35253c41720a9fe9e53eb6"
+  integrity sha512-AxZeu6qpnRBvlDla/Z/hLGZGgy0+2sBx6JH7SkPaisT5uQJO9LCFYzpjyCYSvEKoQ1naWyH0HxhhpiG6pbb2zA==
   dependencies:
-    "@aws-amplify/amplify-category-custom" "3.1.30"
-    "@aws-amplify/amplify-cli-core" "4.4.3"
+    "@aws-amplify/amplify-category-custom" "3.1.31"
+    "@aws-amplify/amplify-cli-core" "4.4.4"
     aws-cdk-lib "~2.189.1"
 
 "@aws-amplify/graphql-transformer-interfaces@^3.12.1":
@@ -114,7 +114,7 @@
     jsonschema "~1.4.1"
     semver "^7.7.1"
 
-"@aws-sdk/util-arn-parser@^3.310.0":
+"@aws-sdk/util-arn-parser@^3.893.0":
   version "3.893.0"
   resolved "https://registry.yarnpkg.com/@aws-sdk/util-arn-parser/-/util-arn-parser-3.893.0.tgz#fcc9b792744b9da597662891c2422dda83881d8d"
   integrity sha512-u8H4f2Zsi19DGnwj5FSZzDMhytYF/bCh37vAtBsn3cNDL3YG578X5oc+wSX54pM3tOxS+NY7tvOAo52SW7koUA==
@@ -1192,9 +1192,9 @@ mimic-fn@^2.1.0:
   integrity sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==
 
 minimatch@^10.0.3:
-  version "10.0.3"
-  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-10.0.3.tgz#cf7a0314a16c4d9ab73a7730a0e8e3c3502d47aa"
-  integrity sha512-IPZ167aShDZZUMdRk66cyQAW3qr0WzbHkPdMYa8bzZhlHhO3jALbKdxcaak7W9FfT2rZNpQuUu4Od7ILEpXSaw==
+  version "10.1.1"
+  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-10.1.1.tgz#e6e61b9b0c1dcab116b5a7d1458e8b6ae9e73a55"
+  integrity sha512-enIvLvRAFZYXJzkCYG5RKmPfrFArdLv+R+lbQ53BmIMLIry74bjKzX6iHAm8WYamJkhSSEabrWN5D97XnKObjQ==
   dependencies:
     "@isaacs/brace-expansion" "^5.0.0"
 
