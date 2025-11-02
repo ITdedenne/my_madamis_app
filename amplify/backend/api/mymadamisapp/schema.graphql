@@ -25,10 +25,13 @@ type User @model
     { allow: owner, operations: [read, update] }, # 自分のプロフィールは読み書き可
     { allow: private, operations: [read] }      # 他の認証ユーザーは検索・閲覧可
   ])
- #@searchable # ★要件 2.2.1「ユーザー検索」のために @searchable を追加
 {
   id: ID! @primaryKey # Cognito の sub (owner)
   username: String! # 検索対象 (2.2.1)
+  
+  # 【最終的な追加】フレンドIDの定義とGSI
+  friendID: String! @index(name: "byFriendID", queryField: "userByFriendID") 
+  
   # (必要に応じてプロフィール画像URLなどを追加)
   
   # User 1-N UserScenario (自分が記録したシナリオ)
@@ -49,7 +52,6 @@ type UserRelationship @model
   ])
 {
   id: ID!
-  
   # フォローした人 (PK)
   followingUserId: ID! @index(name: "byFollowingUser")
   followingUser: User @belongsTo(fields: ["followingUserId"])
@@ -68,7 +70,6 @@ type UserScenario @model
   ])
 {
   id: ID!
-  
   # 【修正】誰の記録か (PK)
   userId: ID! @index(name: "byUser")
   user: User @belongsTo(fields: ["userId"])
@@ -118,6 +119,6 @@ type Query {
 
   # 2.2.3: 【新規】他人のマイリスト取得
   getUserScenarioLogbook(userId: ID!): [ScenarioLogbookEntry]
-    @function(name: "getUserScenarioLogbookFunc-${env}") # ★ステップ1で作成したLambda関数
-    @auth(rules: [{ allow: private }]) # 認証ユーザーなら実行可 (詳細はLambda側で制御)
+    @function(name: "getUserScenarioLogbookFunc-${env}")
+    @auth(rules: [{ allow: private }])
 }

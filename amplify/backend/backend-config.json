@@ -63,6 +63,22 @@
     }
   },
   "function": {
+    "createInitialUser": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput",
+            "GraphQLAPIKeyOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
     "getMyScenarioLogbookFunc": {
       "build": true,
       "dependsOn": [
@@ -113,6 +129,22 @@
     }
   },
   "parameters": {
+    "AMPLIFY_function_createInitialUser_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "createInitialUser"
+        }
+      ]
+    },
+    "AMPLIFY_function_createInitialUser_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "createInitialUser"
+        }
+      ]
+    },
     "AMPLIFY_function_getMyScenarioLogbookFunc_deploymentBucketName": {
       "usedBy": [
         {
