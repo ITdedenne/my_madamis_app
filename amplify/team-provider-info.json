@@ -38,7 +38,7 @@
         },
         "mymadamisappbc17122aPostConfirmation": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
-          "s3Key": "amplify-builds/mymadamisappbc17122aPostConfirmation-69595973585435536c32-build.zip"
+          "s3Key": "amplify-builds/mymadamisappbc17122aPostConfirmation-53507057426e76434872-build.zip"
         }
       },
       "storage": {

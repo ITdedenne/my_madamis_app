@@ -19,6 +19,12 @@
         "Query",
         "Mutation"
       ]
+    },
+    "storage": {
+      "User:@model(appsync)": [
+        "create",
+        "read"
+      ]
     }
   }
 }

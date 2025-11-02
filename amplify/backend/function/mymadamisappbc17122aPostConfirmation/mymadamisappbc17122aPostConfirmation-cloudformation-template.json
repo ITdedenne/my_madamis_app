@@ -38,6 +38,12 @@
     "env": {
       "Type": "String"
     },
+    "deploymentBucketName": {
+      "Type": "String"
+    },
+    "s3Key": {
+      "Type": "String"
+    },
     "apimymadamisappGraphQLAPIIdOutput": {
       "Type": "String",
       "Default": "apimymadamisappGraphQLAPIIdOutput"
@@ -49,12 +55,6 @@
     "apimymadamisappGraphQLAPIKeyOutput": {
       "Type": "String",
       "Default": "apimymadamisappGraphQLAPIKeyOutput"
-    },
-    "deploymentBucketName": {
-      "Type": "String"
-    },
-    "s3Key": {
-      "Type": "String"
     }
   },
   "Conditions": {
@@ -116,6 +116,32 @@
             },
             "API_MYMADAMISAPP_GRAPHQLAPIKEYOUTPUT": {
               "Ref": "apimymadamisappGraphQLAPIKeyOutput"
+            },
+            "API_MYMADAMISAPP_USERTABLE_NAME": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserTable:Name"
+              }
+            },
+            "API_MYMADAMISAPP_USERTABLE_ARN": {
+              "Fn::Join": [
+                "",
+                [
+                  "arn:aws:dynamodb:",
+                  {
+                    "Ref": "AWS::Region"
+                  },
+                  ":",
+                  {
+                    "Ref": "AWS::AccountId"
+                  },
+                  ":table/",
+                  {
+                    "Fn::ImportValue": {
+                      "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserTable:Name"
+                    }
+                  }
+                ]
+              ]
             }
           }
         },
@@ -277,6 +303,67 @@
                         "Ref": "apimymadamisappGraphQLAPIIdOutput"
                       },
                       "/types/Mutation/*"
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:Put*",
+                "dynamodb:Create*",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PartiQLInsert",
+                "dynamodb:Get*",
+                "dynamodb:BatchGetItem",
+                "dynamodb:List*",
+                "dynamodb:Describe*",
+                "dynamodb:Scan",
+                "dynamodb:Query",
+                "dynamodb:PartiQLSelect"
+              ],
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:dynamodb:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":table/",
+                      {
+                        "Fn::ImportValue": {
+                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserTable:Name"
+                        }
+                      }
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:dynamodb:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":table/",
+                      {
+                        "Fn::ImportValue": {
+                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserTable:Name"
+                        }
+                      },
+                      "/index/*"
                     ]
                   ]
                 }
