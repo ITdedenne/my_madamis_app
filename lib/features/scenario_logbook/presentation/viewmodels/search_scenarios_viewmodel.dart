@@ -3,11 +3,10 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_scenarios_usecase.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/update_user_scenario_status_usecase.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
+// import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_my_list_usecase.dart'; // <-- Unused importのため削除
 
 // 検索・フィルタ条件を保持するデータクラス
 class SearchFilterState {
@@ -103,8 +102,9 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
     state = state.copyWith(scenarios: const AsyncValue.loading());
     try {
       final authState = _ref.read(authStateNotifierProvider);
-      final user = authState.authUser; // <-- 'cognitoUser' から 'authUser' に修正
-      if (user == null) {
+      // 'user' ではなく 'username' を参照
+      final userId = authState.username; 
+      if (userId == null) {
         throw Exception('User not authenticated');
       }
 
@@ -114,13 +114,14 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
 
       // BEにクエリ実行
       final connection = await getScenariosUsecase(
-        userId: user.userId,
+        userId: userId, // 取得した userId (username) を渡す
         filter: filterState.toFilterMap(),
         limit: 50, // ページネーション (まずは50件)
       );
 
       state = state.copyWith(
-        scenarios: AsyncValue.data(connection.items),
+        // 'List<...>?' can't be assigned エラーを修正
+        scenarios: AsyncValue.data(connection.items ?? []), 
         // nextToken: connection.nextToken,
       );
     } catch (e, s) {
@@ -131,14 +132,15 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   // ステータスを更新するメソッド
   Future<void> updateScenarioStatus(
       String scenarioId, bool isPlayed, bool isPossessed) async {
-    final user = _ref.read(authStateNotifierProvider).authUser; // <-- 'cognitoUser' から 'authUser' に修正
-    if (user == null) return;
+    // 'user' ではなく 'username' を参照
+    final userId = _ref.read(authStateNotifierProvider).username;
+    if (userId == null) return;
 
     final usecase = _ref.read(updateUserScenarioStatusUsecaseProvider);
 
     try {
-      await usecase.call( // .call() を明示
-        userId: user.userId,
+      await usecase.call( 
+        userId: userId, // 取得した userId (username) を渡す
         scenarioId: scenarioId,
         isPlayed: isPlayed,
         isPossessed: isPossessed,

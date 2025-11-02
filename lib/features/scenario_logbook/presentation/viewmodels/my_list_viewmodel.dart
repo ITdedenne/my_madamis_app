@@ -45,13 +45,14 @@ class MyListViewModel extends StateNotifier<MyListViewState> {
     state = state.copyWith(scenarios: const AsyncValue.loading());
     try {
       final authState = _ref.read(authStateNotifierProvider);
-      final user = authState.authUser; // <-- 'cognitoUser' から 'authUser' に修正
-      if (user == null) {
+      // 'user' ではなく 'username' を参照
+      final userId = authState.username; 
+      if (userId == null) {
         throw Exception('User not authenticated');
       }
 
       final getMyListUsecase = _ref.read(getMyListUsecaseProvider);
-      final data = await getMyListUsecase(user.userId);
+      final data = await getMyListUsecase(userId); // 取得した userId (username) を渡す
       state = state.copyWith(scenarios: AsyncValue.data(data));
     } catch (e, s) {
       state = state.copyWith(scenarios: AsyncValue.error(e, s));
@@ -61,14 +62,15 @@ class MyListViewModel extends StateNotifier<MyListViewState> {
   // ステータスを更新するメソッド
   Future<void> updateScenarioStatus(
       String scenarioId, bool isPlayed, bool isPossessed) async {
-    final user = _ref.read(authStateNotifierProvider).authUser; // <-- 'cognitoUser' から 'authUser' に修正
-    if (user == null) return;
+    // 'user' ではなく 'username' を参照
+    final userId = _ref.read(authStateNotifierProvider).username;
+    if (userId == null) return;
 
     final usecase = _ref.read(updateUserScenarioStatusUsecaseProvider);
 
     try {
-      await usecase.call( // .call() を明示
-        userId: user.userId,
+      await usecase.call( 
+        userId: userId, // 取得した userId (username) を渡す
         scenarioId: scenarioId,
         isPlayed: isPlayed,
         isPossessed: isPossessed,
