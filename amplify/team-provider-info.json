@@ -17,6 +17,23 @@
       },
       "api": {
         "mymadamisapp": {}
+      },
+      "function": {
+        "getMyScenarioLogbookFunc": {
+          "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
+          "s3Key": "amplify-builds/getMyScenarioLogbookFunc-71344979794536626c48-build.zip"
+        },
+        "listScenariosWithMyStatusFunc": {
+          "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
+          "s3Key": "amplify-builds/listScenariosWithMyStatusFunc-79454f374d2f484d6264-build.zip"
+        },
+        "getUserScenarioLogbookFunc": {
+          "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
+          "s3Key": "amplify-builds/getUserScenarioLogbookFunc-57703275744b4843456b-build.zip"
+        }
+      },
+      "storage": {
+        "MyMadamisAppBucket": {}
       }
     }
   }

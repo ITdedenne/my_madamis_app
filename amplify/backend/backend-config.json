@@ -61,5 +61,112 @@
       "providerPlugin": "awscloudformation",
       "service": "Cognito"
     }
+  },
+  "function": {
+    "getMyScenarioLogbookFunc": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput",
+            "GraphQLAPIKeyOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "getUserScenarioLogbookFunc": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput",
+            "GraphQLAPIKeyOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "listScenariosWithMyStatusFunc": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput",
+            "GraphQLAPIKeyOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_getMyScenarioLogbookFunc_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getMyScenarioLogbookFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_getMyScenarioLogbookFunc_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getMyScenarioLogbookFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_getUserScenarioLogbookFunc_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getUserScenarioLogbookFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_getUserScenarioLogbookFunc_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getUserScenarioLogbookFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_listScenariosWithMyStatusFunc_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "listScenariosWithMyStatusFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_listScenariosWithMyStatusFunc_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "listScenariosWithMyStatusFunc"
+        }
+      ]
+    }
+  },
+  "storage": {
+    "MyMadamisAppBucket": {
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "S3"
+    }
   }
 }

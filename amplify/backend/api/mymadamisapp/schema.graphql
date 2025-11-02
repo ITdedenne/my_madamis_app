@@ -1,55 +1,88 @@
-# This "input" configures a global authorization rule to enable public access to
-# all models in this schema. Learn more about authorization rules here: https://docs.amplify.aws/cli/graphql/authorization-rules
-input AMPLIFY { globalAuthRule: AuthRule = { allow: public } } # FOR TESTING ONLY!
-
-# 1.3. データモデル要件
-# @auth ディレクティブを追加して、Cognito認証済みユーザーのみがアクセスできるように設定します。
-# (owner: { allow: owner } など、要件に応じて設定)
+# --- (前回定義した Scenario, Author は変更なし) ---
 
 type Scenario @model @auth(rules: [{ allow: private, operations: [read] }]) {
-  id: ID! # scenarioId
+  id: ID!
   title: String!
   minPlayerCount: Int
   maxPlayerCount: Int
   gmRequirement: Boolean
   storeUrl: AWSURL
-  
-  # 1.3.1 と 1.3.2 のリレーション (Scenario N-1 Author)
   authorId: ID! @index(name: "byAuthor")
   author: Author @belongsTo(fields: ["authorId"])
-  
-  # 1.3.1 と 1.3.3 のリレーション (Scenario 1-N UserScenario)
   userScenarios: [UserScenario] @hasMany(indexName: "byScenario", fields: ["id"])
 }
 
 type Author @model @auth(rules: [{ allow: private, operations: [read] }]) {
-  id: ID! # authorId
+  id: ID!
   authorName: String!
-  
-  # 1.3.2 と 1.3.1 のリレーション (Author 1-N Scenario)
   scenarios: [Scenario] @hasMany(indexName: "byAuthor", fields: ["id"])
 }
 
-type UserScenario @model @auth(rules: [{ allow: owner }]) {
+# --- 【新規】1. Userテーブル (要件 2.3) ---
+# id は Cognito の sub (owner) と一致させます
+type User @model 
+  @auth(rules: [
+    { allow: owner, operations: [read, update] }, # 自分のプロフィールは読み書き可
+    { allow: private, operations: [read] }      # 他の認証ユーザーは検索・閲覧可
+  ])
+ #@searchable # ★要件 2.2.1「ユーザー検索」のために @searchable を追加
+{
+  id: ID! @primaryKey # Cognito の sub (owner)
+  username: String! # 検索対象 (2.2.1)
+  # (必要に応じてプロフィール画像URLなどを追加)
+  
+  # User 1-N UserScenario (自分が記録したシナリオ)
+  scenarios: [UserScenario] @hasMany(indexName: "byUser", fields: ["id"])
+  
+  # User 1-N UserRelationship (自分がフォローした人)
+  following: [UserRelationship] @hasMany(indexName: "byFollowingUser", fields: ["id"])
+  
+  # User 1-N UserRelationship (自分をフォローした人)
+  followers: [UserRelationship] @hasMany(indexName: "byFollowedUser", fields: ["id"])
+}
+
+# --- 【新規】2. フレンズ機能 (UserRelationship) (要件 2.3) ---
+type UserRelationship @model 
+  @auth(rules: [
+    # フォロー操作(作成・削除)は、フォローする人(owner)のみ可能
+    { allow: owner, ownerField: "followingUserId", operations: [create, delete] } 
+  ])
+{
   id: ID!
   
-  # 1.3.3 (注: userId は @auth(rules: [{ allow: owner }]) により自動的に owner フィールドとして管理されます)
-  # ユーザーとシナリオの関連 (N-N の中間テーブル)
+  # フォローした人 (PK)
+  followingUserId: ID! @index(name: "byFollowingUser")
+  followingUser: User @belongsTo(fields: ["followingUserId"])
+
+  # フォローされた人 (SK)
+  followedUserId: ID! @index(name: "byFollowedUser")
+  followedUser: User @belongsTo(fields: ["followedUserId"])
+}
+
+# --- 【修正】3. UserScenario (userId との紐付け) (要件 1.3.3) ---
+type UserScenario @model 
+  @auth(rules: [
+    # 自分の記録は自分(owner)のみ読み書き可
+    { allow: owner, ownerField: "userId" }
+    # ※ 他人の閲覧(2.2.3)は、Lambda(getUserScenarioLogbook)経由で行う
+  ])
+{
+  id: ID!
   
+  # 【修正】誰の記録か (PK)
+  userId: ID! @index(name: "byUser")
+  user: User @belongsTo(fields: ["userId"])
+
+  # どのシナリオか (SK)
   scenarioId: ID! @index(name: "byScenario")
   scenario: Scenario @belongsTo(fields: ["scenarioId"])
   
-  # userId (owner) は自動で入ります
-  
   isPlayed: Boolean!
   isPossessed: Boolean!
 }
 
-# 1.4. バックエンドAPI要件 (カスタムクエリ)
-
-# 1.4.1. マイリスト取得用 (非正規化データ型)
+# --- (前回定義した型は変更なし) ---
 type ScenarioLogbookEntry {
-  # Scenario の全情報
   id: ID!
   title: String!
   minPlayerCount: Int
@@ -57,51 +90,34 @@ type ScenarioLogbookEntry {
   gmRequirement: Boolean
   storeUrl: AWSURL
   authorId: ID!
-  
-  # Author情報 (Lambda内で結合)
-  authorName: String # 例: Lambdaで結合する場合
-  
-  # UserScenario のステータス情報
+  authorName: String 
   isPlayed: Boolean!
   isPossessed: Boolean!
 }
-
-# 1.4.2. 全シナリオ一覧取得用 (Scenario + オプショナルなステータス)
 type ScenarioWithMyStatus {
-  # Scenario の全情報
-  id: ID!
-  title: String!
-  minPlayerCount: Int
-  maxPlayerCount: Int
-  gmRequirement: Boolean
-  storeUrl: AWSURL
-  authorId: ID!
-  
-  # Author情報 (Lambda内で結合)
-  authorName: String # 例: Lambdaで結合する場合
-
-  # ログイン中ユーザーのステータス (オプショナル)
+  # (中略)
   isPlayed: Boolean
   isPossessed: Boolean
 }
-
-# カスタムクエリの定義
-type Query {
-  # 1.4.1: @function で Lambda に接続
-  # userId は Lambda 側で $context.identity.sub から取得するため、引数は不要
-  getMyScenarioLogbook: [ScenarioLogbookEntry]
-    @function(name: "getMyScenarioLogbookFunc-${env}") # ステップ2で作成した関数名
-    @auth(rules: [{ allow: private }]) # ログインユーザーのみ実行可
-
-  # 1.4.2: @function で Lambda に接続
-  # フィルター等は引数で渡す (userIdはLambda側で取得)
-  listScenariosWithMyStatus(filter: String, sort: String, nextToken: String): ScenarioWithMyStatusConnection
-    @function(name: "listScenariosWithMyStatusFunc-${env}") # ステップ2で作成した関数名
-    @auth(rules: [{ allow: private }]) # ログインユーザーのみ実行可
-}
-
-# 1.4.2 のためのページネーション用型
 type ScenarioWithMyStatusConnection {
   items: [ScenarioWithMyStatus]
   nextToken: String
+}
+
+# --- 【修正】4. カスタムクエリの定義 (要件 1.4, 2.2) ---
+type Query {
+  # 1.4.1: 自分のマイリスト取得 (変更なし)
+  getMyScenarioLogbook: [ScenarioLogbookEntry]
+    @function(name: "getMyScenarioLogbookFunc-${env}") 
+    @auth(rules: [{ allow: private }]) 
+
+  # 1.4.2: 全シナリオ一覧取得 (変更なし)
+  listScenariosWithMyStatus(filter: String, sort: String, nextToken: String): ScenarioWithMyStatusConnection
+    @function(name: "listScenariosWithMyStatusFunc-${env}")
+    @auth(rules: [{ allow: private }])
+
+  # 2.2.3: 【新規】他人のマイリスト取得
+  getUserScenarioLogbook(userId: ID!): [ScenarioLogbookEntry]
+    @function(name: "getUserScenarioLogbookFunc-${env}") # ★ステップ1で作成したLambda関数
+    @auth(rules: [{ allow: private }]) # 認証ユーザーなら実行可 (詳細はLambda側で制御)
 }

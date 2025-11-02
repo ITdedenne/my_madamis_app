@@ -1,0 +1,14 @@
+{
+  "resourceName": "MyMadamisAppBucket",
+  "policyUUID": "f6c0b1c5",
+  "bucketName": "mymadamisapp6c751052c4db4ef7802ef4d3e42f1bfa",
+  "storageAccess": "auth",
+  "guestAccess": [],
+  "authAccess": [
+    "CREATE_AND_UPDATE",
+    "READ",
+    "DELETE"
+  ],
+  "triggerFunction": "NONE",
+  "groupAccess": {}
+}
