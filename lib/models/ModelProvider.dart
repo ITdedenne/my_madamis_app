@@ -25,20 +25,27 @@ import 'Scenario.dart';
 import 'User.dart';
 import 'UserRelationship.dart';
 import 'UserScenario.dart';
+import 'ScenarioLogbookEntry.dart';
+import 'ScenarioWithMyStatus.dart';
+import 'ScenarioWithMyStatusConnection.dart';
 
 export 'Author.dart';
+export 'GMRequirementType.dart';
 export 'Scenario.dart';
+export 'ScenarioLogbookEntry.dart';
+export 'ScenarioWithMyStatus.dart';
+export 'ScenarioWithMyStatusConnection.dart';
 export 'User.dart';
 export 'UserRelationship.dart';
 export 'UserScenario.dart';
 
 class ModelProvider implements amplify_core.ModelProviderInterface {
   @override
-  String version = "318d27b69342a0f4a34a66305d125260";
+  String version = "3e6c9a8b08727548aff2647ee1c8e98d";
   @override
   List<amplify_core.ModelSchema> modelSchemas = [Author.schema, Scenario.schema, User.schema, UserRelationship.schema, UserScenario.schema];
   @override
-  List<amplify_core.ModelSchema> customTypeSchemas = [];
+  List<amplify_core.ModelSchema> customTypeSchemas = [ScenarioLogbookEntry.schema, ScenarioWithMyStatus.schema, ScenarioWithMyStatusConnection.schema];
   static final ModelProvider _instance = ModelProvider();
 
   static ModelProvider get instance => _instance;

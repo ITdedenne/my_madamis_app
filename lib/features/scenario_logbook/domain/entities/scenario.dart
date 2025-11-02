@@ -44,7 +44,7 @@ class Scenario extends Equatable {
       amplify_models.Scenario scenarioModel, String authorName) {
     // GmRequirementのマッピング (AmplifyモデルのStringからEnumへ)
     GmRequirement gmReq;
-    switch (scenarioModel.gmRequirement?.toLowerCase()) {
+    switch (scenarioModel.gmRequirement?.toString()) {
       case 'required':
         gmReq = GmRequirement.required;
         break;

@@ -27,9 +27,10 @@ import 'package:amplify_core/amplify_core.dart' as amplify_core;
 class UserScenario extends amplify_core.Model {
   static const classType = const _UserScenarioModelType();
   final String id;
-  final String? _status;
   final User? _user;
   final Scenario? _scenario;
+  final bool? _isPlayed;
+  final bool? _isPossessed;
   final amplify_core.TemporalDateTime? _createdAt;
   final amplify_core.TemporalDateTime? _updatedAt;
 
@@ -46,9 +47,17 @@ class UserScenario extends amplify_core.Model {
       );
   }
   
-  String get status {
+  User? get user {
+    return _user;
+  }
+  
+  Scenario? get scenario {
+    return _scenario;
+  }
+  
+  bool get isPlayed {
     try {
-      return _status!;
+      return _isPlayed!;
     } catch(e) {
       throw amplify_core.AmplifyCodeGenModelException(
           amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
@@ -59,12 +68,17 @@ class UserScenario extends amplify_core.Model {
     }
   }
   
-  User? get user {
-    return _user;
-  }
-  
-  Scenario? get scenario {
-    return _scenario;
+  bool get isPossessed {
+    try {
+      return _isPossessed!;
+    } catch(e) {
+      throw amplify_core.AmplifyCodeGenModelException(
+          amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
+          recoverySuggestion:
+            amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastRecoverySuggestion,
+          underlyingException: e.toString()
+          );
+    }
   }
   
   amplify_core.TemporalDateTime? get createdAt {
@@ -75,14 +89,15 @@ class UserScenario extends amplify_core.Model {
     return _updatedAt;
   }
   
-  const UserScenario._internal({required this.id, required status, user, scenario, createdAt, updatedAt}): _status = status, _user = user, _scenario = scenario, _createdAt = createdAt, _updatedAt = updatedAt;
+  const UserScenario._internal({required this.id, user, scenario, required isPlayed, required isPossessed, createdAt, updatedAt}): _user = user, _scenario = scenario, _isPlayed = isPlayed, _isPossessed = isPossessed, _createdAt = createdAt, _updatedAt = updatedAt;
   
-  factory UserScenario({String? id, required String status, User? user, Scenario? scenario}) {
+  factory UserScenario({String? id, User? user, Scenario? scenario, required bool isPlayed, required bool isPossessed}) {
     return UserScenario._internal(
       id: id == null ? amplify_core.UUID.getUUID() : id,
-      status: status,
       user: user,
-      scenario: scenario);
+      scenario: scenario,
+      isPlayed: isPlayed,
+      isPossessed: isPossessed);
   }
   
   bool equals(Object other) {
@@ -94,9 +109,10 @@ class UserScenario extends amplify_core.Model {
     if (identical(other, this)) return true;
     return other is UserScenario &&
       id == other.id &&
-      _status == other._status &&
       _user == other._user &&
-      _scenario == other._scenario;
+      _scenario == other._scenario &&
+      _isPlayed == other._isPlayed &&
+      _isPossessed == other._isPossessed;
   }
   
   @override
@@ -108,40 +124,43 @@ class UserScenario extends amplify_core.Model {
     
     buffer.write("UserScenario {");
     buffer.write("id=" + "$id" + ", ");
-    buffer.write("status=" + "$_status" + ", ");
-    buffer.write("user=" + (_user != null ? _user.toString() : "null") + ", ");
-    buffer.write("scenario=" + (_scenario != null ? _scenario.toString() : "null") + ", ");
-    buffer.write("createdAt=" + (_createdAt != null ? _createdAt.format() : "null") + ", ");
-    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt.format() : "null"));
+    buffer.write("user=" + (_user != null ? _user!.toString() : "null") + ", ");
+    buffer.write("scenario=" + (_scenario != null ? _scenario!.toString() : "null") + ", ");
+    buffer.write("isPlayed=" + (_isPlayed != null ? _isPlayed!.toString() : "null") + ", ");
+    buffer.write("isPossessed=" + (_isPossessed != null ? _isPossessed!.toString() : "null") + ", ");
+    buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
+    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
     
     return buffer.toString();
   }
   
-  UserScenario copyWith({String? status, User? user, Scenario? scenario}) {
+  UserScenario copyWith({User? user, Scenario? scenario, bool? isPlayed, bool? isPossessed}) {
     return UserScenario._internal(
       id: id,
-      status: status ?? this.status,
       user: user ?? this.user,
-      scenario: scenario ?? this.scenario);
+      scenario: scenario ?? this.scenario,
+      isPlayed: isPlayed ?? this.isPlayed,
+      isPossessed: isPossessed ?? this.isPossessed);
   }
   
   UserScenario copyWithModelFieldValues({
-    ModelFieldValue<String>? status,
     ModelFieldValue<User?>? user,
-    ModelFieldValue<Scenario?>? scenario
+    ModelFieldValue<Scenario?>? scenario,
+    ModelFieldValue<bool>? isPlayed,
+    ModelFieldValue<bool>? isPossessed
   }) {
     return UserScenario._internal(
       id: id,
-      status: status == null ? this.status : status.value,
       user: user == null ? this.user : user.value,
-      scenario: scenario == null ? this.scenario : scenario.value
+      scenario: scenario == null ? this.scenario : scenario.value,
+      isPlayed: isPlayed == null ? this.isPlayed : isPlayed.value,
+      isPossessed: isPossessed == null ? this.isPossessed : isPossessed.value
     );
   }
   
   UserScenario.fromJson(Map<String, dynamic> json)  
     : id = json['id'],
-      _status = json['status'],
       _user = json['user'] != null
         ? json['user']['serializedData'] != null
           ? User.fromJson(new Map<String, dynamic>.from(json['user']['serializedData']))
@@ -152,31 +171,35 @@ class UserScenario extends amplify_core.Model {
           ? Scenario.fromJson(new Map<String, dynamic>.from(json['scenario']['serializedData']))
           : Scenario.fromJson(new Map<String, dynamic>.from(json['scenario']))
         : null,
+      _isPlayed = json['isPlayed'],
+      _isPossessed = json['isPossessed'],
       _createdAt = json['createdAt'] != null ? amplify_core.TemporalDateTime.fromString(json['createdAt']) : null,
       _updatedAt = json['updatedAt'] != null ? amplify_core.TemporalDateTime.fromString(json['updatedAt']) : null;
   
   Map<String, dynamic> toJson() => {
-    'id': id, 'status': _status, 'user': _user?.toJson(), 'scenario': _scenario?.toJson(), 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
+    'id': id, 'user': _user?.toJson(), 'scenario': _scenario?.toJson(), 'isPlayed': _isPlayed, 'isPossessed': _isPossessed, 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
   };
   
   Map<String, Object?> toMap() => {
     'id': id,
-    'status': _status,
     'user': _user,
     'scenario': _scenario,
+    'isPlayed': _isPlayed,
+    'isPossessed': _isPossessed,
     'createdAt': _createdAt,
     'updatedAt': _updatedAt
   };
 
   static final amplify_core.QueryModelIdentifier<UserScenarioModelIdentifier> MODEL_IDENTIFIER = amplify_core.QueryModelIdentifier<UserScenarioModelIdentifier>();
   static final ID = amplify_core.QueryField(fieldName: "id");
-  static final STATUS = amplify_core.QueryField(fieldName: "status");
   static final USER = amplify_core.QueryField(
     fieldName: "user",
     fieldType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.model, ofModelName: 'User'));
   static final SCENARIO = amplify_core.QueryField(
     fieldName: "scenario",
     fieldType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.model, ofModelName: 'Scenario'));
+  static final ISPLAYED = amplify_core.QueryField(fieldName: "isPlayed");
+  static final ISPOSSESSED = amplify_core.QueryField(fieldName: "isPossessed");
   static var schema = amplify_core.Model.defineSchema(define: (amplify_core.ModelSchemaDefinition modelSchemaDefinition) {
     modelSchemaDefinition.name = "UserScenario";
     modelSchemaDefinition.pluralName = "UserScenarios";
@@ -192,26 +215,15 @@ class UserScenario extends amplify_core.Model {
           amplify_core.ModelOperation.UPDATE,
           amplify_core.ModelOperation.DELETE,
           amplify_core.ModelOperation.READ
-        ]),
-      amplify_core.AuthRule(
-        authStrategy: amplify_core.AuthStrategy.PRIVATE,
-        operations: const [
-          amplify_core.ModelOperation.READ
         ])
     ];
     
     modelSchemaDefinition.indexes = [
-      amplify_core.ModelIndex(fields: const ["userId", "scenarioId"], name: "byUser"),
-      amplify_core.ModelIndex(fields: const ["scenarioId", "userId"], name: "byScenario")
+      amplify_core.ModelIndex(fields: const ["userId"], name: "byUser"),
+      amplify_core.ModelIndex(fields: const ["scenarioId"], name: "byScenario")
     ];
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.id());
-    
-    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: UserScenario.STATUS,
-      isRequired: true,
-      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
-    ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.belongsTo(
       key: UserScenario.USER,
@@ -225,6 +237,18 @@ class UserScenario extends amplify_core.Model {
       isRequired: false,
       targetNames: ['scenarioId'],
       ofModelName: 'Scenario'
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
+      key: UserScenario.ISPLAYED,
+      isRequired: true,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.bool)
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
+      key: UserScenario.ISPOSSESSED,
+      isRequired: true,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.bool)
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.nonQueryField(

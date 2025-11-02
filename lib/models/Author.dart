@@ -103,8 +103,8 @@ class Author extends amplify_core.Model {
     buffer.write("Author {");
     buffer.write("id=" + "$id" + ", ");
     buffer.write("authorName=" + "$_authorName" + ", ");
-    buffer.write("createdAt=" + (_createdAt != null ? _createdAt.format() : "null") + ", ");
-    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt.format() : "null"));
+    buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
+    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
     
     return buffer.toString();
@@ -174,17 +174,7 @@ class Author extends amplify_core.Model {
         authStrategy: amplify_core.AuthStrategy.PRIVATE,
         operations: const [
           amplify_core.ModelOperation.READ
-        ]),
-      amplify_core.AuthRule(
-        authStrategy: amplify_core.AuthStrategy.PUBLIC,
-        provider: amplify_core.AuthRuleProvider.APIKEY,
-        operations: const [
-          amplify_core.ModelOperation.READ
         ])
-    ];
-    
-    modelSchemaDefinition.indexes = [
-      amplify_core.ModelIndex(fields: const ["id"], name: null)
     ];
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.id());

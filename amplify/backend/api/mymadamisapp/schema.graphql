@@ -96,7 +96,7 @@ type ScenarioLogbookEntry {
   title: String!
   minPlayerCount: Int
   maxPlayerCount: Int
-  gmRequirement: Boolean
+  gmRequirement: GMRequirementType
   storeUrl: AWSURL
   authorId: ID!
   authorName: String 

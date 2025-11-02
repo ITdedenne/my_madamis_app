@@ -31,10 +31,10 @@ class Scenario extends amplify_core.Model {
   final String? _title;
   final int? _minPlayerCount;
   final int? _maxPlayerCount;
-  final String? _gmRequirement;
+  final GMRequirementType? _gmRequirement;
   final String? _storeUrl;
   final Author? _author;
-  final List<UserScenario>? _users;
+  final List<UserScenario>? _userScenarios;
   final amplify_core.TemporalDateTime? _createdAt;
   final amplify_core.TemporalDateTime? _updatedAt;
 
@@ -72,7 +72,7 @@ class Scenario extends amplify_core.Model {
     return _maxPlayerCount;
   }
   
-  String? get gmRequirement {
+  GMRequirementType? get gmRequirement {
     return _gmRequirement;
   }
   
@@ -84,8 +84,8 @@ class Scenario extends amplify_core.Model {
     return _author;
   }
   
-  List<UserScenario>? get users {
-    return _users;
+  List<UserScenario>? get userScenarios {
+    return _userScenarios;
   }
   
   amplify_core.TemporalDateTime? get createdAt {
@@ -96,9 +96,9 @@ class Scenario extends amplify_core.Model {
     return _updatedAt;
   }
   
-  const Scenario._internal({required this.id, required title, minPlayerCount, maxPlayerCount, gmRequirement, storeUrl, author, users, createdAt, updatedAt}): _title = title, _minPlayerCount = minPlayerCount, _maxPlayerCount = maxPlayerCount, _gmRequirement = gmRequirement, _storeUrl = storeUrl, _author = author, _users = users, _createdAt = createdAt, _updatedAt = updatedAt;
+  const Scenario._internal({required this.id, required title, minPlayerCount, maxPlayerCount, gmRequirement, storeUrl, author, userScenarios, createdAt, updatedAt}): _title = title, _minPlayerCount = minPlayerCount, _maxPlayerCount = maxPlayerCount, _gmRequirement = gmRequirement, _storeUrl = storeUrl, _author = author, _userScenarios = userScenarios, _createdAt = createdAt, _updatedAt = updatedAt;
   
-  factory Scenario({String? id, required String title, int? minPlayerCount, int? maxPlayerCount, String? gmRequirement, String? storeUrl, Author? author, List<UserScenario>? users}) {
+  factory Scenario({String? id, required String title, int? minPlayerCount, int? maxPlayerCount, GMRequirementType? gmRequirement, String? storeUrl, Author? author, List<UserScenario>? userScenarios}) {
     return Scenario._internal(
       id: id == null ? amplify_core.UUID.getUUID() : id,
       title: title,
@@ -107,7 +107,7 @@ class Scenario extends amplify_core.Model {
       gmRequirement: gmRequirement,
       storeUrl: storeUrl,
       author: author,
-      users: users != null ? List<UserScenario>.unmodifiable(users) : users);
+      userScenarios: userScenarios != null ? List<UserScenario>.unmodifiable(userScenarios) : userScenarios);
   }
   
   bool equals(Object other) {
@@ -125,7 +125,7 @@ class Scenario extends amplify_core.Model {
       _gmRequirement == other._gmRequirement &&
       _storeUrl == other._storeUrl &&
       _author == other._author &&
-      DeepCollectionEquality().equals(_users, other._users);
+      DeepCollectionEquality().equals(_userScenarios, other._userScenarios);
   }
   
   @override
@@ -138,19 +138,19 @@ class Scenario extends amplify_core.Model {
     buffer.write("Scenario {");
     buffer.write("id=" + "$id" + ", ");
     buffer.write("title=" + "$_title" + ", ");
-    buffer.write("minPlayerCount=" + (_minPlayerCount != null ? _minPlayerCount.toString() : "null") + ", ");
-    buffer.write("maxPlayerCount=" + (_maxPlayerCount != null ? _maxPlayerCount.toString() : "null") + ", ");
-    buffer.write("gmRequirement=" + "$_gmRequirement" + ", ");
+    buffer.write("minPlayerCount=" + (_minPlayerCount != null ? _minPlayerCount!.toString() : "null") + ", ");
+    buffer.write("maxPlayerCount=" + (_maxPlayerCount != null ? _maxPlayerCount!.toString() : "null") + ", ");
+    buffer.write("gmRequirement=" + (_gmRequirement != null ? amplify_core.enumToString(_gmRequirement)! : "null") + ", ");
     buffer.write("storeUrl=" + "$_storeUrl" + ", ");
-    buffer.write("author=" + (_author != null ? _author.toString() : "null") + ", ");
-    buffer.write("createdAt=" + (_createdAt != null ? _createdAt.format() : "null") + ", ");
-    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt.format() : "null"));
+    buffer.write("author=" + (_author != null ? _author!.toString() : "null") + ", ");
+    buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
+    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
     
     return buffer.toString();
   }
   
-  Scenario copyWith({String? title, int? minPlayerCount, int? maxPlayerCount, String? gmRequirement, String? storeUrl, Author? author, List<UserScenario>? users}) {
+  Scenario copyWith({String? title, int? minPlayerCount, int? maxPlayerCount, GMRequirementType? gmRequirement, String? storeUrl, Author? author, List<UserScenario>? userScenarios}) {
     return Scenario._internal(
       id: id,
       title: title ?? this.title,
@@ -159,17 +159,17 @@ class Scenario extends amplify_core.Model {
       gmRequirement: gmRequirement ?? this.gmRequirement,
       storeUrl: storeUrl ?? this.storeUrl,
       author: author ?? this.author,
-      users: users ?? this.users);
+      userScenarios: userScenarios ?? this.userScenarios);
   }
   
   Scenario copyWithModelFieldValues({
     ModelFieldValue<String>? title,
     ModelFieldValue<int?>? minPlayerCount,
     ModelFieldValue<int?>? maxPlayerCount,
-    ModelFieldValue<String?>? gmRequirement,
+    ModelFieldValue<GMRequirementType?>? gmRequirement,
     ModelFieldValue<String?>? storeUrl,
     ModelFieldValue<Author?>? author,
-    ModelFieldValue<List<UserScenario>?>? users
+    ModelFieldValue<List<UserScenario>?>? userScenarios
   }) {
     return Scenario._internal(
       id: id,
@@ -179,7 +179,7 @@ class Scenario extends amplify_core.Model {
       gmRequirement: gmRequirement == null ? this.gmRequirement : gmRequirement.value,
       storeUrl: storeUrl == null ? this.storeUrl : storeUrl.value,
       author: author == null ? this.author : author.value,
-      users: users == null ? this.users : users.value
+      userScenarios: userScenarios == null ? this.userScenarios : userScenarios.value
     );
   }
   
@@ -188,22 +188,22 @@ class Scenario extends amplify_core.Model {
       _title = json['title'],
       _minPlayerCount = (json['minPlayerCount'] as num?)?.toInt(),
       _maxPlayerCount = (json['maxPlayerCount'] as num?)?.toInt(),
-      _gmRequirement = json['gmRequirement'],
+      _gmRequirement = amplify_core.enumFromString<GMRequirementType>(json['gmRequirement'], GMRequirementType.values),
       _storeUrl = json['storeUrl'],
       _author = json['author'] != null
         ? json['author']['serializedData'] != null
           ? Author.fromJson(new Map<String, dynamic>.from(json['author']['serializedData']))
           : Author.fromJson(new Map<String, dynamic>.from(json['author']))
         : null,
-      _users = json['users']  is Map
-        ? (json['users']['items'] is List
-          ? (json['users']['items'] as List)
+      _userScenarios = json['userScenarios']  is Map
+        ? (json['userScenarios']['items'] is List
+          ? (json['userScenarios']['items'] as List)
               .where((e) => e != null)
               .map((e) => UserScenario.fromJson(new Map<String, dynamic>.from(e)))
               .toList()
           : null)
-        : (json['users'] is List
-          ? (json['users'] as List)
+        : (json['userScenarios'] is List
+          ? (json['userScenarios'] as List)
               .where((e) => e?['serializedData'] != null)
               .map((e) => UserScenario.fromJson(new Map<String, dynamic>.from(e?['serializedData'])))
               .toList()
@@ -212,7 +212,7 @@ class Scenario extends amplify_core.Model {
       _updatedAt = json['updatedAt'] != null ? amplify_core.TemporalDateTime.fromString(json['updatedAt']) : null;
   
   Map<String, dynamic> toJson() => {
-    'id': id, 'title': _title, 'minPlayerCount': _minPlayerCount, 'maxPlayerCount': _maxPlayerCount, 'gmRequirement': _gmRequirement, 'storeUrl': _storeUrl, 'author': _author?.toJson(), 'users': _users?.map((UserScenario? e) => e?.toJson()).toList(), 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
+    'id': id, 'title': _title, 'minPlayerCount': _minPlayerCount, 'maxPlayerCount': _maxPlayerCount, 'gmRequirement': amplify_core.enumToString(_gmRequirement), 'storeUrl': _storeUrl, 'author': _author?.toJson(), 'userScenarios': _userScenarios?.map((UserScenario? e) => e?.toJson()).toList(), 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
   };
   
   Map<String, Object?> toMap() => {
@@ -223,7 +223,7 @@ class Scenario extends amplify_core.Model {
     'gmRequirement': _gmRequirement,
     'storeUrl': _storeUrl,
     'author': _author,
-    'users': _users,
+    'userScenarios': _userScenarios,
     'createdAt': _createdAt,
     'updatedAt': _updatedAt
   };
@@ -238,8 +238,8 @@ class Scenario extends amplify_core.Model {
   static final AUTHOR = amplify_core.QueryField(
     fieldName: "author",
     fieldType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.model, ofModelName: 'Author'));
-  static final USERS = amplify_core.QueryField(
-    fieldName: "users",
+  static final USERSCENARIOS = amplify_core.QueryField(
+    fieldName: "userScenarios",
     fieldType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.model, ofModelName: 'UserScenario'));
   static var schema = amplify_core.Model.defineSchema(define: (amplify_core.ModelSchemaDefinition modelSchemaDefinition) {
     modelSchemaDefinition.name = "Scenario";
@@ -250,18 +250,11 @@ class Scenario extends amplify_core.Model {
         authStrategy: amplify_core.AuthStrategy.PRIVATE,
         operations: const [
           amplify_core.ModelOperation.READ
-        ]),
-      amplify_core.AuthRule(
-        authStrategy: amplify_core.AuthStrategy.PUBLIC,
-        provider: amplify_core.AuthRuleProvider.APIKEY,
-        operations: const [
-          amplify_core.ModelOperation.READ
         ])
     ];
     
     modelSchemaDefinition.indexes = [
-      amplify_core.ModelIndex(fields: const ["id"], name: null),
-      amplify_core.ModelIndex(fields: const ["authorId", "title"], name: "byAuthor")
+      amplify_core.ModelIndex(fields: const ["authorId"], name: "byAuthor")
     ];
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.id());
@@ -287,7 +280,7 @@ class Scenario extends amplify_core.Model {
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
       key: Scenario.GMREQUIREMENT,
       isRequired: false,
-      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.enumeration)
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
@@ -304,7 +297,7 @@ class Scenario extends amplify_core.Model {
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.hasMany(
-      key: Scenario.USERS,
+      key: Scenario.USERSCENARIOS,
       isRequired: false,
       ofModelName: 'UserScenario',
       associatedKey: UserScenario.SCENARIO
