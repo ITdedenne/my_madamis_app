@@ -89,6 +89,22 @@
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
+    "csvDataImporter": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput",
+            "GraphQLAPIKeyOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
     "getMyScenarioLogbookFunc": {
       "build": true,
       "dependsOn": [
@@ -171,6 +187,38 @@
         }
       ]
     },
+    "AMPLIFY_function_csvDataImporter_apiMymadamisappAuthortableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "csvDataImporter"
+        }
+      ]
+    },
+    "AMPLIFY_function_csvDataImporter_apiMymadamisappScenariotableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "csvDataImporter"
+        }
+      ]
+    },
+    "AMPLIFY_function_csvDataImporter_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "csvDataImporter"
+        }
+      ]
+    },
+    "AMPLIFY_function_csvDataImporter_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "csvDataImporter"
+        }
+      ]
+    },
     "AMPLIFY_function_getMyScenarioLogbookFunc_deploymentBucketName": {
       "usedBy": [
         {
@@ -246,7 +294,17 @@
   },
   "storage": {
     "MyMadamisAppBucket": {
-      "dependsOn": [],
+      "dependsOn": [
+        {
+          "attributes": [
+            "Name",
+            "Arn",
+            "LambdaExecutionRole"
+          ],
+          "category": "function",
+          "resourceName": "csvDataImporter"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "S3"
     }

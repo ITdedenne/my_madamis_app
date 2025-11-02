@@ -40,6 +40,12 @@
           "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
           "s3Key": "amplify-builds/mymadamisappbc17122aPostConfirmation-53507057426e76434872-build.zip",
           "userTableName": "User-ce7aaxbssnbe3lzfmkn4m74xgq-dev"
+        },
+        "csvDataImporter": {
+          "apiMymadamisappAuthortableName": "Author-ce7aaxbssnbe3lzfmkn4m74xgq-dev",
+          "apiMymadamisappScenariotableName": "Scenario-ce7aaxbssnbe3lzfmkn4m74xgq-dev",
+          "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
+          "s3Key": "amplify-builds/csvDataImporter-47646733672f6b744b33-build.zip"
         }
       },
       "storage": {

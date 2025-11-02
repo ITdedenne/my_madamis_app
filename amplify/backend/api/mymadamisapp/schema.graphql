@@ -1,11 +1,19 @@
 # --- (前回定義した Scenario, Author は変更なし) ---
 
+# gmRequirement の型を Enum として定義
+enum GMRequirementType {
+  REQUIRED
+  OPTIONAL
+  NONE
+}
+
 type Scenario @model @auth(rules: [{ allow: private, operations: [read] }]) {
   id: ID!
   title: String!
   minPlayerCount: Int
   maxPlayerCount: Int
-  gmRequirement: Boolean
+# gmRequirement: Boolean  <== この行を修正
+  gmRequirement: GMRequirementType # <== このように変更
   storeUrl: AWSURL
   authorId: ID! @index(name: "byAuthor")
   author: Author @belongsTo(fields: ["authorId"])

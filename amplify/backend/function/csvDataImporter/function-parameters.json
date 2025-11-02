@@ -1,0 +1,35 @@
+{
+  "permissions": {
+    "api": {
+      "mymadamisapp": [
+        "Query",
+        "Mutation"
+      ]
+    },
+    "storage": {
+      "Scenario:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "Author:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ]
+    }
+  },
+  "lambdaLayers": [],
+  "environmentVariableList": [
+    {
+      "cloudFormationParameterName": "apiMymadamisappAuthortableName",
+      "environmentVariableName": "API_MYMADAMISAPP_AUTHORTABLE_NAME"
+    },
+    {
+      "cloudFormationParameterName": "apiMymadamisappScenariotableName",
+      "environmentVariableName": "API_MYMADAMISAPP_SCENARIOTABLE_NAME"
+    }
+  ]
+}
