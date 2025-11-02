@@ -1,0 +1,15 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-mymadamisapp-dev-5ce86-authRole",
+      "UnauthRoleArn": "arn:aws:iam::208889941036:role/amplify-mymadamisapp-dev-5ce86-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::208889941036:role/amplify-mymadamisapp-dev-5ce86-authRole",
+      "Region": "ap-northeast-1",
+      "DeploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
+      "UnauthRoleName": "amplify-mymadamisapp-dev-5ce86-unauthRole",
+      "StackName": "amplify-mymadamisapp-dev-5ce86",
+      "StackId": "arn:aws:cloudformation:ap-northeast-1:208889941036:stack/amplify-mymadamisapp-dev-5ce86/bc03a3e0-b7ee-11f0-b812-0a0b43ef89a7",
+      "AmplifyAppId": "d297ez4ti67aqs"
+    }
+  }
+}
