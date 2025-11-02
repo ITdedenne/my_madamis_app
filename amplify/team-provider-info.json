@@ -10,6 +10,14 @@
       "StackName": "amplify-mymadamisapp-dev-5ce86",
       "StackId": "arn:aws:cloudformation:ap-northeast-1:208889941036:stack/amplify-mymadamisapp-dev-5ce86/bc03a3e0-b7ee-11f0-b812-0a0b43ef89a7",
       "AmplifyAppId": "d297ez4ti67aqs"
+    },
+    "categories": {
+      "auth": {
+        "mymadamisappbc17122a": {}
+      },
+      "api": {
+        "mymadamisapp": {}
+      }
     }
   }
 }

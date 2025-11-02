@@ -1,0 +1,107 @@
+# This "input" configures a global authorization rule to enable public access to
+# all models in this schema. Learn more about authorization rules here: https://docs.amplify.aws/cli/graphql/authorization-rules
+input AMPLIFY { globalAuthRule: AuthRule = { allow: public } } # FOR TESTING ONLY!
+
+# 1.3. データモデル要件
+# @auth ディレクティブを追加して、Cognito認証済みユーザーのみがアクセスできるように設定します。
+# (owner: { allow: owner } など、要件に応じて設定)
+
+type Scenario @model @auth(rules: [{ allow: private, operations: [read] }]) {
+  id: ID! # scenarioId
+  title: String!
+  minPlayerCount: Int
+  maxPlayerCount: Int
+  gmRequirement: Boolean
+  storeUrl: AWSURL
+  
+  # 1.3.1 と 1.3.2 のリレーション (Scenario N-1 Author)
+  authorId: ID! @index(name: "byAuthor")
+  author: Author @belongsTo(fields: ["authorId"])
+  
+  # 1.3.1 と 1.3.3 のリレーション (Scenario 1-N UserScenario)
+  userScenarios: [UserScenario] @hasMany(indexName: "byScenario", fields: ["id"])
+}
+
+type Author @model @auth(rules: [{ allow: private, operations: [read] }]) {
+  id: ID! # authorId
+  authorName: String!
+  
+  # 1.3.2 と 1.3.1 のリレーション (Author 1-N Scenario)
+  scenarios: [Scenario] @hasMany(indexName: "byAuthor", fields: ["id"])
+}
+
+type UserScenario @model @auth(rules: [{ allow: owner }]) {
+  id: ID!
+  
+  # 1.3.3 (注: userId は @auth(rules: [{ allow: owner }]) により自動的に owner フィールドとして管理されます)
+  # ユーザーとシナリオの関連 (N-N の中間テーブル)
+  
+  scenarioId: ID! @index(name: "byScenario")
+  scenario: Scenario @belongsTo(fields: ["scenarioId"])
+  
+  # userId (owner) は自動で入ります
+  
+  isPlayed: Boolean!
+  isPossessed: Boolean!
+}
+
+# 1.4. バックエンドAPI要件 (カスタムクエリ)
+
+# 1.4.1. マイリスト取得用 (非正規化データ型)
+type ScenarioLogbookEntry {
+  # Scenario の全情報
+  id: ID!
+  title: String!
+  minPlayerCount: Int
+  maxPlayerCount: Int
+  gmRequirement: Boolean
+  storeUrl: AWSURL
+  authorId: ID!
+  
+  # Author情報 (Lambda内で結合)
+  authorName: String # 例: Lambdaで結合する場合
+  
+  # UserScenario のステータス情報
+  isPlayed: Boolean!
+  isPossessed: Boolean!
+}
+
+# 1.4.2. 全シナリオ一覧取得用 (Scenario + オプショナルなステータス)
+type ScenarioWithMyStatus {
+  # Scenario の全情報
+  id: ID!
+  title: String!
+  minPlayerCount: Int
+  maxPlayerCount: Int
+  gmRequirement: Boolean
+  storeUrl: AWSURL
+  authorId: ID!
+  
+  # Author情報 (Lambda内で結合)
+  authorName: String # 例: Lambdaで結合する場合
+
+  # ログイン中ユーザーのステータス (オプショナル)
+  isPlayed: Boolean
+  isPossessed: Boolean
+}
+
+# カスタムクエリの定義
+type Query {
+  # 1.4.1: @function で Lambda に接続
+  # userId は Lambda 側で $context.identity.sub から取得するため、引数は不要
+  getMyScenarioLogbook: [ScenarioLogbookEntry]
+    @function(name: "getMyScenarioLogbookFunc-${env}") # ステップ2で作成した関数名
+    @auth(rules: [{ allow: private }]) # ログインユーザーのみ実行可
+
+  # 1.4.2: @function で Lambda に接続
+  # フィルター等は引数で渡す (userIdはLambda側で取得)
+  listScenariosWithMyStatus(filter: String, sort: String, nextToken: String): ScenarioWithMyStatusConnection
+    @function(name: "listScenariosWithMyStatusFunc-${env}") # ステップ2で作成した関数名
+    @auth(rules: [{ allow: private }]) # ログインユーザーのみ実行可
+}
+
+# 1.4.2 のためのページネーション用型
+type ScenarioWithMyStatusConnection {
+  items: [ScenarioWithMyStatus]
+  nextToken: String
+}
