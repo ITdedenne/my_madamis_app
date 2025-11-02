@@ -103,7 +103,7 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
     state = state.copyWith(scenarios: const AsyncValue.loading());
     try {
       final authState = _ref.read(authStateNotifierProvider);
-      final user = authState.cognitoUser;
+      final user = authState.authUser; // <-- 'cognitoUser' から 'authUser' に修正
       if (user == null) {
         throw Exception('User not authenticated');
       }
@@ -131,13 +131,13 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   // ステータスを更新するメソッド
   Future<void> updateScenarioStatus(
       String scenarioId, bool isPlayed, bool isPossessed) async {
-    final user = _ref.read(authStateNotifierProvider).cognitoUser;
+    final user = _ref.read(authStateNotifierProvider).authUser; // <-- 'cognitoUser' から 'authUser' に修正
     if (user == null) return;
 
     final usecase = _ref.read(updateUserScenarioStatusUsecaseProvider);
 
     try {
-      await usecase(
+      await usecase.call( // .call() を明示
         userId: user.userId,
         scenarioId: scenarioId,
         isPlayed: isPlayed,

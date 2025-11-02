@@ -4,8 +4,9 @@ import 'dart:convert' as ModelHelpers;
 
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/repositories/scenario_repository.dart';
-import 'package:my_madamis_app/graphql/custom_queries.dart'; // 1. で追加したファイル
+import 'package:my_madamis_app/graphql/custom_queries.dart'; 
 import 'package:my_madamis_app/models/ModelProvider.dart';
+import 'dart:developer'; // logを使用するために import
 
 class ScenarioRepositoryImpl implements ScenarioRepository {
   /// [探す] 画面用: BEのカスタムクエリを叩く
@@ -31,7 +32,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       final responseData = response.data;
 
       if (responseData == null || response.hasErrors) {
-        safePrint('Error fetching scenarios: ${response.errors}');
+        log('Error fetching scenarios: ${response.errors}');
         throw Exception('Failed to list scenarios with status: ${response.errors}');
       }
 
@@ -41,7 +42,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
       return ScenarioWithMyStatusConnection.fromJson(connectionData);
     } catch (e) {
-      safePrint('GraphQL Error: $e');
+      log('GraphQL Error: $e');
       throw Exception('Failed to execute listScenariosWithMyStatus: $e');
     }
   }
@@ -52,18 +53,13 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     try {
       final request = GraphQLRequest<String>(
         document: getMyScenarioLogbookQuery,
-        // userId は Amplify (IAM) 認証情報から Lambda 側で取得するため、
-        // スキーマ定義によっては引数が不要な場合があります。
-        // スキーマ定義 (getMyScenarioLogbook: [ScenarioLogbookEntry] @function(...))
-        // に引数がないため、variablesも空にします。
-        // もしLambda側で引数 'userId' を要求する場合は、variables: {'userId': userId} を追加してください。
       );
 
       final response = await Amplify.API.query(request: request).response;
       final responseData = response.data;
 
       if (responseData == null || response.hasErrors) {
-        safePrint('Error fetching logbook: ${response.errors}');
+        log('Error fetching logbook: ${response.errors}');
         throw Exception('Failed to get scenario logbook: ${response.errors}');
       }
       
@@ -76,19 +72,18 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
               ScenarioLogbookEntry.fromJson(item as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      safePrint('GraphQL Error: $e');
+      log('GraphQL Error: $e');
       throw Exception('Failed to execute getMyScenarioLogbook: $e');
     }
   }
 
   /// [書き込み処理] ステータス更新
-  /// これは既存のDataStoreロジックを流用・最適化します
   @override
   Future<void> updateUserScenarioStatus({
     required String userId,
     required String scenarioId,
-    bool isPlayed = false, // デフォルトを false に
-    bool isPossessed = false, // デフォルトを false に
+    bool isPlayed = false,
+    bool isPossessed = false,
   }) async {
     try {
       // 既存のレコードを検索
@@ -128,7 +123,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         }
       }
     } catch (e) {
-      safePrint('Error updating user scenario status: $e');
+      log('Error updating user scenario status: $e');
       throw Exception('Failed to update status: $e');
     }
   }

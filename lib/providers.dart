@@ -13,7 +13,6 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/repositories/sce
 // --- 【追加】Scenario Logbook の Usecase を import ---
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_my_list_usecase.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_scenarios_usecase.dart';
-// ↓↓↓↓ 不足していた import を追加 ↓↓↓↓
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/update_user_scenario_status_usecase.dart';
 // --- 【追加】ここまで ---
 
@@ -44,14 +43,14 @@ final getScenariosUsecaseProvider = Provider<GetScenariosUsecase>((ref) {
 });
 
 /// [マイリスト] 画面用の Usecase
-final getMyListUsecaseProvider = Provider<GetMyListUsecase>((ref) {
+final getMyListUsecaseProvider = Provider<GetMyListUseCase>((ref) { // <- ...UseCase に修正
   final repository = ref.read(scenarioRepositoryProvider);
-  return GetMyListUsecase(repository);
+  return GetMyListUseCase(repository); // <- ...UseCase に修正
 });
 
 /// ステータス更新用の Usecase
 final updateUserScenarioStatusUsecaseProvider =
-    Provider<UpdateUserScenarioStatusUsecase>((ref) {
+    Provider<UpdateUserScenarioStatusUseCase>((ref) { // <- ...UseCase に修正
   final repository = ref.read(scenarioRepositoryProvider);
-  return UpdateUserScenarioStatusUsecase(repository);
+  return UpdateUserScenarioStatusUseCase(repository); // <- ...UseCase に修正
 });
