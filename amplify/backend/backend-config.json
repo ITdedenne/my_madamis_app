@@ -37,7 +37,17 @@
   "auth": {
     "mymadamisappbc17122a": {
       "customAuth": false,
-      "dependsOn": [],
+      "dependsOn": [
+        {
+          "attributes": [
+            "Arn",
+            "Name"
+          ],
+          "category": "function",
+          "resourceName": "mymadamisappbc17122aPostConfirmation",
+          "triggerProvider": "Cognito"
+        }
+      ],
       "frontendAuthConfig": {
         "mfaConfiguration": "OFF",
         "mfaTypes": [
@@ -126,6 +136,22 @@
       ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
+    },
+    "mymadamisappbc17122aPostConfirmation": {
+      "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput",
+            "GraphQLAPIKeyOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        }
+      ],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
     }
   },
   "parameters": {
@@ -190,6 +216,22 @@
         {
           "category": "function",
           "resourceName": "listScenariosWithMyStatusFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_mymadamisappbc17122aPostConfirmation_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisappbc17122aPostConfirmation"
+        }
+      ]
+    },
+    "AMPLIFY_function_mymadamisappbc17122aPostConfirmation_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisappbc17122aPostConfirmation"
         }
       ]
     }

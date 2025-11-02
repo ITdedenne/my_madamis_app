@@ -9,7 +9,8 @@
       "UnauthRoleName": "amplify-mymadamisapp-dev-5ce86-unauthRole",
       "StackName": "amplify-mymadamisapp-dev-5ce86",
       "StackId": "arn:aws:cloudformation:ap-northeast-1:208889941036:stack/amplify-mymadamisapp-dev-5ce86/bc03a3e0-b7ee-11f0-b812-0a0b43ef89a7",
-      "AmplifyAppId": "d297ez4ti67aqs"
+      "AmplifyAppId": "d297ez4ti67aqs",
+      "AuthTriggerTemplateURL": "https://s3.amazonaws.com/amplify-mymadamisapp-dev-5ce86-deployment/amplify-cfn-templates/auth/auth-trigger-cloudformation-template.json"
     },
     "categories": {
       "auth": {
@@ -34,6 +35,10 @@
         "createInitialUser": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
           "s3Key": "amplify-builds/createInitialUser-78576f39566c72353656-build.zip"
+        },
+        "mymadamisappbc17122aPostConfirmation": {
+          "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
+          "s3Key": "amplify-builds/mymadamisappbc17122aPostConfirmation-69595973585435536c32-build.zip"
         }
       },
       "storage": {

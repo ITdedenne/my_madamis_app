@@ -1,0 +1,24 @@
+{
+  "trigger": true,
+  "modules": [
+    "custom"
+  ],
+  "parentResource": "mymadamisappbc17122a",
+  "functionName": "mymadamisappbc17122aPostConfirmation",
+  "resourceName": "mymadamisappbc17122aPostConfirmation",
+  "parentStack": "auth",
+  "triggerEnvs": "[]",
+  "triggerDir": "/snapshot/amplify-cli/build/node_modules/@aws-amplify/amplify-category-auth/provider-utils/awscloudformation/triggers/PostConfirmation",
+  "triggerTemplate": "PostConfirmation.json.ejs",
+  "triggerEventPath": "PostConfirmation.event.json",
+  "roleName": "mymadamisappbc17122aPostConfirmation",
+  "skipEdit": true,
+  "permissions": {
+    "api": {
+      "mymadamisapp": [
+        "Query",
+        "Mutation"
+      ]
+    }
+  }
+}
