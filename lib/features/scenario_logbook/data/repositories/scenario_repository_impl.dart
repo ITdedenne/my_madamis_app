@@ -1,10 +1,9 @@
 // lib/features/scenario_logbook/data/repositories/scenario_repository_impl.dart
 
-import 'dart:convert' as ModelHelpers;
-
+import 'dart:convert' as model_helpers; // Lintエラー修正
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/repositories/scenario_repository.dart';
-import 'package:my_madamis_app/graphql/custom_queries.dart'; 
+import 'package:my_madamis_app/graphql/custom_queries.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'dart:developer'; // logを使用するために import
 
@@ -33,10 +32,12 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
       if (responseData == null || response.hasErrors) {
         log('Error fetching scenarios: ${response.errors}');
-        throw Exception('Failed to list scenarios with status: ${response.errors}');
+        throw Exception(
+            'Failed to list scenarios with status: ${response.errors}');
       }
 
-      final jsonMap = ModelHelpers.jsonDecode(responseData) as Map<String, dynamic>;
+      final jsonMap =
+          model_helpers.jsonDecode(responseData) as Map<String, dynamic>; // Lintエラー修正
       final connectionData =
           jsonMap['listScenariosWithMyStatus'] as Map<String, dynamic>;
 
@@ -62,10 +63,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         log('Error fetching logbook: ${response.errors}');
         throw Exception('Failed to get scenario logbook: ${response.errors}');
       }
-      
-      final jsonMap = ModelHelpers.jsonDecode(responseData) as Map<String, dynamic>;
-      final itemsData =
-          jsonMap['getMyScenarioLogbook'] as List;
+
+      final jsonMap =
+          model_helpers.jsonDecode(responseData) as Map<String, dynamic>; // Lintエラー修正
+      final itemsData = jsonMap['getMyScenarioLogbook'] as List;
 
       return itemsData
           .map((item) =>
@@ -89,9 +90,9 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       // 既存のレコードを検索
       final existingEntries = await Amplify.DataStore.query(
         UserScenario.classType,
-        where: UserScenario.USERID
-            .eq(userId)
-            .and(UserScenario.SCENARIOID.eq(scenarioId)),
+        where: UserScenario.USER
+            .eq(userId) // '.USERID' から '.USER' に修正
+            .and(UserScenario.SCENARIO.eq(scenarioId)), // '.SCENARIOID' から '.SCENARIO' に修正
       );
 
       final existingEntry =
@@ -112,10 +113,29 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           );
           await Amplify.DataStore.save(updatedEntry);
         } else {
-          // 新規作成
+          // --- 【新規作成】 ---
+          // コンストラクタはフルオブジェクトを要求するため、
+          // IDから親オブジェクトを取得する
+          final userQuery = await Amplify.DataStore.query(
+            User.classType,
+            where: User.ID.eq(userId),
+          );
+          final scenarioQuery = await Amplify.DataStore.query(
+            Scenario.classType,
+            where: Scenario.ID.eq(scenarioId),
+          );
+
+          if (userQuery.isEmpty || scenarioQuery.isEmpty) {
+            throw Exception('User or Scenario not found for creating relation');
+          }
+
+          final userObject = userQuery.first;
+          final scenarioObject = scenarioQuery.first;
+
+          // 正しいコンストラクタ引数で作成
           final newEntry = UserScenario(
-            userId: userId,
-            scenarioId: scenarioId,
+            user: userObject, // 'userId:' ではなく 'user:'
+            scenario: scenarioObject, // 'scenarioId:' ではなく 'scenario:'
             isPlayed: isPlayed,
             isPossessed: isPossessed,
           );
