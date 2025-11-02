@@ -30,7 +30,8 @@
         "getUserScenarioLogbookFunc": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
           "s3Key": "amplify-builds/getUserScenarioLogbookFunc-57703275744b4843456b-build.zip"
-        }
+        },
+        "createInitialUser": {}
       },
       "storage": {
         "MyMadamisAppBucket": {}
