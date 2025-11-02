@@ -219,6 +219,30 @@
         }
       ]
     },
+    "AMPLIFY_function_getMyScenarioLogbookFunc_apiMymadamisappAuthortableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getMyScenarioLogbookFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_getMyScenarioLogbookFunc_apiMymadamisappScenariotableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getMyScenarioLogbookFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_getMyScenarioLogbookFunc_apiMymadamisappUserscenariotableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getMyScenarioLogbookFunc"
+        }
+      ]
+    },
     "AMPLIFY_function_getMyScenarioLogbookFunc_deploymentBucketName": {
       "usedBy": [
         {
@@ -235,6 +259,30 @@
         }
       ]
     },
+    "AMPLIFY_function_getUserScenarioLogbookFunc_apiMymadamisappAuthortableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getUserScenarioLogbookFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_getUserScenarioLogbookFunc_apiMymadamisappScenariotableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getUserScenarioLogbookFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_getUserScenarioLogbookFunc_apiMymadamisappUserscenariotableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "getUserScenarioLogbookFunc"
+        }
+      ]
+    },
     "AMPLIFY_function_getUserScenarioLogbookFunc_deploymentBucketName": {
       "usedBy": [
         {
@@ -248,6 +296,30 @@
         {
           "category": "function",
           "resourceName": "getUserScenarioLogbookFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_listScenariosWithMyStatusFunc_apiMymadamisappAuthortableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "listScenariosWithMyStatusFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_listScenariosWithMyStatusFunc_apiMymadamisappScenariotableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "listScenariosWithMyStatusFunc"
+        }
+      ]
+    },
+    "AMPLIFY_function_listScenariosWithMyStatusFunc_apiMymadamisappUserscenariotableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "listScenariosWithMyStatusFunc"
         }
       ]
     },

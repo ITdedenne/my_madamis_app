@@ -7,5 +7,19 @@
         "Mutation"
       ]
     }
-  }
+  },
+  "environmentVariableList": [
+    {
+      "cloudFormationParameterName": "apiMymadamisappUserscenariotableName",
+      "environmentVariableName": "API_MYMADAMISAPP_USERSCENARIOTABLE_NAME"
+    },
+    {
+      "cloudFormationParameterName": "apiMymadamisappScenariotableName",
+      "environmentVariableName": "API_MYMADAMISAPP_SCENARIOTABLE_NAME"
+    },
+    {
+      "cloudFormationParameterName": "apiMymadamisappAuthortableName",
+      "environmentVariableName": "API_MYMADAMISAPP_AUTHORTABLE_NAME"
+    }
+  ]
 }

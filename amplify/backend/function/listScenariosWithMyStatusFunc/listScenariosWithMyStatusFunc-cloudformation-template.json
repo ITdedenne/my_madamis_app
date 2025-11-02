@@ -27,6 +27,15 @@
     "apimymadamisappGraphQLAPIKeyOutput": {
       "Type": "String",
       "Default": "apimymadamisappGraphQLAPIKeyOutput"
+    },
+    "apiMymadamisappUserscenariotableName": {
+      "Type": "String"
+    },
+    "apiMymadamisappScenariotableName": {
+      "Type": "String"
+    },
+    "apiMymadamisappAuthortableName": {
+      "Type": "String"
     }
   },
   "Conditions": {
@@ -90,6 +99,15 @@
             },
             "API_MYMADAMISAPP_GRAPHQLAPIKEYOUTPUT": {
               "Ref": "apimymadamisappGraphQLAPIKeyOutput"
+            },
+            "API_MYMADAMISAPP_USERSCENARIOTABLE_NAME": {
+              "Ref": "apiMymadamisappUserscenariotableName"
+            },
+            "API_MYMADAMISAPP_SCENARIOTABLE_NAME": {
+              "Ref": "apiMymadamisappScenariotableName"
+            },
+            "API_MYMADAMISAPP_AUTHORTABLE_NAME": {
+              "Ref": "apiMymadamisappAuthortableName"
             }
           }
         },
