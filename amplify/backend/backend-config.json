@@ -234,6 +234,14 @@
           "resourceName": "mymadamisappbc17122aPostConfirmation"
         }
       ]
+    },
+    "AMPLIFY_function_mymadamisappbc17122aPostConfirmation_userTableName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisappbc17122aPostConfirmation"
+        }
+      ]
     }
   },
   "storage": {

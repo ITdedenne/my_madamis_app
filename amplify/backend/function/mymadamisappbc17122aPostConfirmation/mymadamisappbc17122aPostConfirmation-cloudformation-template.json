@@ -55,6 +55,9 @@
     "apimymadamisappGraphQLAPIKeyOutput": {
       "Type": "String",
       "Default": "apimymadamisappGraphQLAPIKeyOutput"
+    },
+    "userTableName": {
+      "Type": "String"
     }
   },
   "Conditions": {
@@ -142,6 +145,9 @@
                   }
                 ]
               ]
+            },
+            "USER_TABLE_NAME": {
+              "Ref": "userTableName"
             }
           }
         },
