@@ -19,12 +19,6 @@
         "read",
         "update",
         "delete"
-      ],
-      "NewUserScenario:@model(appsync)": [
-        "create",
-        "read",
-        "update",
-        "delete"
       ]
     }
   },
