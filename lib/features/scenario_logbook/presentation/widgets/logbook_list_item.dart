@@ -37,6 +37,8 @@ class LogbookListItem extends ConsumerWidget {
       child: ListTile(
         title: Text(title),
         subtitle: authorName != null ? Text(authorName!) : null,
+        // --- ▼ 修正 ▼ ---
+        // trailing 全体を PopupMenuButton に置き換える
         trailing: PopupMenuButton<_UpdateAction>(
           onSelected: (_UpdateAction action) {
             // 新しい状態を計算
@@ -59,15 +61,12 @@ class LogbookListItem extends ConsumerWidget {
           },
           itemBuilder: (BuildContext context) =>
               <PopupMenuEntry<_UpdateAction>>[
-            // --- ▼ 修正 ▼ ---
-            // 「通過済」チェックボックス (UpdateAction -> _UpdateAction に修正)
+            // 「通過済」チェックボックス
             CheckedPopupMenuItem<_UpdateAction>(
               value: _UpdateAction.togglePlayed,
               checked: isPlayed,
               child: const Text('通過済'),
             ),
-            // --- ▲ 修正 ▲ ---
-            
             // 「所持」チェックボックス
             CheckedPopupMenuItem<_UpdateAction>(
               value: _UpdateAction.togglePossessed,
@@ -81,6 +80,8 @@ class LogbookListItem extends ConsumerWidget {
               child: Text('未登録'),
             ),
           ],
+          // ここに「プラスアイコンとプルダウンボタンが両方出る」原因がありました。
+          // PopupMenuButton の child に、表示したいカスタムウィジェットを一つだけ渡します。
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
@@ -97,12 +98,15 @@ class LogbookListItem extends ConsumerWidget {
                 Text(_getStatusText(isPlayed, isPossessed),
                     style:
                         TextStyle(color: _getIconColor(isPlayed, isPossessed))),
+                // この Icon(Icons.arrow_drop_down) がプルダウンのアイコンになります。
+                // PopupMenuButton のデフォルトのアイコンは表示されなくなります。
                 Icon(Icons.arrow_drop_down,
                     color: _getIconColor(isPlayed, isPossessed)),
               ],
             ),
           ),
         ),
+        // --- ▲ 修正 ▲ ---
       ),
     );
   }
