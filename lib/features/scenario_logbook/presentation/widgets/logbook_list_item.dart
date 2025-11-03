@@ -1,167 +1,221 @@
-// lib/features/scenario_logbook/presentation/widgets/logbook_list_item.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
+import 'package:my_madamis_app/models/ModelProvider.dart';
+// 2つのViewModelをインポート
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
-
-// 実行するアクションを定義します
-enum _UpdateAction {
-  togglePlayed, // 「通過済」をトグル
-  togglePossessed, // 「所持」をトグル
-  setUnregistered // 「未登録」にセット
-}
+import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 
 class LogbookListItem extends ConsumerWidget {
+  // オブジェクトではなく、必要なフィールドを直接受け取る
+  final String scenarioId;
+  final String title;
+  final String? authorName;
+  final bool? isPlayed;
+  final bool? isPossessed;
+  // 呼び出し元のページを判別するための引数
+  final String sourcePage; // 'myList' または 'search'
+
   const LogbookListItem({
     super.key,
     required this.scenarioId,
     required this.title,
     this.authorName,
-    required this.isPlayed,
-    required this.isPossessed,
-    required this.sourcePage, // 'search' または 'myList'
+    this.isPlayed,
+    this.isPossessed,
+    required this.sourcePage, // 呼び出し元ページを必須にする
   });
-
-  final String scenarioId;
-  final String title;
-  final String? authorName;
-  final bool isPlayed;
-  final bool isPossessed;
-  final String sourcePage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: ListTile(
-        title: Text(title),
-        subtitle: authorName != null ? Text(authorName!) : null,
-        // --- ▼ 修正 ▼ ---
-        // trailing 全体を PopupMenuButton に置き換える
-        trailing: PopupMenuButton<_UpdateAction>(
-          onSelected: (_UpdateAction action) {
-            // 新しい状態を計算
-            bool newIsPlayed = isPlayed;
-            bool newIsPossessed = isPossessed;
-
-            switch (action) {
-              case _UpdateAction.togglePlayed:
-                newIsPlayed = !isPlayed;
-                break;
-              case _UpdateAction.togglePossessed:
-                newIsPossessed = !isPossessed;
-                break;
-              case _UpdateAction.setUnregistered:
-                newIsPlayed = false;
-                newIsPossessed = false;
-                break;
-            }
-            _updateStatus(ref, newIsPlayed, newIsPossessed);
-          },
-          itemBuilder: (BuildContext context) =>
-              <PopupMenuEntry<_UpdateAction>>[
-            // 「通過済」チェックボックス
-            CheckedPopupMenuItem<_UpdateAction>(
-              value: _UpdateAction.togglePlayed,
-              checked: isPlayed,
-              child: const Text('通過済'),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title, // props を直接使用
+                    style: Theme.of(context).textTheme.titleLarge,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '作者: ${authorName ?? '不明'}', // props を直接使用
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
             ),
-            // 「所持」チェックボックス
-            CheckedPopupMenuItem<_UpdateAction>(
-              value: _UpdateAction.togglePossessed,
-              checked: isPossessed,
-              child: const Text('所持'),
-            ),
-            const PopupMenuDivider(),
-            // 「未登録」ボタン
-            const PopupMenuItem<_UpdateAction>(
-              value: _UpdateAction.setUnregistered,
-              child: Text('未登録'),
+            const SizedBox(width: 16),
+            // ステータスボタンのウィジェット呼び出し
+            _buildStatusButton(
+              context,
+              ref,
+              scenarioId,
+              isPlayed,
+              isPossessed,
             ),
           ],
-          // ここに「プラスアイコンとプルダウンボタンが両方出る」原因がありました。
-          // PopupMenuButton の child に、表示したいカスタムウィジェットを一つだけ渡します。
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              border: Border.all(color: _getBorderColor(isPlayed, isPossessed)),
-              borderRadius: BorderRadius.circular(20),
-              color: _getBackgroundColor(isPlayed, isPossessed),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(_getIconData(isPlayed, isPossessed),
-                    color: _getIconColor(isPlayed, isPossessed), size: 18),
-                const SizedBox(width: 6),
-                Text(_getStatusText(isPlayed, isPossessed),
-                    style:
-                        TextStyle(color: _getIconColor(isPlayed, isPossessed))),
-                // この Icon(Icons.arrow_drop_down) がプルダウンのアイコンになります。
-                // PopupMenuButton のデフォルトのアイコンは表示されなくなります。
-                Icon(Icons.arrow_drop_down,
-                    color: _getIconColor(isPlayed, isPossessed)),
-              ],
-            ),
-          ),
         ),
-        // --- ▲ 修正 ▲ ---
       ),
     );
   }
 
-  // ステータス更新ロジック
-  void _updateStatus(WidgetRef ref, bool newIsPlayed, bool newIsPossessed) {
-    if (sourcePage == 'search') {
-      ref
-          .read(searchScenariosViewModelProvider.notifier) // .notifier を使用
-          .updateScenarioStatus(
-            scenarioId,
-            newIsPlayed,
-            newIsPossessed,
-          );
+  /// ステータスに応じてボタンを構築し、タップでボトムシートを表示する
+  Widget _buildStatusButton(
+    BuildContext context,
+    WidgetRef ref,
+    String scenarioId,
+    bool? isPlayed,
+    bool? isPossessed,
+  ) {
+    // 両方のViewModelを読み込む
+    final searchViewModel = ref.read(searchScenariosViewModelProvider.notifier);
+    final myListViewModel = ref.read(myListViewModelProvider.notifier);
+
+    final bool played = isPlayed ?? false;
+    final bool possessed = isPossessed ?? false;
+
+    // ボタンの見た目決定ロジック (変更なし)
+    IconData iconData;
+    String text;
+    Color backgroundColor;
+    Color foregroundColor = Colors.white;
+
+    if (played && possessed) {
+      iconData = Icons.bookmark_added;
+      text = '通過/所持';
+      backgroundColor = Colors.purple;
+    } else if (played) {
+      iconData = Icons.check_circle;
+      text = '通過済';
+      backgroundColor = Colors.green;
+    } else if (possessed) {
+      iconData = Icons.book;
+      text = '所持';
+      backgroundColor = Colors.orange;
     } else {
-      ref
-          .read(myListViewModelProvider.notifier) // .notifier を使用
-          .updateScenarioStatus(
-            scenarioId,
-            newIsPlayed,
-            newIsPossessed,
-          );
+      iconData = Icons.add_circle_outline;
+      text = '未登録';
+      backgroundColor = Colors.blue;
     }
+
+    return ElevatedButton.icon(
+      icon: Icon(iconData, size: 18),
+      label: Text(text),
+      style: ElevatedButton.styleFrom(
+        foregroundColor: foregroundColor,
+        backgroundColor: backgroundColor,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+      ),
+      onPressed: () {
+        // ボトムシート表示 (変更なし)
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (builderContext) {
+            return _StatusSelectionSheet(
+              initialIsPlayed: played,
+              initialIsPossessed: possessed,
+              onStatusChanged: (newIsPlayed, newIsPossessed) {
+                // --- ▼ 修正点 ▼ ---
+                // 呼び出し元のページ(sourcePage)に応じて、
+                // 対応するViewModelの更新メソッドを呼ぶ
+                if (sourcePage == 'myList') {
+                  myListViewModel.updateScenarioStatus(
+                    scenarioId,
+                    newIsPlayed,
+                    newIsPossessed,
+                  );
+                } else {
+                  // 'search' ページからの呼び出し
+                  searchViewModel.updateScenarioStatus(
+                    scenarioId,
+                    newIsPlayed,
+                    newIsPossessed,
+                  );
+                }
+                // --- ▲ 修正点 ▲ ---
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+}
+
+/// ステータス選択用のボトムシートウィジェット
+/// (このウィジェットは前回の修正から変更ありません)
+class _StatusSelectionSheet extends StatefulWidget {
+  final bool initialIsPlayed;
+  final bool initialIsPossessed;
+  final Function(bool newIsPlayed, bool newIsPossessed) onStatusChanged;
+
+  const _StatusSelectionSheet({
+    required this.initialIsPlayed,
+    required this.initialIsPossessed,
+    required this.onStatusChanged,
+  });
+
+  @override
+  State<_StatusSelectionSheet> createState() => _StatusSelectionSheetState();
+}
+
+class _StatusSelectionSheetState extends State<_StatusSelectionSheet> {
+  late bool _isPlayed;
+  late bool _isPossessed;
+
+  @override
+  void initState() {
+    super.initState();
+    _isPlayed = widget.initialIsPlayed;
+    _isPossessed = widget.initialIsPossessed;
   }
 
-  // --- 以下、UIヘルパーメソッド ---
-
-  String _getStatusText(bool isPlayed, bool isPossessed) {
-    if (isPlayed && isPossessed) return '通過/所持';
-    if (isPlayed) return '通過済';
-    if (isPossessed) return '所持';
-    return '未登録';
-  }
-
-  IconData _getIconData(bool isPlayed, bool isPossessed) {
-    if (isPlayed) return Icons.check_circle; // 「通過済」を優先
-    if (isPossessed) return Icons.inventory;
-    return Icons.add;
-  }
-
-  Color _getIconColor(bool isPlayed, bool isPossessed) {
-    if (isPlayed) return Colors.green; // 「通過済」を優先
-    if (isPossessed) return Colors.blue;
-    return Colors.grey.shade700;
-  }
-
-  Color _getBorderColor(bool isPlayed, bool isPossessed) {
-    if (isPlayed) return Colors.green.shade200; // 「通過済」を優先
-    if (isPossessed) return Colors.blue.shade200;
-    return Colors.grey.shade400;
-  }
-
-  Color _getBackgroundColor(bool isPlayed, bool isPossessed) {
-    if (isPlayed) return Colors.green.shade50; // 「通過済」を優先
-    if (isPossessed) return Colors.blue.shade50;
-    return Colors.grey.shade100;
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.only(top: 8.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CheckboxListTile(
+              title: const Text('✅ 通過済'),
+              value: _isPlayed,
+              onChanged: (value) => setState(() => _isPlayed = value!),
+            ),
+            CheckboxListTile(
+              title: const Text('📚 所持'),
+              value: _isPossessed,
+              onChanged: (value) => setState(() => _isPossessed = value!),
+            ),
+            const Divider(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                  backgroundColor: Theme.of(context).primaryColor,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  widget.onStatusChanged(_isPlayed, _isPossessed);
+                  Navigator.pop(context);
+                },
+                child: const Text('保存'),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
   }
 }

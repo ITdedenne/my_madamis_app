@@ -5,6 +5,13 @@ enum GMRequirementType {
   NONE
 }
 
+enum UserScenarioStatus {
+  played
+  possessed
+  notPlayed
+  playedAndPossessed
+}
+
 type Scenario @model @auth(rules: [{ allow: private, operations: [read] }]) {
   id: ID!
   title: String!

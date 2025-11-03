@@ -76,20 +76,15 @@ class SearchScenariosPage extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     // --- ▼ 修正 ▼ ---
                     // item は ScenarioWithMyStatus
-                    final item = scenarios[index]; 
-                    
-                    // ListTile の代わりに LogbookListItem を使用する
-                    // (要件 1.2.4: 一覧からステータスを更新)
-                    // ※ ScenarioWithMyStatus モデルが id, title, author, isPlayed, isPossessed を
-                    // ※ 正しく fromJson でパースできていることが前提
-                    return LogbookListItem(
-                      scenarioId: item.id, // item.id を使用
-                      title: item.title, // item.title を使用
-                      authorName: item.author?.authorName, // item.author を使用
-                      isPlayed: item.isPlayed ?? false, // null の場合は false
-                      isPossessed: item.isPossessed ?? false, // null の場合は false
-                      sourcePage: 'search', // 'search' ページから呼び出し
-                    );
+final item = scenarios[index]; // item は ScenarioWithMyStatus
+return LogbookListItem(
+  scenarioId: item.id,
+  title: item.title,
+  authorName: item.author?.authorName, // 'author' を介して 'authorName' を取得
+  isPlayed: item.isPlayed,
+  isPossessed: item.isPossessed,
+  sourcePage: 'search', // 呼び出し元を 'search' と指定
+);
                     // --- ▲ 修正 ▲ ---
                   },
                 );

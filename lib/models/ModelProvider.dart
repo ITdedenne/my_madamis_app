@@ -38,6 +38,7 @@ export 'ScenarioWithMyStatusConnection.dart';
 export 'User.dart';
 export 'UserRelationship.dart';
 export 'UserScenario.dart';
+export 'UserScenarioStatus.dart';
 
 class ModelProvider implements amplify_core.ModelProviderInterface {
   @override

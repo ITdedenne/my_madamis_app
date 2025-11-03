@@ -18,15 +18,13 @@ class MyListPage extends ConsumerWidget {
     final MyListViewState state = ref.watch(myListViewModelProvider);
     
     final MyListFilter currentFilter = ref.watch(myListFilterProvider);
-    // --- ▼ 追加 ▼ ---
-    // 現在のソート順 (要件 1.2.7)
+    // 現在のソート順
     final MyListSortOrder currentSort = ref.watch(myListSortProvider);
-    // --- ▲ 追加 ▲ ---
 
     return Scaffold(
       body: Column(
         children: [
-          // フィルタリングUI
+          // フィルタリングUI (変更なし)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: SegmentedButton<MyListFilter>(
@@ -46,8 +44,7 @@ class MyListPage extends ConsumerWidget {
             ),
           ),
           
-          // --- ▼ 追加 ▼ ---
-          // 並び替えUI (要件 1.2.7)
+          // 並び替えUI (変更なし)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0),
             child: Row(
@@ -77,12 +74,11 @@ class MyListPage extends ConsumerWidget {
               ],
             ),
           ),
-          // --- ▲ 追加 ▲ ---
 
           // シナリオリスト
           Expanded(
-            child: state.scenarios.when( // .when は AsyncValue に対して使う
-              data: (_) { // データ（_）は filteredMyListProvider から取得
+            child: state.scenarios.when(
+              data: (_) {
                 if (scenarios.isEmpty) {
                   return Center(
                     child: Text(
@@ -92,20 +88,24 @@ class MyListPage extends ConsumerWidget {
                     ),
                   );
                 }
+                // --- ▼ 修正点 ▼ ---
+                // LogbookListItem の呼び出し方を修正
                 return ListView.builder(
                   itemCount: scenarios.length,
                   itemBuilder: (context, index) {
                     final item = scenarios[index];
+                    // item (ScenarioLogbookEntry) のフィールドを渡す
                     return LogbookListItem(
                       scenarioId: item.id,
                       title: item.title,
                       authorName: item.authorName,
                       isPlayed: item.isPlayed,
                       isPossessed: item.isPossessed,
-                      sourcePage: 'myList', // 更新ロジックの分岐用
+                      sourcePage: 'myList', // 呼び出し元を 'myList' と指定
                     );
                   },
                 );
+                // --- ▲ 修正点 ▲ ---
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (err, stack) => Center(child: Text('エラー: $err')),
