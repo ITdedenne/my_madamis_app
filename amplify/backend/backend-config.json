@@ -110,6 +110,13 @@
       "dependsOn": [
         {
           "attributes": [
+            "UserPoolId"
+          ],
+          "category": "auth",
+          "resourceName": "mymadamisappbc17122a"
+        },
+        {
+          "attributes": [
             "GraphQLAPIIdOutput",
             "GraphQLAPIEndpointOutput",
             "GraphQLAPIKeyOutput"
@@ -126,6 +133,13 @@
       "dependsOn": [
         {
           "attributes": [
+            "UserPoolId"
+          ],
+          "category": "auth",
+          "resourceName": "mymadamisappbc17122a"
+        },
+        {
+          "attributes": [
             "GraphQLAPIIdOutput",
             "GraphQLAPIEndpointOutput",
             "GraphQLAPIKeyOutput"
@@ -140,6 +154,13 @@
     "listScenariosWithMyStatusFunc": {
       "build": true,
       "dependsOn": [
+        {
+          "attributes": [
+            "UserPoolId"
+          ],
+          "category": "auth",
+          "resourceName": "mymadamisappbc17122a"
+        },
         {
           "attributes": [
             "GraphQLAPIIdOutput",

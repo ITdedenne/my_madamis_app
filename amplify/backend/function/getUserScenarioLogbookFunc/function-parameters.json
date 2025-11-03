@@ -1,9 +1,41 @@
 {
   "permissions": {
+    "auth": {
+      "mymadamisappbc17122a": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ]
+    },
     "api": {
       "mymadamisapp": [
         "Query",
-        "Mutation"
+        "Mutation",
+        "Subscription"
+      ]
+    },
+    "storage": {
+      "Scenario:@model(appsync)": [
+        "read"
+      ],
+      "Author:@model(appsync)": [
+        "read"
+      ],
+      "User:@model(appsync)": [
+        "read"
+      ],
+      "UserRelationship:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "UserScenario:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
       ]
     }
   },

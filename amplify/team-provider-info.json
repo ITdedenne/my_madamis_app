@@ -22,21 +22,21 @@
       "function": {
         "getMyScenarioLogbookFunc": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
-          "s3Key": "amplify-builds/getMyScenarioLogbookFunc-745641353835672f4c67-build.zip",
+          "s3Key": "amplify-builds/getMyScenarioLogbookFunc-704a6e4334346857496b-build.zip",
           "apiMymadamisappUserscenariotableName": "UserScenario-ce7aaxbssnbe3lzfmkn4m74xgq-dev",
           "apiMymadamisappScenariotableName": "Scenario-ce7aaxbssnbe3lzfmkn4m74xgq-dev",
           "apiMymadamisappAuthortableName": "Author-ce7aaxbssnbe3lzfmkn4m74xgq-dev"
         },
         "listScenariosWithMyStatusFunc": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
-          "s3Key": "amplify-builds/listScenariosWithMyStatusFunc-39734f2b4b412f524131-build.zip",
+          "s3Key": "amplify-builds/listScenariosWithMyStatusFunc-59435331327839424f69-build.zip",
           "apiMymadamisappUserscenariotableName": "UserScenario-ce7aaxbssnbe3lzfmkn4m74xgq-dev",
           "apiMymadamisappScenariotableName": "Scenario-ce7aaxbssnbe3lzfmkn4m74xgq-dev",
           "apiMymadamisappAuthortableName": "Author-ce7aaxbssnbe3lzfmkn4m74xgq-dev"
         },
         "getUserScenarioLogbookFunc": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
-          "s3Key": "amplify-builds/getUserScenarioLogbookFunc-657670524753736c5735-build.zip",
+          "s3Key": "amplify-builds/getUserScenarioLogbookFunc-664137354e59446f5478-build.zip",
           "apiMymadamisappUserscenariotableName": "UserScenario-ce7aaxbssnbe3lzfmkn4m74xgq-dev",
           "apiMymadamisappScenariotableName": "Scenario-ce7aaxbssnbe3lzfmkn4m74xgq-dev",
           "apiMymadamisappAuthortableName": "Author-ce7aaxbssnbe3lzfmkn4m74xgq-dev"

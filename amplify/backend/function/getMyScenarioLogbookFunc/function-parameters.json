@@ -1,10 +1,27 @@
 {
   "lambdaLayers": [],
   "permissions": {
+    "auth": {
+      "mymadamisappbc17122a": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ]
+    },
     "api": {
       "mymadamisapp": [
         "Query",
-        "Mutation"
+        "Mutation",
+        "Subscription"
+      ]
+    },
+    "storage": {
+      "User:@model(appsync)": [
+        "read"
+      ],
+      "UserScenario:@model(appsync)": [
+        "read"
       ]
     }
   },
