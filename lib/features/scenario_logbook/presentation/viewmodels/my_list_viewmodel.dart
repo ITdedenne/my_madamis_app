@@ -8,22 +8,17 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/update_
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
 
-// マイリストのフィルタ状態
+// (MyListFilter, myListFilterProvider は変更なし)
 enum MyListFilter { all, played, possessed }
-
-// フィルタ状態を管理するProvider
 final myListFilterProvider =
     StateProvider<MyListFilter>((ref) => MyListFilter.all);
 
-// マイリストのソート順 (要件 1.2.7)
+// (MyListSortOrder, myListSortProvider は変更なし)
 enum MyListSortOrder { dateAdded, titleAsc }
-
-// ソート順を管理するProvider
 final myListSortProvider =
     StateProvider<MyListSortOrder>((ref) => MyListSortOrder.dateAdded);
 
-
-// StateNotifier の状態クラス
+// (MyListViewState クラスは変更なし)
 class MyListViewState {
   final AsyncValue<List<ScenarioLogbookEntry>> scenarios;
 
@@ -48,7 +43,7 @@ class MyListViewModel extends StateNotifier<MyListViewState> {
 
   final Ref _ref;
 
-  // データ取得
+  // (fetch メソッドは変更なし)
   Future<void> fetch() async {
     state = state.copyWith(scenarios: const AsyncValue.loading());
     try {
@@ -61,12 +56,7 @@ class MyListViewModel extends StateNotifier<MyListViewState> {
       final getMyListUsecase = _ref.read(getMyListUsecaseProvider);
       final data = await getMyListUsecase(userId);
       
-      // --- ▼ 修正 ▼ ---
-      // エラーが出るため、 createdAt / updatedAt でのソートロジックを削除します。
-      // APIの返却順（デフォルト）を「登録順」とみなします。
-      // data.sort((a, b) => (b.updatedAt ?? b.createdAt!)
-      //     .compareTo(a.updatedAt ?? a.createdAt!));
-      // --- ▲ 修正 ▲ ---
+      // (createdAt/updatedAt が無いモデルのため、ソートロジックは削除したまま)
       
       state = state.copyWith(scenarios: AsyncValue.data(data));
     } catch (e, s) {
@@ -74,7 +64,8 @@ class MyListViewModel extends StateNotifier<MyListViewState> {
     }
   }
 
-  // ステータスを更新するメソッド
+  // --- ▼ 修正 ▼ ---
+  // ステータスを更新するメソッド (オプティミスティック・アップデート)
   Future<void> updateScenarioStatus(
       String scenarioId, bool isPlayed, bool isPossessed) async {
     final userId = _ref.read(authStateNotifierProvider).username;
@@ -82,37 +73,70 @@ class MyListViewModel extends StateNotifier<MyListViewState> {
 
     final usecase = _ref.read(updateUserScenarioStatusUsecaseProvider);
 
+    // 1. UI（ローカル状態）を即座に更新する
+    // (ScenarioLogbookEntry.dart に copyWith が無いため、手動で再生成)
+    state = state.scenarios.when(
+      data: (scenarios) {
+        final newList = scenarios.map((item) {
+          if (item.id == scenarioId) {
+            // 新しいオブジェクトを生成
+            return ScenarioLogbookEntry(
+              id: item.id,
+              title: item.title,
+              minPlayerCount: item.minPlayerCount,
+              maxPlayerCount: item.maxPlayerCount,
+              gmRequirement: item.gmRequirement,
+              storeUrl: item.storeUrl,
+              authorId: item.authorId,
+              authorName: item.authorName,
+              createdAt: item.createdAt, // タイムスタンプもコピー
+              updatedAt: item.updatedAt, // タイムスタンプもコピー
+              // 更新されたステータス
+              isPlayed: isPlayed,
+              isPossessed: isPossessed,
+            );
+          }
+          return item;
+        }).toList();
+        // 新しいリストで state を更新
+        return state.copyWith(scenarios: AsyncValue.data(newList));
+      },
+      loading: () => state,
+      error: (e, s) => state,
+    );
+
+
     try {
+      // 2. バックグラウンドで DataStore の更新を実行
       await usecase.call( 
         userId: userId,
         scenarioId: scenarioId,
         isPlayed: isPlayed,
         isPossessed: isPossessed,
       );
-      // データを再フェッチ
-      await fetch();
+      // (Search 側への通知は不要)
+
     } catch (e) {
-      // エラーハンドリング (例: スナックバー表示)
+      // 3. もし DataStore への保存が失敗したら、
+      //    クラウドの最新情報でUIを元に戻す（ロールバック）
+      await fetch();
     }
   }
+  // --- ▲ 修正 ▲ ---
 }
 
-// StateNotifierProvider
+// (myListViewModelProvider は変更なし)
 final myListViewModelProvider =
     StateNotifierProvider<MyListViewModel, MyListViewState>(
   (ref) => MyListViewModel(ref),
 );
 
-// フィルタリング・ソート済みのリストを提供するProvider
+// (filteredMyListProvider は変更なし)
 final filteredMyListProvider = Provider<List<ScenarioLogbookEntry>>((ref) {
-  // 元データを監視
   final state = ref.watch(myListViewModelProvider);
-  // フィルタを監視
   final filter = ref.watch(myListFilterProvider);
-  // ソート順を監視 (要件 1.2.7)
   final sortOrder = ref.watch(myListSortProvider);
 
-  // AsyncValue.when を使って安全にデータを取り出す
   return state.scenarios.when(
     data: (data) {
       // フィルタリング
@@ -131,11 +155,10 @@ final filteredMyListProvider = Provider<List<ScenarioLogbookEntry>>((ref) {
       if (sortOrder == MyListSortOrder.titleAsc) {
         filteredList.sort((a, b) => a.title.compareTo(b.title));
       }
-      // dateAdded は fetch 時にソート済み（削除した）のため、何もしない (APIの返却順)
       
       return filteredList;
     },
-    loading: () => [], // ローディング中は空リスト
-    error: (e, s) => [], // エラー時も空リスト
+    loading: () => [],
+    error: (e, s) => [],
   );
 });

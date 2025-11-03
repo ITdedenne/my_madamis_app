@@ -7,12 +7,11 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
 
-// 検索・フィルタ条件を保持するデータクラス
+// (SearchFilterState クラスは変更なし)
 class SearchFilterState {
   final String? keyword;
   final int? minPlayerCount;
   final int? maxPlayerCount;
-  // TODO: 他のフィルタ条件（時間、GM要件など）もここに追加
 
   SearchFilterState({
     this.keyword,
@@ -32,11 +31,9 @@ class SearchFilterState {
     );
   }
 
-  // Amplifyの filter マップに変換
   Map<String, dynamic>? toFilterMap() {
     final Map<String, dynamic> filter = {};
 
-    // キーワード検索 (タイトル or 作者名)
     if (keyword != null && keyword!.isNotEmpty) {
       filter['or'] = [
         {'title': {'contains': keyword}},
@@ -44,7 +41,6 @@ class SearchFilterState {
       ];
     }
     
-    // 人数
     if (minPlayerCount != null) {
       filter['minPlayerCount'] = {'ge': minPlayerCount};
     }
@@ -52,17 +48,15 @@ class SearchFilterState {
       filter['maxPlayerCount'] = {'le': maxPlayerCount};
     }
 
-    // TODO: 他のフィルタ条件もここに追加
-
     return filter.isEmpty ? null : filter;
   }
 }
 
-// フィルタ状態を管理するProvider
+// (searchFilterProvider は変更なし)
 final searchFilterProvider =
     StateProvider<SearchFilterState>((ref) => SearchFilterState());
 
-// StateNotifier の状態クラス
+// (SearchScenariosState クラスは変更なし)
 class SearchScenariosState {
   final AsyncValue<List<ScenarioWithMyStatus>> scenarios;
   final String? nextToken;
@@ -83,43 +77,36 @@ class SearchScenariosState {
   }
 }
 
+
 // StateNotifier
 class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   SearchScenariosViewModel(this._ref) : super(SearchScenariosState()) {
-    // フィルタ条件が変更されたら自動でフェッチする
     _ref.listen<SearchFilterState>(searchFilterProvider, (_, __) {
       fetch();
     });
-    fetch(); // 初期データ取得
+    fetch(); 
   }
 
   final Ref _ref;
 
-  // データ取得
+  // (fetch メソッドは変更なし)
   Future<void> fetch() async {
     state = state.copyWith(scenarios: const AsyncValue.loading());
     try {
-      // GQL呼び出しにuserIdは不要だが、
-      // updateScenarioStatus のために
-      // authState (と userId) のチェックは残しておく
       final authState = _ref.read(authStateNotifierProvider);
       final userId = authState.username; 
       if (userId == null) {
         throw Exception('User not authenticated');
       }
 
-      // 現在のフィルタ条件を取得
       final filterState = _ref.read(searchFilterProvider);
       final getScenariosUsecase = _ref.read(getScenariosUsecaseProvider);
 
-      // --- ▼ 修正 ▼ ---
-      // Usecase の I/F 変更に合わせて userId を削除
       final connection = await getScenariosUsecase(
         filter: filterState.toFilterMap(),
-        limit: 50, // limit はI/Fに残したが、GQL呼び出しでは無視される
-        nextToken: state.nextToken, // ページネーション用
+        limit: 50,
+        nextToken: state.nextToken,
       );
-      // --- ▲ 修正 ▲ ---
 
       state = state.copyWith(
         scenarios: AsyncValue.data(connection.items ?? []), 
@@ -130,7 +117,8 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
     }
   }
 
-  // ステータスを更新するメソッド
+  // --- ▼ 修正 ▼ ---
+  // ステータスを更新するメソッド (オプティミスティック・アップデート)
   Future<void> updateScenarioStatus(
       String scenarioId, bool isPlayed, bool isPossessed) async {
     final userId = _ref.read(authStateNotifierProvider).username;
@@ -138,27 +126,62 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
 
     final usecase = _ref.read(updateUserScenarioStatusUsecaseProvider);
 
+    // 1. UI（ローカル状態）を即座に更新する
+    // (ScenarioWithMyStatus.dart に copyWith が無いため、手動で再生成)
+    state = state.scenarios.when(
+      data: (scenarios) {
+        final newList = scenarios.map((item) {
+          if (item.id == scenarioId) {
+            // 新しいオブジェクトを生成
+            return ScenarioWithMyStatus(
+              id: item.id,
+              title: item.title,
+              minPlayerCount: item.minPlayerCount,
+              maxPlayerCount: item.maxPlayerCount,
+              gmRequirement: item.gmRequirement,
+              storeUrl: item.storeUrl,
+              authorId: item.authorId,
+              author: item.author,
+              createdAt: item.createdAt,
+              updatedAt: item.updatedAt,
+              // 更新されたステータス
+              isPlayed: isPlayed,
+              isPossessed: isPossessed,
+            );
+          }
+          return item;
+        }).toList();
+        // 新しいリストで state を更新
+        return state.copyWith(scenarios: AsyncValue.data(newList));
+      },
+      // ローディング中やエラー時は何もしない
+      loading: () => state,
+      error: (e, s) => state,
+    );
+
     try {
-      await usecase.call( 
+      // 2. バックグラウンドで DataStore の更新を実行
+      await usecase.call(
         userId: userId,
         scenarioId: scenarioId,
         isPlayed: isPlayed,
         isPossessed: isPossessed,
       );
 
-      // データを再フェッチ
-      await fetch();
-      
-      // マイリスト側も更新を反映させるために再フェッチをキック
+      // 3. マイリスト側も更新を反映させるために再フェッチをキック
+      // (MyList は DataStore ではなく Lambda を見ているため)
       _ref.read(myListViewModelProvider.notifier).fetch();
 
     } catch (e) {
-      // エラーハンドリング
+      // 4. もし DataStore への保存が失敗したら、
+      //    クラウドの最新情報でUIを元に戻す（ロールバック）
+      await fetch();
     }
   }
+  // --- ▲ 修正 ▲ ---
 }
 
-// StateNotifierProvider
+// (StateNotifierProvider は変更なし)
 final searchScenariosViewModelProvider =
     StateNotifierProvider<SearchScenariosViewModel, SearchScenariosState>(
   (ref) => SearchScenariosViewModel(ref),

@@ -5,11 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 
-// シナリオのステータスを表すEnum
-enum ScenarioStatus {
-  unregistered,
-  played,
-  possessed,
+// 実行するアクションを定義します
+enum _UpdateAction {
+  togglePlayed, // 「通過済」をトグル
+  togglePossessed, // 「所持」をトグル
+  setUnregistered // 「未登録」にセット
 }
 
 class LogbookListItem extends ConsumerWidget {
@@ -30,12 +30,6 @@ class LogbookListItem extends ConsumerWidget {
   final bool isPossessed;
   final String sourcePage;
 
-  ScenarioStatus get status {
-    if (isPlayed) return ScenarioStatus.played;
-    if (isPossessed) return ScenarioStatus.possessed;
-    return ScenarioStatus.unregistered;
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
@@ -43,35 +37,68 @@ class LogbookListItem extends ConsumerWidget {
       child: ListTile(
         title: Text(title),
         subtitle: authorName != null ? Text(authorName!) : null,
-        trailing: PopupMenuButton<ScenarioStatus>(
-          onSelected: (ScenarioStatus newStatus) {
-            _updateStatus(ref, newStatus);
+        trailing: PopupMenuButton<_UpdateAction>(
+          onSelected: (_UpdateAction action) {
+            // 新しい状態を計算
+            bool newIsPlayed = isPlayed;
+            bool newIsPossessed = isPossessed;
+
+            switch (action) {
+              case _UpdateAction.togglePlayed:
+                newIsPlayed = !isPlayed;
+                break;
+              case _UpdateAction.togglePossessed:
+                newIsPossessed = !isPossessed;
+                break;
+              case _UpdateAction.setUnregistered:
+                newIsPlayed = false;
+                newIsPossessed = false;
+                break;
+            }
+            _updateStatus(ref, newIsPlayed, newIsPossessed);
           },
           itemBuilder: (BuildContext context) =>
-              <PopupMenuEntry<ScenarioStatus>>[
-            _buildPopupMenuItem(
-                '通過済', ScenarioStatus.played, status == ScenarioStatus.played),
-            _buildPopupMenuItem('所持', ScenarioStatus.possessed,
-                status == ScenarioStatus.possessed),
+              <PopupMenuEntry<_UpdateAction>>[
+            // --- ▼ 修正 ▼ ---
+            // 「通過済」チェックボックス (UpdateAction -> _UpdateAction に修正)
+            CheckedPopupMenuItem<_UpdateAction>(
+              value: _UpdateAction.togglePlayed,
+              checked: isPlayed,
+              child: const Text('通過済'),
+            ),
+            // --- ▲ 修正 ▲ ---
+            
+            // 「所持」チェックボックス
+            CheckedPopupMenuItem<_UpdateAction>(
+              value: _UpdateAction.togglePossessed,
+              checked: isPossessed,
+              child: const Text('所持'),
+            ),
             const PopupMenuDivider(),
-            _buildPopupMenuItem('未登録', ScenarioStatus.unregistered,
-                status == ScenarioStatus.unregistered),
+            // 「未登録」ボタン
+            const PopupMenuItem<_UpdateAction>(
+              value: _UpdateAction.setUnregistered,
+              child: Text('未登録'),
+            ),
           ],
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              border: Border.all(color: _getBorderColor(status)),
+              border: Border.all(color: _getBorderColor(isPlayed, isPossessed)),
               borderRadius: BorderRadius.circular(20),
-              color: _getBackgroundColor(status),
+              color: _getBackgroundColor(isPlayed, isPossessed),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(_getIconData(status), color: _getIconColor(status), size: 18),
+                Icon(_getIconData(isPlayed, isPossessed),
+                    color: _getIconColor(isPlayed, isPossessed), size: 18),
                 const SizedBox(width: 6),
-                Text(_getStatusText(status),
-                    style: TextStyle(color: _getIconColor(status))),
-                Icon(Icons.arrow_drop_down, color: _getIconColor(status)),
+                Text(_getStatusText(isPlayed, isPossessed),
+                    style:
+                        TextStyle(color: _getIconColor(isPlayed, isPossessed))),
+                Icon(Icons.arrow_drop_down,
+                    color: _getIconColor(isPlayed, isPossessed)),
               ],
             ),
           ),
@@ -81,11 +108,7 @@ class LogbookListItem extends ConsumerWidget {
   }
 
   // ステータス更新ロジック
-  void _updateStatus(WidgetRef ref, ScenarioStatus newStatus) {
-    final bool newIsPlayed = newStatus == ScenarioStatus.played;
-    final bool newIsPossessed = newStatus == ScenarioStatus.possessed;
-
-    // どのViewModelのメソッドを叩くかを sourcePage で分岐
+  void _updateStatus(WidgetRef ref, bool newIsPlayed, bool newIsPossessed) {
     if (sourcePage == 'search') {
       ref
           .read(searchScenariosViewModelProvider.notifier) // .notifier を使用
@@ -107,72 +130,34 @@ class LogbookListItem extends ConsumerWidget {
 
   // --- 以下、UIヘルパーメソッド ---
 
-  PopupMenuItem<ScenarioStatus> _buildPopupMenuItem(
-      String text, ScenarioStatus value, bool isSelected) {
-    return PopupMenuItem<ScenarioStatus>(
-      value: value,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(text),
-          if (isSelected) const Icon(Icons.check, color: Colors.blue),
-        ],
-      ),
-    );
+  String _getStatusText(bool isPlayed, bool isPossessed) {
+    if (isPlayed && isPossessed) return '通過/所持';
+    if (isPlayed) return '通過済';
+    if (isPossessed) return '所持';
+    return '未登録';
   }
 
-  String _getStatusText(ScenarioStatus status) {
-    switch (status) {
-      case ScenarioStatus.played:
-        return '通過済';
-      case ScenarioStatus.possessed:
-        return '所持';
-      case ScenarioStatus.unregistered:
-        return '未登録';
-    }
+  IconData _getIconData(bool isPlayed, bool isPossessed) {
+    if (isPlayed) return Icons.check_circle; // 「通過済」を優先
+    if (isPossessed) return Icons.inventory;
+    return Icons.add;
   }
 
-  IconData _getIconData(ScenarioStatus status) {
-    switch (status) {
-      case ScenarioStatus.played:
-        return Icons.check_circle;
-      case ScenarioStatus.possessed:
-        return Icons.inventory;
-      case ScenarioStatus.unregistered:
-        return Icons.add;
-    }
+  Color _getIconColor(bool isPlayed, bool isPossessed) {
+    if (isPlayed) return Colors.green; // 「通過済」を優先
+    if (isPossessed) return Colors.blue;
+    return Colors.grey.shade700;
   }
 
-  Color _getIconColor(ScenarioStatus status) {
-    switch (status) {
-      case ScenarioStatus.played:
-        return Colors.green;
-      case ScenarioStatus.possessed:
-        return Colors.blue;
-      case ScenarioStatus.unregistered:
-        return Colors.grey.shade700;
-    }
+  Color _getBorderColor(bool isPlayed, bool isPossessed) {
+    if (isPlayed) return Colors.green.shade200; // 「通過済」を優先
+    if (isPossessed) return Colors.blue.shade200;
+    return Colors.grey.shade400;
   }
 
-  Color _getBorderColor(ScenarioStatus status) {
-    switch (status) {
-      case ScenarioStatus.played:
-        return Colors.green.shade200;
-      case ScenarioStatus.possessed:
-        return Colors.blue.shade200;
-      case ScenarioStatus.unregistered:
-        return Colors.grey.shade400;
-    }
-  }
-
-  Color _getBackgroundColor(ScenarioStatus status) {
-    switch (status) {
-      case ScenarioStatus.played:
-        return Colors.green.shade50;
-      case ScenarioStatus.possessed:
-        return Colors.blue.shade50;
-      case ScenarioStatus.unregistered:
-        return Colors.grey.shade100;
-    }
+  Color _getBackgroundColor(bool isPlayed, bool isPossessed) {
+    if (isPlayed) return Colors.green.shade50; // 「通過済」を優先
+    if (isPossessed) return Colors.blue.shade50;
+    return Colors.grey.shade100;
   }
 }
