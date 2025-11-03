@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "auth": {
+      "mymadamisappbc17122a": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ]
+    },
+    "api": {
+      "mymadamisapp": [
+        "Query",
+        "Mutation",
+        "Subscription"
+      ]
+    },
+    "storage": {
+      "UserScenario:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ]
+    }
+  },
+  "lambdaLayers": [],
+  "environmentVariableList": [
+    {
+      "cloudFormationParameterName": "userScenarioTableName",
+      "environmentVariableName": "USER_SCENARIO_TABLE_NAME"
+    }
+  ]
+}

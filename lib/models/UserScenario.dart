@@ -5,7 +5,7 @@
 * You may not use this file except in compliance with the License.
 * A copy of the License is located at
 *
-* http://aws.amazon.com/apache2.0
+*  http://aws.amazon.com/apache2.0
 *
 * or in the "license" file accompanying this file. This file is distributed
 * on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
@@ -200,12 +200,6 @@ class UserScenario extends amplify_core.Model {
     fieldType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.model, ofModelName: 'Scenario'));
   static final ISPLAYED = amplify_core.QueryField(fieldName: "isPlayed");
   static final ISPOSSESSED = amplify_core.QueryField(fieldName: "isPossessed");
-  
-  // --- ▼ 追加: DataStoreでIDによる検索を可能にするための静的フィールド ▼ ---
-  static final USERID = amplify_core.QueryField(fieldName: 'userId');
-  static final SCENARIOID = amplify_core.QueryField(fieldName: 'scenarioId');
-  // --- ▲ 追加 ▲ ---
-
   static var schema = amplify_core.Model.defineSchema(define: (amplify_core.ModelSchemaDefinition modelSchemaDefinition) {
     modelSchemaDefinition.name = "UserScenario";
     modelSchemaDefinition.pluralName = "UserScenarios";

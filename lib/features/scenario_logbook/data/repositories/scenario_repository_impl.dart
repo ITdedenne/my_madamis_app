@@ -1,13 +1,15 @@
 // lib/features/scenario_logbook/data/repositories/scenario_repository_impl.dart
 
-import 'dart:convert' as model_helpers;
+import 'dart:convert' as model_helpers; 
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/repositories/scenario_repository.dart';
 import 'package:my_madamis_app/graphql/custom_queries.dart';
+import 'package:my_madamis_app/graphql/custom_mutations.dart'; // <--- 追加
 import 'package:my_madamis_app/models/ModelProvider.dart';
-import 'dart:developer';
+import 'dart:developer'; 
 
 class ScenarioRepositoryImpl implements ScenarioRepository {
+  
   /// [探す] 画面用: BEのカスタムクエリを叩く
   @override
   Future<ScenarioWithMyStatusConnection> listScenariosWithMyStatus({
@@ -89,68 +91,27 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     bool isPossessed = false,
   }) async {
     try {
-      // 既存のレコードを検索（前回の修正で問題解決済み）
-      final existingEntries = await Amplify.DataStore.query(
-        UserScenario.classType,
-        where: UserScenario.USERID
-            .eq(userId)
-            .and(UserScenario.SCENARIOID.eq(scenarioId)), 
+      // ▼▼▼ 修正: DataStore操作からLambda関数によるカスタムMutation呼び出しに切り替え ▼▼▼
+      final request = GraphQLRequest<String>(
+        document: updateUserScenarioStatusMutation, // <--- カスタムMutationを使用
+        variables: <String, dynamic>{
+          'userId': userId,
+          'scenarioId': scenarioId,
+          'isPlayed': isPlayed,
+          'isPossessed': isPossessed,
+        },
       );
 
-      final existingEntry =
-          existingEntries.isNotEmpty ? existingEntries.first : null;
-
-      if (isPlayed == false && isPossessed == false) {
-        // 両方 false なら「未登録」= レコードを削除
-        if (existingEntry != null) {
-          await Amplify.DataStore.delete(existingEntry);
-        }
-      } else {
-        // どちらかが true なら「登録」= レコードを作成または更新
-        if (existingEntry != null) {
-          // 更新
-          final updatedEntry = existingEntry.copyWith(
-            isPlayed: isPlayed,
-            isPossessed: isPossessed,
-          );
-          await Amplify.DataStore.save(updatedEntry);
-        } else {
-          // --- 【新規作成】 ---
-          
-          // ▼▼▼ 修正: Userモデルの主キー(username)で検索する ▼▼▼
-          final userQuery = await Amplify.DataStore.query(
-            User.classType,
-            where: User.USERNAME.eq(userId), // <--- IDではなくUSERNAMEで検索
-          );
-          // ▲▲▲ 修正 ▲▲▲
-          
-          // Scenarioオブジェクトの取得（Scenarioの主キーはIDなのでこのままでOK）
-          final scenarioQuery = await Amplify.DataStore.query(
-            Scenario.classType,
-            where: Scenario.ID.eq(scenarioId),
-          );
-
-          if (userQuery.isEmpty || scenarioQuery.isEmpty) {
-            log('User ID: $userId, Scenario ID: $scenarioId');
-            throw Exception('User or Scenario not found for creating relation');
-          }
-
-          final userObject = userQuery.first;
-          final scenarioObject = scenarioQuery.first;
-
-          // 新しいレコードを作成して保存
-          final newEntry = UserScenario(
-            user: userObject,
-            scenario: scenarioObject,
-            isPlayed: isPlayed,
-            isPossessed: isPossessed,
-          );
-          await Amplify.DataStore.save(newEntry);
-        }
+      final response = await Amplify.API.mutate(request: request).response;
+      
+      if (response.hasErrors) {
+        log('Error updating status via Lambda: ${response.errors}');
+        throw Exception('Failed to update status via Lambda: ${response.errors}');
       }
+      
     } catch (e) {
-      log('Error updating user scenario status: $e');
-      throw Exception('Failed to update status: $e');
+      log('Error executing updateUserScenarioStatus: $e');
+      throw Exception('Failed to execute update status mutation: $e');
     }
   }
 }

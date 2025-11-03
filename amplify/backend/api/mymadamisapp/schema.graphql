@@ -132,3 +132,18 @@ type Query {
     @function(name: "getUserScenarioLogbookFunc-${env}")
     @auth(rules: [{ allow: private }])
 }
+
+type Mutation {
+  # ... (既存のミューテーション create/update/delete UserScenario) ...
+
+  # ▼▼▼ 新規追加: カスタムミューテーション ▼▼▼
+  updateUserScenarioStatusByLambda(
+    userId: ID!,
+    scenarioId: ID!,
+    isPlayed: Boolean!,
+    isPossessed: Boolean!
+  ): UserScenario @function(name: "updateScenarioStatusFunc-${env}")
+  # ▲▲▲ 新規追加 ▲▲▲
+
+  # ... (その他のミューテーション) ...
+}
