@@ -1,42 +1,32 @@
 // lib/features/scenario_logbook/data/repositories/scenario_repository_impl.dart
 
-import 'dart:convert' as model_helpers; // jsonEncode のために import
+import 'dart:convert' as model_helpers;
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/repositories/scenario_repository.dart';
 import 'package:my_madamis_app/graphql/custom_queries.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
-import 'dart:developer'; // logを使用するために import
+import 'dart:developer';
 
 class ScenarioRepositoryImpl implements ScenarioRepository {
   /// [探す] 画面用: BEのカスタムクエリを叩く
   @override
-  // --- ▼ 修正 ▼ ---
-  // I/F 変更に合わせて userId を削除
   Future<ScenarioWithMyStatusConnection> listScenariosWithMyStatus({
     Map<String, dynamic>? filter,
-    int? limit, // (※ GQL呼び出しでは使用しない)
+    int? limit,
     String? nextToken,
   }) async {
-  // --- ▲ 修正 ▲ ---
     try {
-      // --- ▼ 修正 ▼ ---
-      // filter (Map) を JSON文字列にエンコードする (TypeMismatchエラー対応)
       final filterString =
           (filter != null && filter.isNotEmpty) ? model_helpers.jsonEncode(filter) : null;
       
       final request = GraphQLRequest<String>(
         document: listScenariosWithMyStatusQuery,
-        // GQLクエリ(custom_queries.dart)の引数に合わせる
         variables: <String, dynamic>{
-          // 'userId': userId, // UnknownArgumentエラーのため削除
           if (filterString != null) 'filter': filterString,
-          // if (limit != null) 'limit': limit, // UnknownArgumentエラーのため削除
           if (nextToken != null) 'nextToken': nextToken,
-          // 'sort' 引数もスキーマにはあるが、一旦 null を渡す (必要ならI/Fに追加)
           'sort': null, 
         },
       );
-      // --- ▲ 修正 ▲ ---
 
       final response = await Amplify.API.query(request: request).response;
       final responseData = response.data;
@@ -62,11 +52,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   /// [マイリスト] 画面用: BEのカスタムクエリを叩く
   @override
   Future<List<ScenarioLogbookEntry>> getMyScenarioLogbook(String userId) async {
-    // (変更なし。userId を引数に取るが、GQL呼び出しで使っていないのでエラーにならない)
     try {
       final request = GraphQLRequest<String>(
         document: getMyScenarioLogbookQuery,
-        variables: {}, // 引数なし
+        variables: {},
       );
 
       final response = await Amplify.API.query(request: request).response;
@@ -94,22 +83,19 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   /// [書き込み処理] ステータス更新
   @override
   Future<void> updateUserScenarioStatus({
-    // (変更なし)
     required String userId,
     required String scenarioId,
     bool isPlayed = false,
     bool isPossessed = false,
   }) async {
     try {
-      // 既存のレコードを検索
-      // --- ▼ 修正: USER/SCENARIO ではなく、IDフィールド (USERID/SCENARIOID) で検索する ▼ ---
+      // 既存のレコードを検索（前回の修正で問題解決済み）
       final existingEntries = await Amplify.DataStore.query(
         UserScenario.classType,
         where: UserScenario.USERID
             .eq(userId)
             .and(UserScenario.SCENARIOID.eq(scenarioId)), 
       );
-      // --- ▲ 修正 ▲ ---
 
       final existingEntry =
           existingEntries.isNotEmpty ? existingEntries.first : null;
@@ -130,24 +116,29 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           await Amplify.DataStore.save(updatedEntry);
         } else {
           // --- 【新規作成】 ---
-          // IDから親オブジェクトを取得する
+          
+          // ▼▼▼ 修正: Userモデルの主キー(username)で検索する ▼▼▼
           final userQuery = await Amplify.DataStore.query(
             User.classType,
-            where: User.ID.eq(userId),
+            where: User.USERNAME.eq(userId), // <--- IDではなくUSERNAMEで検索
           );
+          // ▲▲▲ 修正 ▲▲▲
+          
+          // Scenarioオブジェクトの取得（Scenarioの主キーはIDなのでこのままでOK）
           final scenarioQuery = await Amplify.DataStore.query(
             Scenario.classType,
             where: Scenario.ID.eq(scenarioId),
           );
 
           if (userQuery.isEmpty || scenarioQuery.isEmpty) {
+            log('User ID: $userId, Scenario ID: $scenarioId');
             throw Exception('User or Scenario not found for creating relation');
           }
 
           final userObject = userQuery.first;
           final scenarioObject = scenarioQuery.first;
 
-          // 正しいコンストラクタ引数で作成
+          // 新しいレコードを作成して保存
           final newEntry = UserScenario(
             user: userObject,
             scenario: scenarioObject,
