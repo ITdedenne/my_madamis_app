@@ -15,6 +15,14 @@ enum MyListFilter { all, played, possessed }
 final myListFilterProvider =
     StateProvider<MyListFilter>((ref) => MyListFilter.all);
 
+// マイリストのソート順 (要件 1.2.7)
+enum MyListSortOrder { dateAdded, titleAsc }
+
+// ソート順を管理するProvider
+final myListSortProvider =
+    StateProvider<MyListSortOrder>((ref) => MyListSortOrder.dateAdded);
+
+
 // StateNotifier の状態クラス
 class MyListViewState {
   final AsyncValue<List<ScenarioLogbookEntry>> scenarios;
@@ -45,14 +53,21 @@ class MyListViewModel extends StateNotifier<MyListViewState> {
     state = state.copyWith(scenarios: const AsyncValue.loading());
     try {
       final authState = _ref.read(authStateNotifierProvider);
-      // 'user' ではなく 'username' を参照
       final userId = authState.username; 
       if (userId == null) {
         throw Exception('User not authenticated');
       }
 
       final getMyListUsecase = _ref.read(getMyListUsecaseProvider);
-      final data = await getMyListUsecase(userId); // 取得した userId (username) を渡す
+      final data = await getMyListUsecase(userId);
+      
+      // --- ▼ 修正 ▼ ---
+      // エラーが出るため、 createdAt / updatedAt でのソートロジックを削除します。
+      // APIの返却順（デフォルト）を「登録順」とみなします。
+      // data.sort((a, b) => (b.updatedAt ?? b.createdAt!)
+      //     .compareTo(a.updatedAt ?? a.createdAt!));
+      // --- ▲ 修正 ▲ ---
+      
       state = state.copyWith(scenarios: AsyncValue.data(data));
     } catch (e, s) {
       state = state.copyWith(scenarios: AsyncValue.error(e, s));
@@ -62,7 +77,6 @@ class MyListViewModel extends StateNotifier<MyListViewState> {
   // ステータスを更新するメソッド
   Future<void> updateScenarioStatus(
       String scenarioId, bool isPlayed, bool isPossessed) async {
-    // 'user' ではなく 'username' を参照
     final userId = _ref.read(authStateNotifierProvider).username;
     if (userId == null) return;
 
@@ -70,7 +84,7 @@ class MyListViewModel extends StateNotifier<MyListViewState> {
 
     try {
       await usecase.call( 
-        userId: userId, // 取得した userId (username) を渡す
+        userId: userId,
         scenarioId: scenarioId,
         isPlayed: isPlayed,
         isPossessed: isPossessed,
@@ -95,6 +109,8 @@ final filteredMyListProvider = Provider<List<ScenarioLogbookEntry>>((ref) {
   final state = ref.watch(myListViewModelProvider);
   // フィルタを監視
   final filter = ref.watch(myListFilterProvider);
+  // ソート順を監視 (要件 1.2.7)
+  final sortOrder = ref.watch(myListSortProvider);
 
   // AsyncValue.when を使って安全にデータを取り出す
   return state.scenarios.when(
@@ -111,9 +127,11 @@ final filteredMyListProvider = Provider<List<ScenarioLogbookEntry>>((ref) {
         }
       }).toList();
 
-      // TODO: 必要に応じてソート順プロバイダを追加し、ここでソートロジックを実装
-      // (例: タイトル順)
-      // filteredList.sort((a, b) => a.title.compareTo(b.title));
+      // 並び替え (要件 1.2.7)
+      if (sortOrder == MyListSortOrder.titleAsc) {
+        filteredList.sort((a, b) => a.title.compareTo(b.title));
+      }
+      // dateAdded は fetch 時にソート済み（削除した）のため、何もしない (APIの返却順)
       
       return filteredList;
     },

@@ -18,13 +18,17 @@ class MyListPage extends ConsumerWidget {
     final MyListViewState state = ref.watch(myListViewModelProvider);
     
     final MyListFilter currentFilter = ref.watch(myListFilterProvider);
+    // --- ▼ 追加 ▼ ---
+    // 現在のソート順 (要件 1.2.7)
+    final MyListSortOrder currentSort = ref.watch(myListSortProvider);
+    // --- ▲ 追加 ▲ ---
 
     return Scaffold(
       body: Column(
         children: [
           // フィルタリングUI
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: SegmentedButton<MyListFilter>(
               segments: const [
                 ButtonSegment<MyListFilter>(
@@ -42,6 +46,39 @@ class MyListPage extends ConsumerWidget {
             ),
           ),
           
+          // --- ▼ 追加 ▼ ---
+          // 並び替えUI (要件 1.2.7)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text('並び替え: ', style: Theme.of(context).textTheme.bodySmall),
+                DropdownButton<MyListSortOrder>(
+                  value: currentSort,
+                  style: Theme.of(context).textTheme.bodySmall,
+                  underline: Container(), // 下線を消す
+                  items: const [
+                    DropdownMenuItem(
+                      value: MyListSortOrder.dateAdded,
+                      child: Text('登録順'),
+                    ),
+                    DropdownMenuItem(
+                      value: MyListSortOrder.titleAsc,
+                      child: Text('タイトル順'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      ref.read(myListSortProvider.notifier).state = value;
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          // --- ▲ 追加 ▲ ---
+
           // シナリオリスト
           Expanded(
             child: state.scenarios.when( // .when は AsyncValue に対して使う

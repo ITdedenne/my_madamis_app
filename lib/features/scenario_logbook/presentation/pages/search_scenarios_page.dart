@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
-// import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/logbook_list_item.dart'; // <-- 不要なため削除
+// --- ▼ 修正 ▼ ---
+// LogbookListItem の import を復活させる
+import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/logbook_list_item.dart';
+// --- ▲ 修正 ▲ ---
 import 'package:my_madamis_app/models/ModelProvider.dart';
 
 class SearchScenariosPage extends ConsumerWidget {
@@ -13,7 +16,6 @@ class SearchScenariosPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // ViewModelの状態（ロード状態、データ）を監視
-    // state.scenarios は List<Scenario> を返す想定
     final SearchScenariosState state =
         ref.watch(searchScenariosViewModelProvider);
     
@@ -62,24 +64,33 @@ class SearchScenariosPage extends ConsumerWidget {
           // シナリオリスト
           Expanded(
             child: state.scenarios.when(
-              data: (scenarios) { // 'scenarios' は List<Scenario> と想定
+              // --- ▼ 修正 ▼ ---
+              // (scenarios) は List<ScenarioWithMyStatus>型
+              data: (List<ScenarioWithMyStatus> scenarios) { 
+              // --- ▲ 修正 ▲ ---
                 if (scenarios.isEmpty) {
                   return const Center(child: Text('シナリオが見つかりません'));
                 }
                 return ListView.builder(
                   itemCount: scenarios.length,
                   itemBuilder: (context, index) {
-                    final item = scenarios[index]; // 'item' は Scenario
+                    // --- ▼ 修正 ▼ ---
+                    // item は ScenarioWithMyStatus
+                    final item = scenarios[index]; 
                     
-                    // LogbookListItem の代わりに ListTile を使用します。
-                    // これにより、isPlayed や isPossessed が不要になります。
-                    return ListTile(
-                      title: Text(item.title), // <-- Scenario.title
-                      subtitle: Text(item.author?.authorName ?? '作者不明'), // <-- Scenario.author
-                      onTap: () {
-                        // シナリオ詳細ページへの遷移などのロジックをここに追加
-                      },
+                    // ListTile の代わりに LogbookListItem を使用する
+                    // (要件 1.2.4: 一覧からステータスを更新)
+                    // ※ ScenarioWithMyStatus モデルが id, title, author, isPlayed, isPossessed を
+                    // ※ 正しく fromJson でパースできていることが前提
+                    return LogbookListItem(
+                      scenarioId: item.id, // item.id を使用
+                      title: item.title, // item.title を使用
+                      authorName: item.author?.authorName, // item.author を使用
+                      isPlayed: item.isPlayed ?? false, // null の場合は false
+                      isPossessed: item.isPossessed ?? false, // null の場合は false
+                      sourcePage: 'search', // 'search' ページから呼び出し
                     );
+                    // --- ▲ 修正 ▲ ---
                   },
                 );
               },

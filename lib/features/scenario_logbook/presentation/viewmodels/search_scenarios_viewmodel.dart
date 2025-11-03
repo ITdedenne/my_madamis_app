@@ -65,22 +65,28 @@ final searchFilterProvider =
 
 // StateNotifier の状態クラス
 class SearchScenariosState {
-  final AsyncValue<List<Scenario>> scenarios;
-  // TODO: ページネーション用の nextToken をここに保持
-  // final String? nextToken;
+  // --- ▼ 修正 ▼ ---
+  // List<Scenario> ではなく List<ScenarioWithMyStatus> を保持する
+  final AsyncValue<List<ScenarioWithMyStatus>> scenarios;
+  // --- ▲ 修正 ▲ ---
+  
+  // ページネーション用の nextToken
+  final String? nextToken;
 
   SearchScenariosState({
     this.scenarios = const AsyncValue.loading(),
-    // this.nextToken,
+    this.nextToken, // <-- 追加
   });
 
   SearchScenariosState copyWith({
-    AsyncValue<List<Scenario>>? scenarios,
-    // String? nextToken,
+    // --- ▼ 修正 ▼ ---
+    AsyncValue<List<ScenarioWithMyStatus>>? scenarios,
+    // --- ▲ 修正 ▲ ---
+    String? nextToken, // <-- 追加
   }) {
     return SearchScenariosState(
       scenarios: scenarios ?? this.scenarios,
-      // nextToken: nextToken ?? this.nextToken,
+      nextToken: nextToken ?? this.nextToken, // <-- 追加
     );
   }
 }
@@ -102,27 +108,26 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
     state = state.copyWith(scenarios: const AsyncValue.loading());
     try {
       final authState = _ref.read(authStateNotifierProvider);
-      // 'user' ではなく 'username' を参照
       final userId = authState.username; 
       if (userId == null) {
         throw Exception('User not authenticated');
       }
 
-      // 現在のフィルタ条件を取得
       final filterState = _ref.read(searchFilterProvider);
       final getScenariosUsecase = _ref.read(getScenariosUsecaseProvider);
 
-      // BEにクエリ実行
       final connection = await getScenariosUsecase(
-        userId: userId, // 取得した userId (username) を渡す
+        userId: userId,
         filter: filterState.toFilterMap(),
-        limit: 50, // ページネーション (まずは50件)
+        limit: 50,
       );
 
       state = state.copyWith(
-        // 'List<...>?' can't be assigned エラーを修正
-        scenarios: AsyncValue.data([]), 
-        // nextToken: connection.nextToken,
+        // --- ▼ 修正 ▼ ---
+        // `[]` ではなく connection.items を AsyncValue.data で渡す
+        scenarios: AsyncValue.data(connection.items ?? []), 
+        nextToken: connection.nextToken,
+        // --- ▲ 修正 ▲ ---
       );
     } catch (e, s) {
       state = state.copyWith(scenarios: AsyncValue.error(e, s));
@@ -132,7 +137,6 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   // ステータスを更新するメソッド
   Future<void> updateScenarioStatus(
       String scenarioId, bool isPlayed, bool isPossessed) async {
-    // 'user' ではなく 'username' を参照
     final userId = _ref.read(authStateNotifierProvider).username;
     if (userId == null) return;
 
@@ -140,13 +144,15 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
 
     try {
       await usecase.call( 
-        userId: userId, // 取得した userId (username) を渡す
+        userId: userId,
         scenarioId: scenarioId,
         isPlayed: isPlayed,
         isPossessed: isPossessed,
       );
 
       // データを再フェッチ
+      // ※注意: listScenariosWithMyStatus はDataStoreの変更を検知しないため、
+      // 手動で `fetch()` を呼び出す必要がある (Lambdaカスタムクエリのため)
       await fetch();
       
       // マイリスト側も更新を反映させるために再フェッチをキック
