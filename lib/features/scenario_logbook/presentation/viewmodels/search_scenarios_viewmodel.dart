@@ -6,7 +6,6 @@ import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_n
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
-// import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_my_list_usecase.dart'; // <-- Unused importのため削除
 
 // 検索・フィルタ条件を保持するデータクラス
 class SearchFilterState {
@@ -65,28 +64,21 @@ final searchFilterProvider =
 
 // StateNotifier の状態クラス
 class SearchScenariosState {
-  // --- ▼ 修正 ▼ ---
-  // List<Scenario> ではなく List<ScenarioWithMyStatus> を保持する
   final AsyncValue<List<ScenarioWithMyStatus>> scenarios;
-  // --- ▲ 修正 ▲ ---
-  
-  // ページネーション用の nextToken
   final String? nextToken;
 
   SearchScenariosState({
     this.scenarios = const AsyncValue.loading(),
-    this.nextToken, // <-- 追加
+    this.nextToken,
   });
 
   SearchScenariosState copyWith({
-    // --- ▼ 修正 ▼ ---
     AsyncValue<List<ScenarioWithMyStatus>>? scenarios,
-    // --- ▲ 修正 ▲ ---
-    String? nextToken, // <-- 追加
+    String? nextToken,
   }) {
     return SearchScenariosState(
       scenarios: scenarios ?? this.scenarios,
-      nextToken: nextToken ?? this.nextToken, // <-- 追加
+      nextToken: nextToken ?? this.nextToken,
     );
   }
 }
@@ -107,27 +99,31 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   Future<void> fetch() async {
     state = state.copyWith(scenarios: const AsyncValue.loading());
     try {
+      // GQL呼び出しにuserIdは不要だが、
+      // updateScenarioStatus のために
+      // authState (と userId) のチェックは残しておく
       final authState = _ref.read(authStateNotifierProvider);
       final userId = authState.username; 
       if (userId == null) {
         throw Exception('User not authenticated');
       }
 
+      // 現在のフィルタ条件を取得
       final filterState = _ref.read(searchFilterProvider);
       final getScenariosUsecase = _ref.read(getScenariosUsecaseProvider);
 
+      // --- ▼ 修正 ▼ ---
+      // Usecase の I/F 変更に合わせて userId を削除
       final connection = await getScenariosUsecase(
-        userId: userId,
         filter: filterState.toFilterMap(),
-        limit: 50,
+        limit: 50, // limit はI/Fに残したが、GQL呼び出しでは無視される
+        nextToken: state.nextToken, // ページネーション用
       );
+      // --- ▲ 修正 ▲ ---
 
       state = state.copyWith(
-        // --- ▼ 修正 ▼ ---
-        // `[]` ではなく connection.items を AsyncValue.data で渡す
         scenarios: AsyncValue.data(connection.items ?? []), 
         nextToken: connection.nextToken,
-        // --- ▲ 修正 ▲ ---
       );
     } catch (e, s) {
       state = state.copyWith(scenarios: AsyncValue.error(e, s));
@@ -151,8 +147,6 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
       );
 
       // データを再フェッチ
-      // ※注意: listScenariosWithMyStatus はDataStoreの変更を検知しないため、
-      // 手動で `fetch()` を呼び出す必要がある (Lambdaカスタムクエリのため)
       await fetch();
       
       // マイリスト側も更新を反映させるために再フェッチをキック

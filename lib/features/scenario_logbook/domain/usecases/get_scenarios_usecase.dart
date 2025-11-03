@@ -8,17 +8,18 @@ class GetScenariosUsecase {
 
   GetScenariosUsecase(this.repository);
 
+  // --- ▼ 修正 ▼ ---
+  // リポジトリのI/F変更に合わせて userId を削除
   Future<ScenarioWithMyStatusConnection> call({
-    required String userId,
     Map<String, dynamic>? filter,
     int? limit,
     String? nextToken,
   }) {
     return repository.listScenariosWithMyStatus(
-      userId: userId,
       filter: filter,
       limit: limit,
       nextToken: nextToken,
     );
   }
+  // --- ▲ 修正 ▲ ---
 }
