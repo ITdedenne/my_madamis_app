@@ -117,7 +117,6 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
     }
   }
 
-  // --- ▼ 修正 ▼ ---
   // ステータスを更新するメソッド (オプティミスティック・アップデート)
   Future<void> updateScenarioStatus(
       String scenarioId, bool isPlayed, bool isPossessed) async {
@@ -127,24 +126,13 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
     final usecase = _ref.read(updateUserScenarioStatusUsecaseProvider);
 
     // 1. UI（ローカル状態）を即座に更新する
-    // (ScenarioWithMyStatus.dart に copyWith が無いため、手動で再生成)
+    // copyWith を使用して簡略化
     state = state.scenarios.when(
       data: (scenarios) {
         final newList = scenarios.map((item) {
           if (item.id == scenarioId) {
-            // 新しいオブジェクトを生成
-            return ScenarioWithMyStatus(
-              id: item.id,
-              title: item.title,
-              minPlayerCount: item.minPlayerCount,
-              maxPlayerCount: item.maxPlayerCount,
-              gmRequirement: item.gmRequirement,
-              storeUrl: item.storeUrl,
-              authorId: item.authorId,
-              author: item.author,
-              createdAt: item.createdAt,
-              updatedAt: item.updatedAt,
-              // 更新されたステータス
+            // copyWith を使用して更新
+            return item.copyWith(
               isPlayed: isPlayed,
               isPossessed: isPossessed,
             );
@@ -169,7 +157,6 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
       );
 
       // 3. マイリスト側も更新を反映させるために再フェッチをキック
-      // (MyList は DataStore ではなく Lambda を見ているため)
       _ref.read(myListViewModelProvider.notifier).fetch();
 
     } catch (e) {
@@ -178,7 +165,6 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
       await fetch();
     }
   }
-  // --- ▲ 修正 ▲ ---
 }
 
 // (StateNotifierProvider は変更なし)

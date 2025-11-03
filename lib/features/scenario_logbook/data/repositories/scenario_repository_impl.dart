@@ -102,12 +102,14 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   }) async {
     try {
       // 既存のレコードを検索
+      // --- ▼ 修正: USER/SCENARIO ではなく、IDフィールド (USERID/SCENARIOID) で検索する ▼ ---
       final existingEntries = await Amplify.DataStore.query(
         UserScenario.classType,
-        where: UserScenario.USER
+        where: UserScenario.USERID
             .eq(userId)
-            .and(UserScenario.SCENARIO.eq(scenarioId)), 
+            .and(UserScenario.SCENARIOID.eq(scenarioId)), 
       );
+      // --- ▲ 修正 ▲ ---
 
       final existingEntry =
           existingEntries.isNotEmpty ? existingEntries.first : null;
