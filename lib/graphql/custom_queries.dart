@@ -19,17 +19,15 @@ const String getMyScenarioLogbookQuery = '''
   }
 ''';
 
-// --- ▼ 修正 ▼ ---
-// schema.graphql の定義 (filter: String, sort: String, nextToken: String) に合わせる
 const String listScenariosWithMyStatusQuery = '''
   query ListScenariosWithMyStatus(
     \$filter: String, 
-    \$nextToken: String,
+    \$nextToken: String, 
     \$sort: String
   ) {
     listScenariosWithMyStatus(
       filter: \$filter, 
-      nextToken: \$nextToken,
+      nextToken: \$nextToken, 
       sort: \$sort
     ) {
       items {
@@ -43,8 +41,6 @@ const String listScenariosWithMyStatusQuery = '''
         author {
           id
           authorName
-          createdAt
-          updatedAt
         }
         isPlayed
         isPossessed
@@ -55,4 +51,3 @@ const String listScenariosWithMyStatusQuery = '''
     }
   }
 ''';
-// --- ▲ 修正 ▲ ---

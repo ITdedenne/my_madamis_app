@@ -1,5 +1,3 @@
-# --- (前回定義した Scenario, Author は変更なし) ---
-
 # gmRequirement の型を Enum として定義
 enum GMRequirementType {
   REQUIRED
@@ -12,8 +10,7 @@ type Scenario @model @auth(rules: [{ allow: private, operations: [read] }]) {
   title: String!
   minPlayerCount: Int
   maxPlayerCount: Int
-# gmRequirement: Boolean  <== この行を修正
-  gmRequirement: GMRequirementType # <== このように変更
+  gmRequirement: GMRequirementType
   storeUrl: AWSURL
   authorId: ID! @index(name: "byAuthor")
   author: Author @belongsTo(fields: ["authorId"])
@@ -26,7 +23,6 @@ type Author @model @auth(rules: [{ allow: private, operations: [read] }]) {
   scenarios: [Scenario] @hasMany(indexName: "byAuthor", fields: ["id"])
 }
 
-# --- 【新規】1. Userテーブル (要件 2.3) ---
 # id は Cognito の sub (owner) と一致させます
 type User @model 
   @auth(rules: [
@@ -37,52 +33,37 @@ type User @model
   id: ID! @primaryKey # Cognito の sub (owner)
   username: String! # 検索対象 (2.2.1)
   
-  # 【最終的な追加】フレンドIDの定義とGSI
-  friendID: String! @index(name: "byFriendID", queryField: "userByFriendID") 
+  friendID: String!
+  @index(name: "byFriendID", queryField: "userByFriendID") 
   
-  # (必要に応じてプロフィール画像URLなどを追加)
-  
-  # User 1-N UserScenario (自分が記録したシナリオ)
   scenarios: [UserScenario] @hasMany(indexName: "byUser", fields: ["id"])
-  
-  # User 1-N UserRelationship (自分がフォローした人)
   following: [UserRelationship] @hasMany(indexName: "byFollowingUser", fields: ["id"])
-  
-  # User 1-N UserRelationship (自分をフォローした人)
   followers: [UserRelationship] @hasMany(indexName: "byFollowedUser", fields: ["id"])
 }
 
-# --- 【新規】2. フレンズ機能 (UserRelationship) (要件 2.3) ---
 type UserRelationship @model 
   @auth(rules: [
-    # フォロー操作(作成・削除)は、フォローする人(owner)のみ可能
     { allow: owner, ownerField: "followingUserId", operations: [create, delete] } 
   ])
 {
   id: ID!
-  # フォローした人 (PK)
   followingUserId: ID! @index(name: "byFollowingUser")
   followingUser: User @belongsTo(fields: ["followingUserId"])
 
-  # フォローされた人 (SK)
   followedUserId: ID! @index(name: "byFollowedUser")
   followedUser: User @belongsTo(fields: ["followedUserId"])
 }
 
-# --- 【修正】3. UserScenario (userId との紐付け) (要件 1.3.3) ---
 type UserScenario @model 
   @auth(rules: [
     # 自分の記録は自分(owner)のみ読み書き可
     { allow: owner, ownerField: "userId" }
-    # ※ 他人の閲覧(2.2.3)は、Lambda(getUserScenarioLogbook)経由で行う
   ])
 {
   id: ID!
-  # 【修正】誰の記録か (PK)
   userId: ID! @index(name: "byUser")
   user: User @belongsTo(fields: ["userId"])
 
-  # どのシナリオか (SK)
   scenarioId: ID! @index(name: "byScenario")
   scenario: Scenario @belongsTo(fields: ["scenarioId"])
   
@@ -90,7 +71,7 @@ type UserScenario @model
   isPossessed: Boolean!
 }
 
-# --- (前回定義した型は変更なし) ---
+# マイリスト画面用の型
 type ScenarioLogbookEntry {
   id: ID!
   title: String!
@@ -102,30 +83,44 @@ type ScenarioLogbookEntry {
   authorName: String 
   isPlayed: Boolean!
   isPossessed: Boolean!
+  createdAt: AWSDateTime # ソート用にタイムスタンプを追加
+  updatedAt: AWSDateTime # ソート用にタイムスタンプを追加
 }
+
+# 「探す」画面用の型 (エラー修正)
 type ScenarioWithMyStatus {
-  # (中略)
+  id: ID!
+  title: String!
+  minPlayerCount: Int
+  maxPlayerCount: Int
+  gmRequirement: GMRequirementType
+  storeUrl: AWSURL
+  authorId: ID!
+  author: Author # ネストした author オブジェクト
   isPlayed: Boolean
   isPossessed: Boolean
+  createdAt: AWSDateTime
+  updatedAt: AWSDateTime
 }
+
 type ScenarioWithMyStatusConnection {
   items: [ScenarioWithMyStatus]
   nextToken: String
 }
 
-# --- 【修正】4. カスタムクエリの定義 (要件 1.4, 2.2) ---
+# カスタムクエリ
 type Query {
-  # 1.4.1: 自分のマイリスト取得 (変更なし)
+  # 1.4.1: 自分のマイリスト取得
   getMyScenarioLogbook: [ScenarioLogbookEntry]
     @function(name: "getMyScenarioLogbookFunc-${env}") 
     @auth(rules: [{ allow: private }]) 
 
-  # 1.4.2: 全シナリオ一覧取得 (変更なし)
+  # 1.4.2: 全シナリオ一覧取得 (引数をスキーマ定義に合わせる)
   listScenariosWithMyStatus(filter: String, sort: String, nextToken: String): ScenarioWithMyStatusConnection
     @function(name: "listScenariosWithMyStatusFunc-${env}")
     @auth(rules: [{ allow: private }])
 
-  # 2.2.3: 【新規】他人のマイリスト取得
+  # 2.2.3: 他人のマイリスト取得
   getUserScenarioLogbook(userId: ID!): [ScenarioLogbookEntry]
     @function(name: "getUserScenarioLogbookFunc-${env}")
     @auth(rules: [{ allow: private }])

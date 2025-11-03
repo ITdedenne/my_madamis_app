@@ -35,6 +35,8 @@ class ScenarioLogbookEntry {
   final String? _authorName;
   final bool? _isPlayed;
   final bool? _isPossessed;
+  final amplify_core.TemporalDateTime? _createdAt;
+  final amplify_core.TemporalDateTime? _updatedAt;
 
   String get title {
     try {
@@ -108,9 +110,17 @@ class ScenarioLogbookEntry {
     }
   }
   
-  const ScenarioLogbookEntry._internal({required this.id, required title, minPlayerCount, maxPlayerCount, gmRequirement, storeUrl, required authorId, authorName, required isPlayed, required isPossessed}): _title = title, _minPlayerCount = minPlayerCount, _maxPlayerCount = maxPlayerCount, _gmRequirement = gmRequirement, _storeUrl = storeUrl, _authorId = authorId, _authorName = authorName, _isPlayed = isPlayed, _isPossessed = isPossessed;
+  amplify_core.TemporalDateTime? get createdAt {
+    return _createdAt;
+  }
   
-  factory ScenarioLogbookEntry({String? id, required String title, int? minPlayerCount, int? maxPlayerCount, GMRequirementType? gmRequirement, String? storeUrl, required String authorId, String? authorName, required bool isPlayed, required bool isPossessed}) {
+  amplify_core.TemporalDateTime? get updatedAt {
+    return _updatedAt;
+  }
+  
+  const ScenarioLogbookEntry._internal({required this.id, required title, minPlayerCount, maxPlayerCount, gmRequirement, storeUrl, required authorId, authorName, required isPlayed, required isPossessed, createdAt, updatedAt}): _title = title, _minPlayerCount = minPlayerCount, _maxPlayerCount = maxPlayerCount, _gmRequirement = gmRequirement, _storeUrl = storeUrl, _authorId = authorId, _authorName = authorName, _isPlayed = isPlayed, _isPossessed = isPossessed, _createdAt = createdAt, _updatedAt = updatedAt;
+  
+  factory ScenarioLogbookEntry({String? id, required String title, int? minPlayerCount, int? maxPlayerCount, GMRequirementType? gmRequirement, String? storeUrl, required String authorId, String? authorName, required bool isPlayed, required bool isPossessed, amplify_core.TemporalDateTime? createdAt, amplify_core.TemporalDateTime? updatedAt}) {
     return ScenarioLogbookEntry._internal(
       id: id == null ? amplify_core.UUID.getUUID() : id,
       title: title,
@@ -121,7 +131,9 @@ class ScenarioLogbookEntry {
       authorId: authorId,
       authorName: authorName,
       isPlayed: isPlayed,
-      isPossessed: isPossessed);
+      isPossessed: isPossessed,
+      createdAt: createdAt,
+      updatedAt: updatedAt);
   }
   
   bool equals(Object other) {
@@ -141,7 +153,9 @@ class ScenarioLogbookEntry {
       _authorId == other._authorId &&
       _authorName == other._authorName &&
       _isPlayed == other._isPlayed &&
-      _isPossessed == other._isPossessed;
+      _isPossessed == other._isPossessed &&
+      _createdAt == other._createdAt &&
+      _updatedAt == other._updatedAt;
   }
   
   @override
@@ -161,13 +175,15 @@ class ScenarioLogbookEntry {
     buffer.write("authorId=" + "$_authorId" + ", ");
     buffer.write("authorName=" + "$_authorName" + ", ");
     buffer.write("isPlayed=" + (_isPlayed != null ? _isPlayed!.toString() : "null") + ", ");
-    buffer.write("isPossessed=" + (_isPossessed != null ? _isPossessed!.toString() : "null"));
+    buffer.write("isPossessed=" + (_isPossessed != null ? _isPossessed!.toString() : "null") + ", ");
+    buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
+    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
     
     return buffer.toString();
   }
   
-  ScenarioLogbookEntry copyWith({String? id, String? title, int? minPlayerCount, int? maxPlayerCount, GMRequirementType? gmRequirement, String? storeUrl, String? authorId, String? authorName, bool? isPlayed, bool? isPossessed}) {
+  ScenarioLogbookEntry copyWith({String? id, String? title, int? minPlayerCount, int? maxPlayerCount, GMRequirementType? gmRequirement, String? storeUrl, String? authorId, String? authorName, bool? isPlayed, bool? isPossessed, amplify_core.TemporalDateTime? createdAt, amplify_core.TemporalDateTime? updatedAt}) {
     return ScenarioLogbookEntry._internal(
       id: id ?? this.id,
       title: title ?? this.title,
@@ -178,7 +194,9 @@ class ScenarioLogbookEntry {
       authorId: authorId ?? this.authorId,
       authorName: authorName ?? this.authorName,
       isPlayed: isPlayed ?? this.isPlayed,
-      isPossessed: isPossessed ?? this.isPossessed);
+      isPossessed: isPossessed ?? this.isPossessed,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt);
   }
   
   ScenarioLogbookEntry copyWithModelFieldValues({
@@ -191,7 +209,9 @@ class ScenarioLogbookEntry {
     ModelFieldValue<String>? authorId,
     ModelFieldValue<String?>? authorName,
     ModelFieldValue<bool>? isPlayed,
-    ModelFieldValue<bool>? isPossessed
+    ModelFieldValue<bool>? isPossessed,
+    ModelFieldValue<amplify_core.TemporalDateTime?>? createdAt,
+    ModelFieldValue<amplify_core.TemporalDateTime?>? updatedAt
   }) {
     return ScenarioLogbookEntry._internal(
       id: id == null ? this.id : id.value,
@@ -203,7 +223,9 @@ class ScenarioLogbookEntry {
       authorId: authorId == null ? this.authorId : authorId.value,
       authorName: authorName == null ? this.authorName : authorName.value,
       isPlayed: isPlayed == null ? this.isPlayed : isPlayed.value,
-      isPossessed: isPossessed == null ? this.isPossessed : isPossessed.value
+      isPossessed: isPossessed == null ? this.isPossessed : isPossessed.value,
+      createdAt: createdAt == null ? this.createdAt : createdAt.value,
+      updatedAt: updatedAt == null ? this.updatedAt : updatedAt.value
     );
   }
   
@@ -217,10 +239,12 @@ class ScenarioLogbookEntry {
       _authorId = json['authorId'],
       _authorName = json['authorName'],
       _isPlayed = json['isPlayed'],
-      _isPossessed = json['isPossessed'];
+      _isPossessed = json['isPossessed'],
+      _createdAt = json['createdAt'] != null ? amplify_core.TemporalDateTime.fromString(json['createdAt']) : null,
+      _updatedAt = json['updatedAt'] != null ? amplify_core.TemporalDateTime.fromString(json['updatedAt']) : null;
   
   Map<String, dynamic> toJson() => {
-    'id': id, 'title': _title, 'minPlayerCount': _minPlayerCount, 'maxPlayerCount': _maxPlayerCount, 'gmRequirement': amplify_core.enumToString(_gmRequirement), 'storeUrl': _storeUrl, 'authorId': _authorId, 'authorName': _authorName, 'isPlayed': _isPlayed, 'isPossessed': _isPossessed
+    'id': id, 'title': _title, 'minPlayerCount': _minPlayerCount, 'maxPlayerCount': _maxPlayerCount, 'gmRequirement': amplify_core.enumToString(_gmRequirement), 'storeUrl': _storeUrl, 'authorId': _authorId, 'authorName': _authorName, 'isPlayed': _isPlayed, 'isPossessed': _isPossessed, 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
   };
   
   Map<String, Object?> toMap() => {
@@ -233,7 +257,9 @@ class ScenarioLogbookEntry {
     'authorId': _authorId,
     'authorName': _authorName,
     'isPlayed': _isPlayed,
-    'isPossessed': _isPossessed
+    'isPossessed': _isPossessed,
+    'createdAt': _createdAt,
+    'updatedAt': _updatedAt
   };
 
   static var schema = amplify_core.Model.defineSchema(define: (amplify_core.ModelSchemaDefinition modelSchemaDefinition) {
@@ -298,6 +324,18 @@ class ScenarioLogbookEntry {
       fieldName: 'isPossessed',
       isRequired: true,
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.bool)
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.customTypeField(
+      fieldName: 'createdAt',
+      isRequired: false,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.dateTime)
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.customTypeField(
+      fieldName: 'updatedAt',
+      isRequired: false,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.dateTime)
     ));
   });
 }
