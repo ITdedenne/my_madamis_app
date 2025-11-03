@@ -16,7 +16,7 @@
       ]
     },
     "storage": {
-      "UserScenario:@model(appsync)": [
+      "NewUserScenario:@model(appsync)": [
         "create",
         "read",
         "update",

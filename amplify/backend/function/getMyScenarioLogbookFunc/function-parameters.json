@@ -20,8 +20,11 @@
       "User:@model(appsync)": [
         "read"
       ],
-      "UserScenario:@model(appsync)": [
-        "read"
+      "NewUserScenario:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
       ]
     }
   },

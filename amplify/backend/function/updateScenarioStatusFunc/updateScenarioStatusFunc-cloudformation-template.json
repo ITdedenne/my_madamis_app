@@ -101,12 +101,12 @@
             "API_MYMADAMISAPP_GRAPHQLAPIKEYOUTPUT": {
               "Ref": "apimymadamisappGraphQLAPIKeyOutput"
             },
-            "API_MYMADAMISAPP_USERSCENARIOTABLE_NAME": {
+            "API_MYMADAMISAPP_NEWUSERSCENARIOTABLE_NAME": {
               "Fn::ImportValue": {
-                "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserScenarioTable:Name"
+                "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:NewUserScenarioTable:Name"
               }
             },
-            "API_MYMADAMISAPP_USERSCENARIOTABLE_ARN": {
+            "API_MYMADAMISAPP_NEWUSERSCENARIOTABLE_ARN": {
               "Fn::Join": [
                 "",
                 [
@@ -121,7 +121,7 @@
                   ":table/",
                   {
                     "Fn::ImportValue": {
-                      "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserScenarioTable:Name"
+                      "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:NewUserScenarioTable:Name"
                     }
                   }
                 ]
@@ -451,7 +451,7 @@
                       ":table/",
                       {
                         "Fn::ImportValue": {
-                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserScenarioTable:Name"
+                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:NewUserScenarioTable:Name"
                         }
                       }
                     ]
@@ -472,7 +472,7 @@
                       ":table/",
                       {
                         "Fn::ImportValue": {
-                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserScenarioTable:Name"
+                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:NewUserScenarioTable:Name"
                         }
                       },
                       "/index/*"

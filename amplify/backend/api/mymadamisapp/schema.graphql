@@ -12,6 +12,9 @@ enum UserScenarioStatus {
   playedAndPossessed
 }
 
+# --------------------------
+# 修正 1: Scenario モデル
+# --------------------------
 type Scenario @model @auth(rules: [{ allow: private, operations: [read] }]) {
   id: ID!
   title: String!
@@ -21,7 +24,8 @@ type Scenario @model @auth(rules: [{ allow: private, operations: [read] }]) {
   storeUrl: AWSURL
   authorId: ID! @index(name: "byAuthor")
   author: Author @belongsTo(fields: ["authorId"])
-  userScenarios: [UserScenario] @hasMany(indexName: "byScenario", fields: ["id"])
+  # 修正点: NewUserScenario にリレーション変更
+  userScenarios: [NewUserScenario] @hasMany(indexName: "byScenario", fields: ["id"])
 }
 
 type Author @model @auth(rules: [{ allow: private, operations: [read] }]) {
@@ -30,6 +34,9 @@ type Author @model @auth(rules: [{ allow: private, operations: [read] }]) {
   scenarios: [Scenario] @hasMany(indexName: "byAuthor", fields: ["id"])
 }
 
+# --------------------------
+# 修正 2: User モデル
+# --------------------------
 # id は Cognito の sub (owner) と一致させます
 type User @model 
   @auth(rules: [
@@ -40,10 +47,10 @@ type User @model
   id: ID! @primaryKey # Cognito の sub (owner)
   username: String! # 検索対象 (2.2.1)
   
-  friendID: String!
-  @index(name: "byFriendID", queryField: "userByFriendID") 
+  friendID: String! @index(name: "byFriendID", queryField: "userByFriendID") 
   
-  scenarios: [UserScenario] @hasMany(indexName: "byUser", fields: ["id"])
+  # 修正点: NewUserScenario にリレーション変更
+  scenarios: [NewUserScenario] @hasMany(indexName: "byUser", fields: ["id"])
   following: [UserRelationship] @hasMany(indexName: "byFollowingUser", fields: ["id"])
   followers: [UserRelationship] @hasMany(indexName: "byFollowedUser", fields: ["id"])
 }
@@ -61,6 +68,33 @@ type UserRelationship @model
   followedUser: User @belongsTo(fields: ["followedUserId"])
 }
 
+# --------------------------
+# 新規 3: NewUserScenario モデル
+# --------------------------
+# UserScenario の機能を userId を複合プライマリーキーとして再定義したモデル
+type NewUserScenario @model 
+  @auth(rules: [
+    # 自分の記録は自分(owner)のみ読み書き可
+    { allow: owner, ownerField: "userId" }
+  ])
+{
+  id: ID! # デフォルトのプライマリーキー（Partition Key）として機能することを期待
+  
+  # Partition Key として使いたいが、複合キーにできないため、単なるインデックスとする
+  userId: ID! @index(name: "byUser") 
+  user: User @belongsTo(fields: ["userId"])
+
+  # Sort Key として使いたいが、単なるインデックスとする
+  scenarioId: ID! @index(name: "byScenario") 
+  scenario: Scenario @belongsTo(fields: ["scenarioId"])
+  
+  isPlayed: Boolean!
+  isPossessed: Boolean!
+}
+
+# --------------------------
+# 既存 4: UserScenario モデル (変更なし)
+# --------------------------
 type UserScenario @model 
   @auth(rules: [
     # 自分の記録は自分(owner)のみ読み書き可
@@ -69,10 +103,10 @@ type UserScenario @model
 {
   id: ID!
   userId: ID! @index(name: "byUser")
-  user: User @belongsTo(fields: ["userId"])
+  #user: User @belongsTo(fields: ["userId"])
 
   scenarioId: ID! @index(name: "byScenario")
-  scenario: Scenario @belongsTo(fields: ["scenarioId"])
+  #scenario: Scenario @belongsTo(fields: ["scenarioId"])
   
   isPlayed: Boolean!
   isPossessed: Boolean!
@@ -133,7 +167,11 @@ type Query {
     @auth(rules: [{ allow: private }])
 }
 
+# --------------------------
+# 修正 5: Mutation フィールド
+# --------------------------
 type Mutation {
+ 
   # ... (既存のミューテーション create/update/delete UserScenario) ...
 
   # ▼▼▼ 新規追加: カスタムミューテーション ▼▼▼
@@ -142,7 +180,8 @@ type Mutation {
     scenarioId: ID!,
     isPlayed: Boolean!,
     isPossessed: Boolean!
-  ): UserScenario @function(name: "updateScenarioStatusFunc-${env}")
+  # 修正点: NewUserScenario を返すように変更
+  ): NewUserScenario @function(name: "updateScenarioStatusFunc-${env}")
   # ▲▲▲ 新規追加 ▲▲▲
 
   # ... (その他のミューテーション) ...

@@ -104,11 +104,6 @@
             "API_MYMADAMISAPP_GRAPHQLAPIKEYOUTPUT": {
               "Ref": "apimymadamisappGraphQLAPIKeyOutput"
             },
-            "API_MYMADAMISAPP_USERSCENARIOTABLE_NAME": {
-              "Fn::ImportValue": {
-                "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserScenarioTable:Name"
-              }
-            },
             "AUTH_MYMADAMISAPPBC17122A_USERPOOLID": {
               "Ref": "authmymadamisappbc17122aUserPoolId"
             },
@@ -138,7 +133,12 @@
                 ]
               ]
             },
-            "API_MYMADAMISAPP_USERSCENARIOTABLE_ARN": {
+            "API_MYMADAMISAPP_NEWUSERSCENARIOTABLE_NAME": {
+              "Fn::ImportValue": {
+                "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:NewUserScenarioTable:Name"
+              }
+            },
+            "API_MYMADAMISAPP_NEWUSERSCENARIOTABLE_ARN": {
               "Fn::Join": [
                 "",
                 [
@@ -153,7 +153,7 @@
                   ":table/",
                   {
                     "Fn::ImportValue": {
-                      "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserScenarioTable:Name"
+                      "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:NewUserScenarioTable:Name"
                     }
                   }
                 ]
@@ -510,13 +510,22 @@
             {
               "Effect": "Allow",
               "Action": [
+                "dynamodb:Put*",
+                "dynamodb:Create*",
+                "dynamodb:BatchWriteItem",
+                "dynamodb:PartiQLInsert",
                 "dynamodb:Get*",
                 "dynamodb:BatchGetItem",
                 "dynamodb:List*",
                 "dynamodb:Describe*",
                 "dynamodb:Scan",
                 "dynamodb:Query",
-                "dynamodb:PartiQLSelect"
+                "dynamodb:PartiQLSelect",
+                "dynamodb:Update*",
+                "dynamodb:RestoreTable*",
+                "dynamodb:PartiQLUpdate",
+                "dynamodb:Delete*",
+                "dynamodb:PartiQLDelete"
               ],
               "Resource": [
                 {
@@ -534,7 +543,7 @@
                       ":table/",
                       {
                         "Fn::ImportValue": {
-                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserScenarioTable:Name"
+                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:NewUserScenarioTable:Name"
                         }
                       }
                     ]
@@ -555,7 +564,7 @@
                       ":table/",
                       {
                         "Fn::ImportValue": {
-                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:UserScenarioTable:Name"
+                          "Fn::Sub": "${apimymadamisappGraphQLAPIIdOutput}:GetAtt:NewUserScenarioTable:Name"
                         }
                       },
                       "/index/*"

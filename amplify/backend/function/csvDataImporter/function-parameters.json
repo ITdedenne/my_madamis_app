@@ -3,7 +3,8 @@
     "api": {
       "mymadamisapp": [
         "Query",
-        "Mutation"
+        "Mutation",
+        "Subscription"
       ]
     },
     "storage": {
@@ -14,6 +15,12 @@
         "delete"
       ],
       "Author:@model(appsync)": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ],
+      "NewUserScenario:@model(appsync)": [
         "create",
         "read",
         "update",

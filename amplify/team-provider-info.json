@@ -57,9 +57,9 @@
           "s3Key": "amplify-builds/csvDataImporter-47646733672f6b744b33-build.zip"
         },
         "updateScenarioStatusFunc": {
-          "userScenarioTableName": "UserScenario-ce7aaxbssnbe3lzfmkn4m74xgq-dev",
           "deploymentBucketName": "amplify-mymadamisapp-dev-5ce86-deployment",
-          "s3Key": "amplify-builds/updateScenarioStatusFunc-586c77482f574e75726e-build.zip"
+          "s3Key": "amplify-builds/updateScenarioStatusFunc-586c77482f574e75726e-build.zip",
+          "userScenarioTableName": "UserScenario-ce7aaxbssnbe3lzfmkn4m74xgq-dev"
         }
       },
       "storage": {
