@@ -12,5 +12,12 @@
   "triggerTemplate": "PostConfirmation.json.ejs",
   "triggerEventPath": "PostConfirmation.event.json",
   "roleName": "mymadamisappb2bf781dPostConfirmation",
-  "skipEdit": true
+  "skipEdit": true,
+  "lambdaLayers": [],
+  "environmentVariableList": [
+    {
+      "cloudFormationParameterName": "dummy",
+      "environmentVariableName": "DUMMY"
+    }
+  ]
 }

@@ -82,6 +82,7 @@
     },
     "mymadamisappb2bf781dPostConfirmation": {
       "build": true,
+      "dependsOn": [],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
@@ -148,6 +149,14 @@
         }
       ]
     },
+    "AMPLIFY_function_mymadamisappb2bf781dPostConfirmation_dummy": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisappb2bf781dPostConfirmation"
+        }
+      ]
+    },
     "AMPLIFY_function_mymadamisappb2bf781dPostConfirmation_s3Key": {
       "usedBy": [
         {
@@ -171,6 +180,13 @@
           "resourceName": "updateUserProfile"
         }
       ]
+    }
+  },
+  "storage": {
+    "madamisappS3": {
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "S3"
     }
   }
 }
