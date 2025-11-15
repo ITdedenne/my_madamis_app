@@ -24,7 +24,7 @@ packages:
       sha256: "58ce33e28f555bb01546659c2afc670ba52c2b0506aa94aa264cb339766e391c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.8"
+    version: "0.3.11"
   amplify_api:
     dependency: "direct main"
     description:

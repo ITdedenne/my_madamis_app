@@ -1,1 +1,176 @@
-{}
+{
+  "api": {
+    "mymadamisapp": {
+      "dependsOn": [
+        {
+          "attributes": [
+            "UserPoolId"
+          ],
+          "category": "auth",
+          "resourceName": "mymadamisappb2bf781d"
+        }
+      ],
+      "output": {
+        "authConfig": {
+          "additionalAuthenticationProviders": [],
+          "defaultAuthentication": {
+            "authenticationType": "AMAZON_COGNITO_USER_POOLS",
+            "userPoolConfig": {
+              "userPoolId": "authmymadamisappb2bf781d"
+            }
+          }
+        }
+      },
+      "providerPlugin": "awscloudformation",
+      "service": "AppSync"
+    }
+  },
+  "auth": {
+    "mymadamisappb2bf781d": {
+      "customAuth": false,
+      "dependsOn": [
+        {
+          "attributes": [
+            "Arn",
+            "Name"
+          ],
+          "category": "function",
+          "resourceName": "mymadamisappb2bf781dPostConfirmation",
+          "triggerProvider": "Cognito"
+        }
+      ],
+      "frontendAuthConfig": {
+        "mfaConfiguration": "OFF",
+        "mfaTypes": [
+          "SMS"
+        ],
+        "passwordProtectionSettings": {
+          "passwordPolicyCharacters": [],
+          "passwordPolicyMinLength": 8
+        },
+        "signupAttributes": [
+          "EMAIL",
+          "PREFERRED_USERNAME"
+        ],
+        "socialProviders": [],
+        "usernameAttributes": [
+          "EMAIL"
+        ],
+        "verificationMechanisms": [
+          "EMAIL"
+        ]
+      },
+      "providerPlugin": "awscloudformation",
+      "service": "Cognito"
+    }
+  },
+  "function": {
+    "deleteUserAccount": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "findGroupScenarios": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "findUnplayedFriends": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "mymadamisappb2bf781dPostConfirmation": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "updateUserProfile": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_function_deleteUserAccount_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "deleteUserAccount"
+        }
+      ]
+    },
+    "AMPLIFY_function_deleteUserAccount_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "deleteUserAccount"
+        }
+      ]
+    },
+    "AMPLIFY_function_findGroupScenarios_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "findGroupScenarios"
+        }
+      ]
+    },
+    "AMPLIFY_function_findGroupScenarios_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "findGroupScenarios"
+        }
+      ]
+    },
+    "AMPLIFY_function_findUnplayedFriends_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "findUnplayedFriends"
+        }
+      ]
+    },
+    "AMPLIFY_function_findUnplayedFriends_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "findUnplayedFriends"
+        }
+      ]
+    },
+    "AMPLIFY_function_mymadamisappb2bf781dPostConfirmation_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisappb2bf781dPostConfirmation"
+        }
+      ]
+    },
+    "AMPLIFY_function_mymadamisappb2bf781dPostConfirmation_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisappb2bf781dPostConfirmation"
+        }
+      ]
+    },
+    "AMPLIFY_function_updateUserProfile_deploymentBucketName": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "updateUserProfile"
+        }
+      ]
+    },
+    "AMPLIFY_function_updateUserProfile_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "updateUserProfile"
+        }
+      ]
+    }
+  }
+}

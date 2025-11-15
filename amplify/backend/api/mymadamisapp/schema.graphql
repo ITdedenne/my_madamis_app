@@ -1,0 +1,107 @@
+# (v2.7) アプリケーション要件定義書 5.3 準拠 - 互換性確保版
+# 修正点: 
+# 1. UserRelationship.followedId の @index から 'fields' 引数を削除（前回の修正）
+# 2. UserScenario に @index(name: "byUser") を追加（前回の修正）
+# 3. UserRelationship.followingId に @index(name: "byFollowing") を追加（今回の修正）
+
+# =================================================================
+# User (users) テーブル (5.3)
+# =================================================================
+type User @model
+  @auth(rules: [
+    { allow: owner, operations: [read] },
+    { allow: private, operations: [read] }
+  ])
+{
+  # 5.3: PK, Cognito Sub ID
+  id: ID! @primaryKey 
+
+  # 5.3: ユーザー検索用 GSI (publicUserIdがGSIのPKとなる)
+  publicUserId: String! @index(name: "byPublicUserId", queryField: "userByPublicUserId")
+
+  # 5.3: ユーザー名 GSI (usernameがGSIのPKとなる)
+  username: String! @index(name: "byUsername", queryField: "userByUsername")
+
+  # 5.3: 自己紹介
+  bio: String
+
+  # ----- リレーション -----
+  userScenarios: [UserScenario] @hasMany(indexName: "byUser", fields: ["id"])
+  following: [UserRelationship] @hasMany(indexName: "byFollowing", fields: ["id"])
+}
+
+
+# =================================================================
+# UserRelationship (user_relationships) テーブル (5.3)
+# =================================================================
+type UserRelationship @model
+  @auth(rules: [
+    { allow: owner, ownerField: "followingId", operations: [create, read, delete] }
+  ])
+{
+  # 5.3: PK: (followingId, followedId)。followingIdがPK、followedIdがSK。
+  followingId: ID! @primaryKey(sortKeyFields: ["followedId"])
+  # GSI byFollowing の定義（@hasMany の参照先として必須）
+  @index(name: "byFollowing", queryField: "listByFollowing") 
+  
+  # 5.3: followedId はSKとして利用
+  followedId: ID! 
+  # GSI: byFollowed on followedId (followedIdがPK、followingIdがSK)
+  @index(name: "byFollowed", sortKeyFields: ["followingId"], queryField: "listByFollowed")
+  
+  # ----- リレーション -----
+  followingUser: User @belongsTo(fields: ["followingId"])
+  followedUser: User @belongsTo(fields: ["followedId"])
+}
+
+
+# =================================================================
+# UserScenario (user_scenarios) テーブル (5.3)
+# =================================================================
+type UserScenario @model
+  @auth(rules: [
+    { allow: owner, ownerField: "userId", operations: [create, read, update, delete] },
+    { allow: private, operations: [read] }
+  ])
+{
+  # 5.3: PK: (userId, scenarioId)。userIdがPK、scenarioIdがSK。
+  userId: ID! @primaryKey(sortKeyFields: ["scenarioId"])
+  
+  # GSI byUser の定義（@hasMany の参照先として必須）
+  @index(name: "byUser", queryField: "listByUser")
+
+  # 5.3: scenarioId
+  # GSI: byScenario のPK（GSIの定義は scenarioId の行に移動）
+  scenarioId: String! @index(name: "byScenario", sortKeyFields: ["userId"], queryField: "listByScenario")
+
+  # 5.3: ステータス
+  isPlayed: Boolean!
+  isPossessed: Boolean!
+  wantsToGm: Boolean!
+  # ----- リレーション -----
+  user: User @belongsTo(fields: ["userId"])
+}
+
+
+# =================================================================
+# 5.2: カスタムLambda関数 (Query / Mutation)
+# =================================================================
+type Query {
+  findUnplayedFriends(scenarioId: String!): String
+    @function(name: "findUnplayedFriends-${env}")
+    @auth(rules: [{ allow: private }])
+
+  findGroupScenarios(friendIds: [ID!]!): String
+    @function(name: "findGroupScenarios-${env}")
+    @auth(rules: [{ allow: private }])
+}
+
+type Mutation {
+  updateUserProfile(username: String!, bio: String): String
+    @function(name: "updateUserProfile-${env}")
+    @auth(rules: [{ allow: owner }])
+
+  deleteUserAccount: String
+    @function(name: "deleteUserAccount-${env}")
+    @auth(rules: [{ allow: owner }])
+}
