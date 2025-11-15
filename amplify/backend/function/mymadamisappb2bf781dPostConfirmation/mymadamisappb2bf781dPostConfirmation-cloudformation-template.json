@@ -43,6 +43,9 @@
     },
     "s3Key": {
       "Type": "String"
+    },
+    "dummy": {
+      "Type": "String"
     }
   },
   "Conditions": {
@@ -95,6 +98,9 @@
             },
             "GROUP": {
               "Ref": "GROUP"
+            },
+            "DUMMY": {
+              "Ref": "dummy"
             }
           }
         },

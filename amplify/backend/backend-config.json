@@ -149,6 +149,14 @@
         }
       ]
     },
+    "AMPLIFY_function_mymadamisappb2bf781dPostConfirmation_dummy": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "mymadamisappb2bf781dPostConfirmation"
+        }
+      ]
+    },
     "AMPLIFY_function_mymadamisappb2bf781dPostConfirmation_s3Key": {
       "usedBy": [
         {

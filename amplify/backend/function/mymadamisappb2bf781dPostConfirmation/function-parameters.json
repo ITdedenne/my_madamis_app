@@ -14,5 +14,10 @@
   "roleName": "mymadamisappb2bf781dPostConfirmation",
   "skipEdit": true,
   "lambdaLayers": [],
-  "environmentVariableList": []
+  "environmentVariableList": [
+    {
+      "cloudFormationParameterName": "dummy",
+      "environmentVariableName": "DUMMY"
+    }
+  ]
 }
