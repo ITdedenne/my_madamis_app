@@ -13,16 +13,10 @@ class ProfileRepositoryImpl implements ProfileRepository {
         .firstWhere((a) => a.userAttributeKey == AuthUserAttributeKey.preferredUsername,
             orElse: () => const AuthUserAttribute(userAttributeKey: AuthUserAttributeKey.preferredUsername, value: ''))
         .value;
-    final bio = attributes
-        .firstWhere((a) => a.userAttributeKey == const CognitoUserAttributeKey.custom('bio'),
-            // ▼▼▼ ここのタイプミスを修正しました ▼▼▼
-            orElse: () => const AuthUserAttribute(userAttributeKey: CognitoUserAttributeKey.custom('bio'), value: ''))
-        .value;
-    final twitterId = attributes
-        .firstWhere((a) => a.userAttributeKey == const CognitoUserAttributeKey.custom('twitter_id'),
-            // ▼▼▼ ここのタイプミスを修正しました ▼▼▼
-            orElse: () => const AuthUserAttribute(userAttributeKey: CognitoUserAttributeKey.custom('twitter_id'), value: ''))
-        .value;
+    
+    // 要件 6.3.3: Cognitoカスタム属性の廃止に伴い、取得処理を修正 (DynamoDBへの移行が完了するまで空文字を返す)
+    const bio = ''; 
+    const twitterId = ''; 
 
     return UserProfile(username: username, bio: bio, twitterId: twitterId);
   }
@@ -34,14 +28,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         userAttributeKey: AuthUserAttributeKey.preferredUsername,
         value: profile.username,
       ),
-      AuthUserAttribute(
-        userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
-        value: profile.bio,
-      ),
-      AuthUserAttribute(
-        userAttributeKey: const CognitoUserAttributeKey.custom('twitter_id'),
-        value: profile.twitterId,
-      ),
+      // 要件 6.3.3: Cognitoカスタム属性の廃止に伴い、bio/twitterIdの更新を削除
     ];
     await Amplify.Auth.updateUserAttributes(attributes: attributesToUpdate);
   }

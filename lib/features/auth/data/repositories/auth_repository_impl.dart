@@ -15,10 +15,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final userAttributes = <AuthUserAttributeKey, String>{
       AuthUserAttributeKey.email: email,
       AuthUserAttributeKey.preferredUsername: username,
-      if (bio != null && bio.trim().isNotEmpty)
-        const CognitoUserAttributeKey.custom('bio'): bio,
-      if (twitterId != null && twitterId.trim().isNotEmpty)
-        const CognitoUserAttributeKey.custom('twitter_id'): twitterId,
+      // 要件 6.3.3: Cognitoカスタム属性の廃止に伴い、bio/twitterIdの送信を削除
     };
 
     final options = SignUpOptions(userAttributes: userAttributes);
@@ -58,7 +55,7 @@ class AuthRepositoryImpl implements AuthRepository {
   
   @override
   Future<void> signOut() async {
-    // ★修正ポイント: globalSignOut を使用して、デバイス上のセッションを強制的にクリアする
+    // globalSignOut を使用して、デバイス上のセッションを強制的にクリアする
     const options = SignOutOptions(globalSignOut: true);
     await Amplify.Auth.signOut(options: options);
   }
