@@ -1,8 +1,11 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
 
-// (5.3) テーブル名は環境変数から動的に構築し、環境非依存性を確保
-const USER_TABLE_NAME = `User-${process.env.API_MYMADAMISAPP_GRAPHQLAPIIDOUTPUT}-${process.env.ENV}`;
+// =================================================================
+// ★ 修正箇所: 環境非依存の定義を削除し、直値でテーブル名を指定
+// WARNING: 本番環境デプロイ前にこの直値を動的変数に戻してください
+const USER_TABLE_NAME = 'User-eju77evq3javlfhhc6o5pecapy-dev'; 
+// =================================================================
 const MAX_RETRIES = 5;
 
 // DynamoDBクライアントの初期化
