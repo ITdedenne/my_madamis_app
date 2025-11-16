@@ -86,6 +86,7 @@ class CreateProfileViewModel extends StateNotifier<CreateProfileState> {
       username: username,
       bio: bio ?? '', 
       twitterId: twitterId ?? '',
+      
     );
     
     try {

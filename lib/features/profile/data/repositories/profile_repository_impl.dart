@@ -17,14 +17,14 @@ class ProfileRepositoryImpl implements ProfileRepository {
     }
   ''';
   
-  // ★ 修正箇所: 存在しないフィールド 'twitterld' や 'DynamoDB' を削除
+  // ★ 修正箇所: スキーマ(publicUserId)とモデル(friendID)の差異をエイリアスで吸収
   static const _getUserQuery = r'''
     query GetUser($id: ID!) {
       getUser(id: $id) {
         id
         username
         bio
-        publicUserId
+        friendID: publicUserId 
       }
     }
   ''';
@@ -68,8 +68,9 @@ class ProfileRepositoryImpl implements ProfileRepository {
     final userModel = response.data!;
     
     // 2. 取得した User モデルから UserProfile エンティティを構築
-    // twitterId は現在スキーマから削除済みのため、空文字として扱う
+    // ★ 修正: userModel.friendID を publicUserId にマッピング
     return UserProfile(
+      publicUserId: userModel.friendID, 
       username: userModel.username, 
       bio: userModel.bio ?? '', 
       twitterId: '', 
@@ -84,6 +85,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
         variables: {
           'username': profile.username,
           'bio': profile.bio,
+          // publicUserId は ReadOnly のため送信しない
         },
         authorizationMode: APIAuthorizationType.userPools,
       );

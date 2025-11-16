@@ -1,3 +1,5 @@
+// ファイルパス: test/features/profile/presentation/pages/profile_page_test.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,6 +26,7 @@ class FakeProfileViewModel extends StateNotifier<ProfileState>
 
 void main() {
   const tUserProfile = UserProfile(
+    publicUserId: '1234567', // ★ 追加
     username: 'test_user',
     bio: 'Test bio content.',
     twitterId: 'twitter_user',
@@ -48,8 +51,10 @@ void main() {
     expect(find.text('プロフィール'), findsOneWidget);
     expect(find.text('test_user'), findsOneWidget);
     expect(find.text('Test bio content.'), findsOneWidget);
-    expect(find.text('@twitter_user'), findsOneWidget);
+    expect(find.text('1234567'), findsOneWidget); // ★ 追加: publicUserIdの表示確認
     expect(find.byIcon(Icons.edit), findsOneWidget);
+    // ★ 修正: twitterId ('@twitter_user') のアサーションは削除 (UIから削除したため)
+    expect(find.text('@twitter_user'), findsNothing);
   });
 
   testWidgets('Loading状態でCircularProgressIndicatorが表示されること', (tester) async {

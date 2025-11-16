@@ -1,3 +1,5 @@
+// ファイルパス: test/features/profile/presentation/viewmodels/profile_viewmodel_test.dart
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
@@ -26,7 +28,11 @@ void main() {
     container.dispose();
   });
 
-  const tUserProfile = UserProfile(username: 'test_user', bio: 'test bio');
+  const tUserProfile = UserProfile(
+    publicUserId: '123', // ★ 追加
+    username: 'test_user', 
+    bio: 'test bio'
+  );
 
   // ▼▼▼ このテストを修正します ▼▼▼
   test('初期化時にloadUserProfileが呼ばれ、成功時にstateがloadedになること', () async {
@@ -72,7 +78,11 @@ void main() {
 
   test('updateStateWithNewProfileメソッドでStateが直接更新されること', () {
     // Arrange
-    const newProfile = UserProfile(username: 'new_user', bio: 'new bio');
+    const newProfile = UserProfile(
+      publicUserId: '456', // ★ 追加
+      username: 'new_user', 
+      bio: 'new bio'
+    );
 
     // Act
     container
