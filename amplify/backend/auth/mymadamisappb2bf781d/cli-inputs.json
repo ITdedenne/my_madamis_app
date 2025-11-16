@@ -2,7 +2,7 @@
   "version": "1",
   "cognitoConfig": {
     "identityPoolName": "mymadamisappb2bf781d_identitypool_4bf6ddeb",
-    "allowUnauthenticatedIdentities": true,
+    "allowUnauthenticatedIdentities": false,
     "resourceNameTruncated": "mymadab2bf781d",
     "userPoolName": "mymadamisappb2bf781d_userpool_b2bf781d",
     "autoVerifiedAttributes": [
@@ -80,10 +80,9 @@
     "parentStack": {
       "Ref": "AWS::StackId"
     },
-    "authTriggerConnections": [
-      "{\"triggerType\":\"PostConfirmation\",\"lambdaFunctionName\":\"mymadamisappb2bf781dPostConfirmation\"}"
-    ],
+    "authTriggerConnections": "[\n  {\n    \"triggerType\": \"PostConfirmation\",\n    \"lambdaFunctionName\": \"mymadamisappb2bf781dPostConfirmation\"\n  }\n]",
     "permissions": [],
-    "authProviders": []
+    "authProviders": [],
+    "thirdPartyAuth": false
   }
 }
