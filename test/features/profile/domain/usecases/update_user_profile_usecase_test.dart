@@ -1,3 +1,5 @@
+// ファイルパス: test/features/profile/domain/usecases/update_user_profile_usecase_test.dart
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:my_madamis_app/features/profile/domain/entities/user_profile.dart';
@@ -15,6 +17,7 @@ void main() {
   });
 
   const tUserProfile = UserProfile(
+    publicUserId: '1234567', // ★ 追加
     username: 'updated_user',
     bio: 'Updated bio.',
     twitterId: 'updated_twitter',

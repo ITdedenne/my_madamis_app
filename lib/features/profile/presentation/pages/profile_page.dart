@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/profile/presentation/pages/edit_profile_page.dart';
 import 'package:my_madamis_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
+// ★ 追加: サービス（クリップボード）を利用するため
+import 'package:flutter/services.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -44,6 +46,16 @@ class ProfilePage extends ConsumerWidget {
                 children: [
                   _buildProfileHeader(context, profileState.profile!.username),
                   const SizedBox(height: 24),
+
+                  // ★ ここから追加 (publicUserId が null でない場合のみ表示) ★
+                  if (profileState.profile!.publicUserId != null) ...[
+                    _buildSectionTitle('フレンドID'),
+                    const SizedBox(height: 8),
+                    _buildFriendId(context, profileState.profile!.publicUserId!),
+                    const SizedBox(height: 24),
+                  ],
+                  // ★ 追加ここまで ★
+
                   _buildSectionTitle('自己紹介'),
                   const SizedBox(height: 8),
                   // 6.2.7 準拠: 単純な Text ウィジェットで表示
@@ -86,6 +98,39 @@ class ProfilePage extends ConsumerWidget {
     return Text(
       title,
       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+    );
+  }
+  
+  // ★ 追加: フレンドID表示用のウィジェット
+  Widget _buildFriendId(BuildContext context, String friendId) {
+    return InkWell(
+      onTap: () {
+        Clipboard.setData(ClipboardData(text: friendId));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('フレンドIDをコピーしました')),
+        );
+      },
+      borderRadius: BorderRadius.circular(8), // InkWellのエフェクト用
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              friendId,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontFamily: 'monospace', // IDらしさを出す
+                color: Colors.black87,
+              ),
+            ),
+            const Icon(Icons.copy_outlined, color: Colors.grey, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }

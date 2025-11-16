@@ -3,7 +3,7 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
 
-// ... (USER_TABLE_NAME, MAX_RETRIES, generatePublicUserId, ddbDocClient の定義は省略/維持) ...
+// ... (USER_TABLE_NAME, MAX_RETRIES の定義) ...
 const USER_TABLE_NAME = 'User-eju77evq3javlfhhc6o5pecapy-dev'; // ★ 直値を使用
 const MAX_RETRIES = 5;
 
@@ -11,7 +11,18 @@ const MAX_RETRIES = 5;
 const client = new DynamoDBClient({ region: process.env.REGION });
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
-// ... (generatePublicUserId 関数は省略/維持) ...
+// --- ▼▼▼ ここから修正（追加） ▼▼▼ ---
+/**
+ * (5.2.1) 7桁のランダムな数字IDを生成する
+ * @returns {string} 7桁のランダムな数字の文字列
+ */
+function generatePublicUserId() {
+  // 1000000 から 9999999 までの7桁のランダムな整数を生成
+  const min = 1000000;
+  const max = 9999999;
+  return String(Math.floor(Math.random() * (max - min + 1)) + min);
+}
+// --- ▲▲▲ 修正完了 ▲▲▲ ---
 
 /**
  * Cognito Post Confirmation トリガーハンドラ (5.2.1)
@@ -35,7 +46,7 @@ exports.handler = async (event) => {
   const username = event.request.userAttributes['preferred_username'];
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const publicUserId = generatePublicUserId();
+    const publicUserId = generatePublicUserId(); // ★ この関数が定義されました
     
     const params = {
       TableName: USER_TABLE_NAME, 

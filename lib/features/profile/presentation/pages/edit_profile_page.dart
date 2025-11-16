@@ -82,7 +82,9 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 isLoading: viewModelState.status == EditProfileStatus.loading,
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
+                    // ★ 修正: publicUserId を渡す
                     notifier.updateProfile(
+                      publicUserId: widget.initialProfile.publicUserId, 
                       username: _usernameController.text,
                       bio: _bioController.text,
                       twitterId: '', 
