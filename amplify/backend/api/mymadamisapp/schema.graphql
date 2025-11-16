@@ -1,90 +1,107 @@
-# === ユーザー関連 ===
+# (v2.7) アプリケーション要件定義書 5.3 準拠 - 互換性確保版
+# 修正点: 
+# 1. UserRelationship.followedId の @index から 'fields' 引数を削除（前回の修正）
+# 2. UserScenario に @index(name: "byUser") を追加（前回の修正）
+# 3. UserRelationship.followingId に @index(name: "byFollowing") を追加（今回の修正）
 
-# "users" テーブル
-# ルール: 自分のUserデータは自分で作成・更新・閲覧できる (Cognito)
-#        ログイン済みユーザーは他人のUserデータ（プロフィール）を閲覧できる (Cognito)
-type User @model 
+# =================================================================
+# User (users) テーブル (5.3)
+# =================================================================
+type User @model
   @auth(rules: [
-    { allow: owner, operations: [read, update, create] },
-    { allow: private, operations: [read] } 
-  ]) {
-  id: ID! @primaryKey # Cognitoのsub(userId)
-  username: String!
+    { allow: owner, operations: [read] },
+    { allow: private, operations: [read] }
+  ])
+{
+  # 5.3: PK, Cognito Sub ID
+  id: ID! @primaryKey 
+
+  # 5.3: ユーザー検索用 GSI (publicUserIdがGSIのPKとなる)
+  publicUserId: String! @index(name: "byPublicUserId", queryField: "userByPublicUserId")
+
+  # 5.3: ユーザー名 GSI (usernameがGSIのPKとなる)
+  username: String! @index(name: "byUsername", queryField: "userByUsername")
+
+  # 5.3: 自己紹介
   bio: String
 
-
-  # ユーザー検索用のID (7桁の数字を想定)
-  # GSI (Global Secondary Index) を作成し、検索クエリ 'userByFriendID' を自動生成
-  friendID: String! @index(name: "byFriendID", queryField: "userByFriendID")
-  
-
-  scenarios: [UserScenario] @hasMany(indexName: "byUser", fields: ["id"])
+  # ----- リレーション -----
+  userScenarios: [UserScenario] @hasMany(indexName: "byUser", fields: ["id"])
   following: [UserRelationship] @hasMany(indexName: "byFollowing", fields: ["id"])
 }
 
-# "user_relationships" テーブル
-# ルール: 自分のフォロー関係は自分で作成・削除・閲覧できる (Cognito)
-type UserRelationship @model 
-  @auth(rules: [
-    { allow: owner, ownerField: "followingId", operations: [create, delete, read] }
-  ]) {
-  id: ID!
-  followingId: ID! @index(name: "byFollowing", sortKeyFields: ["followedId"]) # PK: フォローした人
-  followedId: ID! # SK: フォローされた人
 
+# =================================================================
+# UserRelationship (user_relationships) テーブル (5.3)
+# =================================================================
+type UserRelationship @model
+  @auth(rules: [
+    { allow: owner, ownerField: "followingId", operations: [create, read, delete] }
+  ])
+{
+  # 5.3: PK: (followingId, followedId)。followingIdがPK、followedIdがSK。
+  followingId: ID! @primaryKey(sortKeyFields: ["followedId"])
+  # GSI byFollowing の定義（@hasMany の参照先として必須）
+  @index(name: "byFollowing", queryField: "listByFollowing") 
+  
+  # 5.3: followedId はSKとして利用
+  followedId: ID! 
+  # GSI: byFollowed on followedId (followedIdがPK、followingIdがSK)
+  @index(name: "byFollowed", sortKeyFields: ["followingId"], queryField: "listByFollowed")
+  
+  # ----- リレーション -----
+  followingUser: User @belongsTo(fields: ["followingId"])
   followedUser: User @belongsTo(fields: ["followedId"])
-  followerUser: User @belongsTo(fields: ["followingId"])
 }
 
-# === シナリオ関連 ===
 
-# "scenarios" テーブル
-# ルール: ログイン済みユーザー(Cognito)も、してない人(API Key)もシナリオを閲覧できる
-type Scenario @model 
+# =================================================================
+# UserScenario (user_scenarios) テーブル (5.3)
+# =================================================================
+type UserScenario @model
   @auth(rules: [
-    { allow: private, operations: [read] }, # Cognito
-    { allow: public, provider: apiKey, operations: [read] } # API Key
-  ]) {
-  id: ID! @primaryKey # CSVのscenarioId
-  title: String!
-  minPlayerCount: Int
-  maxPlayerCount: Int
-  gmRequirement: String
-  authorId: ID! @index(name: "byAuthor", sortKeyFields: ["title"])
-  storeUrl: String
-
-  author: Author @belongsTo(fields: ["authorId"])
-  users: [UserScenario] @hasMany(indexName: "byScenario", fields: ["id"])
-}
-
-# "authors" テーブル
-# ルール: ログイン済みユーザー(Cognito)も、してない人(API Key)も作者を閲覧できる
-type Author @model 
-  @auth(rules: [
-    { allow: private, operations: [read] }, # Cognito
-    { allow: public, provider: apiKey, operations: [read] } # API Key
-  ]) {
-  id: ID! @primaryKey # CSVのauthorId
-  authorName: String!
-
-  scenarios: [Scenario] @hasMany(indexName: "byAuthor", fields: ["id"])
-}
-
-# === 中間テーブル ===
-
-# "user_scenarios" テーブル
-# ルール: 自分の手帳は自分で全操作できる (Cognito)
-#        ログイン済みユーザーは他人の手帳を（プロフィール拡張機能のため）閲覧できる (Cognito)
-type UserScenario @model 
-  @auth(rules: [
-    { allow: owner, ownerField: "userId" }, # CRUD (create, read, update, delete)
+    { allow: owner, ownerField: "userId", operations: [create, read, update, delete] },
     { allow: private, operations: [read] }
-  ]) {
-  id: ID!
-  userId: ID! @index(name: "byUser", sortKeyFields: ["scenarioId"]) # PK: userId (マイリスト表示用)
-  scenarioId: ID! @index(name: "byScenario", sortKeyFields: ["userId"]) # GSI: scenarioId (プレイヤーファインダー用)
-  status: String! # "passed" または "owned"
+  ])
+{
+  # 5.3: PK: (userId, scenarioId)。userIdがPK、scenarioIdがSK。
+  userId: ID! @primaryKey(sortKeyFields: ["scenarioId"])
+  
+  # GSI byUser の定義（@hasMany の参照先として必須）
+  @index(name: "byUser", queryField: "listByUser")
 
+  # 5.3: scenarioId
+  # GSI: byScenario のPK（GSIの定義は scenarioId の行に移動）
+  scenarioId: String! @index(name: "byScenario", sortKeyFields: ["userId"], queryField: "listByScenario")
+
+  # 5.3: ステータス
+  isPlayed: Boolean!
+  isPossessed: Boolean!
+  wantsToGm: Boolean!
+  # ----- リレーション -----
   user: User @belongsTo(fields: ["userId"])
-  scenario: Scenario @belongsTo(fields: ["scenarioId"])
+}
+
+
+# =================================================================
+# 5.2: カスタムLambda関数 (Query / Mutation)
+# =================================================================
+type Query {
+  findUnplayedFriends(scenarioId: String!): String
+    @function(name: "findUnplayedFriends-${env}")
+    @auth(rules: [{ allow: private }])
+
+  findGroupScenarios(friendIds: [ID!]!): String
+    @function(name: "findGroupScenarios-${env}")
+    @auth(rules: [{ allow: private }])
+}
+
+type Mutation {
+  updateUserProfile(username: String!, bio: String): String
+    @function(name: "updateUserProfile-${env}")
+    @auth(rules: [{ allow: private }])
+
+  deleteUserAccount: String
+    @function(name: "deleteUserAccount-${env}")
+    @auth(rules: [{ allow: owner }])
 }

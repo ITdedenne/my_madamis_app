@@ -5,15 +5,7 @@
     "serviceName": "AppSync",
     "defaultAuthType": {
       "mode": "AMAZON_COGNITO_USER_POOLS",
-      "cognitoUserPoolId": "authmymadamisapp2c00b4e92c00b4e9"
-    },
-    "additionalAuthTypes": [
-      {
-        "mode": "API_KEY",
-        "expirationTime": 7,
-        "apiKeyExpirationDate": "2025-10-25T13:05:21.706Z",
-        "keyDescription": ""
-      }
-    ]
+      "cognitoUserPoolId": "authmymadamisappb2bf781d"
+    }
   }
 }

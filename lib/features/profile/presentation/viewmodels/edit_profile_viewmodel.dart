@@ -44,20 +44,20 @@ class EditProfileViewModel extends StateNotifier<EditProfileState> {
   Future<void> updateProfile({
     required String username,
     required String bio,
-    required String twitterId,
+    // twitterId は UI から渡されるが、現在はバックエンドに送信しない
+    required String twitterId, 
   }) async {
     state = state.copyWith(status: EditProfileStatus.loading);
     try {
-      final profile = UserProfile(username: username, bio: bio, twitterId: twitterId);
+      // ★ 修正箇所: twitterId は現在空文字列を渡す
+      final profile = UserProfile(username: username, bio: bio, twitterId: ''); 
       await _updateUserProfileUseCase(profile);
       
       // グローバルなユーザー名状態も更新
       _ref.read(authStateNotifierProvider.notifier).updateUsername(username);
       
-      // ▼▼▼ ここから修正 ▼▼▼
-      // プロフィール表示画面のViewModelの状態を直接更新する
+      // プロフィール表示画面のViewModelの状態を直接更新する (twitterIdは空文字)
       _ref.read(profileViewModelProvider.notifier).updateStateWithNewProfile(profile);
-      // ▲▲▲ ここまで修正 ▲▲▲
       
       state = state.copyWith(status: EditProfileStatus.success);
     } catch (e) {

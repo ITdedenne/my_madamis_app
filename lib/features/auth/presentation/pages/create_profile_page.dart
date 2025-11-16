@@ -18,8 +18,9 @@ class CreateProfilePage extends ConsumerWidget {
     final formKey = GlobalKey<FormState>();
     final usernameController = TextEditingController();
     final passwordController = TextEditingController();
-    final bioController = TextEditingController();
-    final twitterController = TextEditingController();
+    // 修正により、以下のコントローラは削除
+    // final bioController = TextEditingController();
+    // final twitterController = TextEditingController();
 
     final viewModel = ref.watch(createProfileViewModelProvider);
     final notifier = ref.read(createProfileViewModelProvider.notifier);
@@ -84,19 +85,6 @@ class CreateProfilePage extends ConsumerWidget {
                 obscureText: true,
                 validator: (v) => (v == null || v.length < 8) ? 'パスワードは8文字以上で入力してください' : null,
               ),
-              const SizedBox(height: 16),
-              CustomTextFormField(
-                controller: bioController,
-                labelText: '自己紹介 (任意)',
-                maxLines: 5,
-                maxLength: 200,
-              ),
-               const SizedBox(height: 16),
-              CustomTextFormField(
-                controller: twitterController,
-                labelText: 'X (Twitter) ID (任意)',
-                prefixText: '@',
-              ),
               const SizedBox(height: 24),
               PrimaryButton(
                 text: '利用を開始する',
@@ -107,8 +95,9 @@ class CreateProfilePage extends ConsumerWidget {
                       email: email,
                       password: passwordController.text,
                       username: usernameController.text,
-                      bio: bioController.text,
-                      twitterId: twitterController.text,
+                      // 修正: bio と twitterId は空文字を渡すか、引数を省略する
+                      bio: '',
+                      twitterId: '',
                     );
                   }
                 },

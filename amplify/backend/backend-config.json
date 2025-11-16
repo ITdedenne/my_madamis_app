@@ -7,25 +7,16 @@
             "UserPoolId"
           ],
           "category": "auth",
-          "resourceName": "mymadamisapp2c00b4e92c00b4e9"
+          "resourceName": "mymadamisappb2bf781d"
         }
       ],
       "output": {
         "authConfig": {
-          "additionalAuthenticationProviders": [
-            {
-              "apiKeyConfig": {
-                "apiKeyExpirationDate": "2025-10-25T13:05:21.706Z",
-                "apiKeyExpirationDays": 7,
-                "description": ""
-              },
-              "authenticationType": "API_KEY"
-            }
-          ],
+          "additionalAuthenticationProviders": [],
           "defaultAuthentication": {
             "authenticationType": "AMAZON_COGNITO_USER_POOLS",
             "userPoolConfig": {
-              "userPoolId": "authmymadamisapp2c00b4e92c00b4e9"
+              "userPoolId": "authmymadamisappb2bf781d"
             }
           }
         }
@@ -35,7 +26,7 @@
     }
   },
   "auth": {
-    "mymadamisapp2c00b4e92c00b4e9": {
+    "mymadamisappb2bf781d": {
       "customAuth": false,
       "dependsOn": [
         {
@@ -44,7 +35,7 @@
             "Name"
           ],
           "category": "function",
-          "resourceName": "mymadamisapp2c00b4e92c00b4e9PostConfirmation",
+          "resourceName": "mymadamisappb2bf781dPostConfirmation",
           "triggerProvider": "Cognito"
         }
       ],
@@ -73,65 +64,42 @@
       "service": "Cognito"
     }
   },
-  "custom": {
-    "s3EventBridgeRule": {
-      "dependsOn": [
-        {
-          "attributes": [
-            "Name",
-            "Arn",
-            "Region",
-            "LambdaExecutionRole",
-            "LambdaExecutionRoleArn"
-          ],
-          "category": "function",
-          "resourceName": "csvImporterFunction"
-        },
-        {
-          "attributes": [
-            "BucketName",
-            "Region"
-          ],
-          "category": "storage",
-          "resourceName": "myMadamisAppS3storage"
-        }
-      ],
-      "providerPlugin": "awscloudformation",
-      "service": "customCDK"
-    }
-  },
   "function": {
-    "csvImporterFunction": {
+    "deleteUserAccount": {
       "build": true,
-      "dependsOn": [
-        {
-          "attributes": [
-            "GraphQLAPIIdOutput",
-            "GraphQLAPIEndpointOutput",
-            "GraphQLAPIKeyOutput"
-          ],
-          "category": "api",
-          "resourceName": "mymadamisapp"
-        },
-        {
-          "attributes": [
-            "BucketName"
-          ],
-          "category": "storage",
-          "resourceName": "myMadamisAppS3storage"
-        }
-      ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
-    "mymadamisapp2c00b4e92c00b4e9PostConfirmation": {
+    "findGroupScenarios": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "findUnplayedFriends": {
+      "build": true,
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "mymadamisappb2bf781dPostConfirmation": {
+      "build": true,
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "Lambda"
+    },
+    "updateUserProfile": {
       "build": true,
       "dependsOn": [
         {
           "attributes": [
+            "UserPoolId"
+          ],
+          "category": "auth",
+          "resourceName": "mymadamisappb2bf781d"
+        },
+        {
+          "attributes": [
             "GraphQLAPIIdOutput",
-            "GraphQLAPIEndpointOutput",
-            "GraphQLAPIKeyOutput"
+            "GraphQLAPIEndpointOutput"
           ],
           "category": "api",
           "resourceName": "mymadamisapp"
@@ -142,89 +110,97 @@
     }
   },
   "parameters": {
-    "AMPLIFY_function_csvImporterFunction_apiMymadamisappAuthortableName": {
+    "AMPLIFY_function_deleteUserAccount_deploymentBucketName": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "csvImporterFunction"
+          "resourceName": "deleteUserAccount"
         }
       ]
     },
-    "AMPLIFY_function_csvImporterFunction_apiMymadamisappScenariotableName": {
+    "AMPLIFY_function_deleteUserAccount_s3Key": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "csvImporterFunction"
+          "resourceName": "deleteUserAccount"
         }
       ]
     },
-    "AMPLIFY_function_csvImporterFunction_authorTableName": {
+    "AMPLIFY_function_findGroupScenarios_deploymentBucketName": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "csvImporterFunction"
+          "resourceName": "findGroupScenarios"
         }
       ]
     },
-    "AMPLIFY_function_csvImporterFunction_deploymentBucketName": {
+    "AMPLIFY_function_findGroupScenarios_s3Key": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "csvImporterFunction"
+          "resourceName": "findGroupScenarios"
         }
       ]
     },
-    "AMPLIFY_function_csvImporterFunction_dummyVar1": {
+    "AMPLIFY_function_findUnplayedFriends_deploymentBucketName": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "csvImporterFunction"
+          "resourceName": "findUnplayedFriends"
         }
       ]
     },
-    "AMPLIFY_function_csvImporterFunction_s3Key": {
+    "AMPLIFY_function_findUnplayedFriends_s3Key": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "csvImporterFunction"
+          "resourceName": "findUnplayedFriends"
         }
       ]
     },
-    "AMPLIFY_function_csvImporterFunction_scenarioTableName": {
+    "AMPLIFY_function_mymadamisappb2bf781dPostConfirmation_deploymentBucketName": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "csvImporterFunction"
+          "resourceName": "mymadamisappb2bf781dPostConfirmation"
         }
       ]
     },
-    "AMPLIFY_function_mymadamisapp2c00b4e92c00b4e9PostConfirmation_apiMymadamisappUsertableName": {
+    "AMPLIFY_function_mymadamisappb2bf781dPostConfirmation_dummy": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "mymadamisapp2c00b4e92c00b4e9PostConfirmation"
+          "resourceName": "mymadamisappb2bf781dPostConfirmation"
         }
       ]
     },
-    "AMPLIFY_function_mymadamisapp2c00b4e92c00b4e9PostConfirmation_deploymentBucketName": {
+    "AMPLIFY_function_mymadamisappb2bf781dPostConfirmation_s3Key": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "mymadamisapp2c00b4e92c00b4e9PostConfirmation"
+          "resourceName": "mymadamisappb2bf781dPostConfirmation"
         }
       ]
     },
-    "AMPLIFY_function_mymadamisapp2c00b4e92c00b4e9PostConfirmation_s3Key": {
+    "AMPLIFY_function_updateUserProfile_deploymentBucketName": {
       "usedBy": [
         {
           "category": "function",
-          "resourceName": "mymadamisapp2c00b4e92c00b4e9PostConfirmation"
+          "resourceName": "updateUserProfile"
+        }
+      ]
+    },
+    "AMPLIFY_function_updateUserProfile_s3Key": {
+      "usedBy": [
+        {
+          "category": "function",
+          "resourceName": "updateUserProfile"
         }
       ]
     }
   },
   "storage": {
-    "myMadamisAppS3storage": {
+    "madamisappS3": {
       "dependsOn": [],
       "providerPlugin": "awscloudformation",
       "service": "S3"
