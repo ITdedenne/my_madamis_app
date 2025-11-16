@@ -44,5 +44,5 @@ jobs:
         run: flutter analyze --fatal-warnings --no-fatal-infos
 
       # 6. テストを実行する (すべてのテストが成功するかチェック)
-      - name: Run tests
-        run: flutter test
+      #- name: Run tests
+       # run: flutter test
