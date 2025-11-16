@@ -4,11 +4,14 @@ import boto3
 from html.parser import HTMLParser
 from decimal import Decimal
 
-# DynamoDB/Cognito クライアントの初期化
+# =================================================================
+# ★ 修正箇所: 直値でテーブル名と User Pool ID を指定
+# WARNING: 本番環境デプロイ前にこの直値を動的変数に戻してください
+USER_TABLE_NAME = 'User-eju77evq3javlfhhc6o5pecapy-dev'
+COGNITO_USER_POOL_ID = 'ap-northeast-1_cNMzs7UkA' # ★ Cognito User Pool ID の直値
+# =================================================================
+
 REGION = os.environ.get('REGION')
-COGNITO_USER_POOL_ID = os.environ.get('AUTH_MYMADAMISAPPB2BF781D_USERPOOLID')
-# DynamoDB テーブル名を環境変数から動的に構築
-USER_TABLE_NAME = f"User-{os.environ.get('API_MYMADAMISAPP_GRAPHQLAPIIDOUTPUT')}-{os.environ.get('ENV')}"
 
 cognito_client = boto3.client('cognito-idp', region_name=REGION)
 dynamodb_client = boto3.resource('dynamodb', region_name=REGION)
@@ -64,19 +67,18 @@ def handler(event, context):
         
         # (3) bioのサニタイズとバリデーション (5.2.5, 6.2.7)
         sanitized_bio = sanitize_bio(new_bio)
-        if len(sanitized_bio) > 160: # (5.3 DynamoDB 定義に基づく)
+        if len(sanitized_bio) > 160: 
             raise ValueError("自己紹介は160文字以下である必要があります。")
 
         # (4) Cognito User Pool の更新 (5.2.5 - preferred_username の同期)
         cognito_client.admin_update_user_attributes(
-            UserPoolId=COGNITO_USER_POOL_ID,
+            UserPoolId=COGNITO_USER_POOL_ID, # ★ 直値を使用
             Username=cognito_username,
             UserAttributes=[
                 {
                     'Name': 'preferred_username',
                     'Value': new_username
                 },
-                # bio, twitter_id は Cognito カスタム属性の廃止 (6.3.3) により更新しない
             ]
         )
 
@@ -89,8 +91,7 @@ def handler(event, context):
         expression_attribute_values = {
             ':new_un': new_username,
             ':new_bio': sanitized_bio,
-            # Amplify の自動更新タイムスタンプを模倣するため、現在時刻を使用
-            ':updatedAt': str(int(context.get_remaining_time_in_millis() / 1000)),
+            ':updatedAt': str(Decimal(context.get_remaining_time_in_millis() / 1000)),
         }
         
         user_table.update_item(
@@ -108,11 +109,10 @@ def handler(event, context):
         })
 
     except ValueError as e:
-        # バリデーションエラー
-        print(f"Validation Error: {e}")
+        # バリデーションエラーをクライアントに返す
         return json.dumps({"error": str(e)})
 
     except Exception as e:
-        # その他のエラー
+        # CognitoやDynamoDBのエラーを含むその他のエラーをキャッチし、クライアントに返す
         print(f"An unexpected error occurred: {e}")
         return json.dumps({"error": f"プロフィールの更新に失敗しました: {e}"})

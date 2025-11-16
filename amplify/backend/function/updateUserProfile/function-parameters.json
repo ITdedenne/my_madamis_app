@@ -1,3 +1,17 @@
 {
-  "lambdaLayers": []
+  "lambdaLayers": [],
+  "permissions": {
+    "auth": {
+      "mymadamisappb2bf781d": [
+        "read"
+      ]
+    },
+    "api": {
+      "mymadamisapp": [
+        "Query",
+        "Mutation",
+        "Subscription"
+      ]
+    }
+  }
 }

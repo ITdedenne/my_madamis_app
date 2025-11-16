@@ -1,6 +1,35 @@
 [
   {
-    "Action": [],
-    "Resource": []
+    "Action": [
+      "cognito-idp:AdminUpdateUserAttributes"
+    ],
+    "Resource": [
+      {
+        "Fn::Sub": [
+          "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/ap-northeast-1_cNMzs7UkA",
+          {}
+        ]
+      }
+    ]
+  },
+  {
+    "Action": [
+      "dynamodb:UpdateItem",
+      "dynamodb:GetItem"
+    ],
+    "Resource": [
+      {
+        "Fn::Sub": [
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-eju77evq3javlfhhc6o5pecapy-dev",
+          {}
+        ]
+      },
+      {
+        "Fn::Sub": [
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-eju77evq3javlfhhc6o5pecapy-dev/index/*",
+          {}
+        ]
+      }
+    ]
   }
 ]

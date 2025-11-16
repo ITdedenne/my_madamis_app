@@ -8,16 +8,14 @@ import 'package:my_madamis_app/features/profile/domain/repositories/profile_repo
 class ProfileRepositoryImpl implements ProfileRepository {
   
   // GraphQL Mutation (Lambda) を呼び出すためのドキュメント
+  // ★ 修正箇所: @function ディレクティブを削除
   static const _updateUserProfileMutation = r'''
     mutation UpdateUserProfile($username: String!, $bio: String) {
       updateUserProfile(username: $username, bio: $bio)
-        @function(name: "updateUserProfile-${env}") {
-        message
-        username
-        bio
-      }
+      // @function(name: "updateUserProfile-${env}") はスキーマ定義内のみ有効
     }
   ''';
+
 
   @override
   Future<UserProfile> fetchUserProfile() async {
@@ -39,14 +37,12 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<void> updateUserProfile(UserProfile profile) async {
-    // ★★★ 修正箇所: Cognito 直接更新から GraphQL Mutation (Lambda) 呼び出しへ切り替え (5.2.5) ★★★
     try {
       final request = GraphQLRequest(
         document: _updateUserProfileMutation,
         variables: {
           'username': profile.username,
           'bio': profile.bio,
-          // twitterId は Lambda 側で処理しないため、GraphQL Mutation の引数には含めない
         },
         authorizationMode: APIAuthorizationType.userPools,
       );
@@ -54,14 +50,19 @@ class ProfileRepositoryImpl implements ProfileRepository {
       final response = await Amplify.API.mutate(request: request).response;
 
       if (response.hasErrors) {
-        throw Exception('GraphQL Error: ${response.errors.map((e) => e.message).join(", ")}');
-      }
-
-      final body = jsonDecode(response.data!);
-      final lambdaResponse = body['updateUserProfile'];
-      
-      if (lambdaResponse != null && lambdaResponse['error'] != null) {
-        throw Exception(lambdaResponse['error']);
+        // Lambda の実行が成功し、Lambda がエラー JSON を返した場合の対応
+        if (response.data != null) {
+            try {
+                final body = jsonDecode(response.data!);
+                if (body['updateUserProfile'] != null && body['updateUserProfile']['error'] != null) {
+                    throw Exception(body['updateUserProfile']['error']);
+                }
+            } catch (_) {
+                // JSON パース失敗または想定外の形式
+            }
+        }
+        
+        throw Exception('GraphQL Mutation Error: ${response.errors.map((e) => e.message).join(", ")}');
       }
       
     } on Exception catch (e) {
