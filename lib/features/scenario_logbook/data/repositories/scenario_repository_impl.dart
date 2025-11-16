@@ -16,7 +16,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   List<String>? _cachedAuthorNames;
 
   ScenarioRepositoryImpl() {
-    // コンストラクタ内のダミーデータ生成ロジックは削除済み
+    // コンストラクタ
   }
 
   // --- 共通ヘルパー関数 (変更なし) ---
@@ -74,7 +74,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     try {
       // 1. S3から `Authors.json` をダウンロード
       final authorDownload = await Amplify.Storage.downloadData(
-        key: 'public/Authors.json', // ★ 修正: 'public/' プレフィックス
+        key: 'Authors.json', // ★ 修正: 'public/' プレフィックス
         options: const StorageDownloadDataOptions(
           accessLevel: StorageAccessLevel.guest, // ★ 修正: .guest
         ),
@@ -120,7 +120,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
       // 2. S3から `Scenarios.json` をダウンロード
       final scenarioDownload = await Amplify.Storage.downloadData(
-        key: 'public/Scenarios.json', // ★ 修正: 'public/' プレフィックス
+        key: 'Scenarios.json', // ★ 修正: 'public/' プレフィックス
         options: const StorageDownloadDataOptions(
           accessLevel: StorageAccessLevel.guest, // ★ 修正: .guest
         ),
@@ -226,7 +226,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       .where((us) => us.scenario != null) 
       .map((us) {
         final scenarioModel = us.scenario!;
-        // ★ 修正: Scenario.fromModel を正しく呼び出す
         final scenarioEntity = Scenario.fromModel(
           scenarioModel, 
           scenarioModel.author?.authorName ?? '不明な作者',
@@ -255,7 +254,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     if (existing != null) {
       // 2. 既存レコードを更新
       const updateDoc = r'''
-        mutation UpdateUserScenario($input: UpdateUserScenarioInput!) {
+        mutation UpdateUserScenario(\$input: UpdateUserScenarioInput!) {
           updateUserScenario(input: $input) {
             id
             status
