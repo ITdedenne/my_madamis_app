@@ -1,12 +1,28 @@
 // ファイルパス: lib/features/profile/data/repositories/profile_repository_impl.dart
 
+import 'dart:convert';
 import 'package:amplify_flutter/amplify_flutter.dart' hide UserProfile;
 import 'package:my_madamis_app/features/profile/domain/entities/user_profile.dart';
 import 'package:my_madamis_app/features/profile/domain/repositories/profile_repository.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
+  
+  // GraphQL Mutation (Lambda) を呼び出すためのドキュメント
+  static const _updateUserProfileMutation = r'''
+    mutation UpdateUserProfile($username: String!, $bio: String) {
+      updateUserProfile(username: $username, bio: $bio)
+        @function(name: "updateUserProfile-${env}") {
+        message
+        username
+        bio
+      }
+    }
+  ''';
+
   @override
   Future<UserProfile> fetchUserProfile() async {
+    // Note: DynamoDB から bio/twitterId を取得するロジックは、まだ実装していません。
+    // 今は Cognito から取得できる情報のみに制限します。
     final attributes = await Amplify.Auth.fetchUserAttributes();
 
     final username = attributes
@@ -14,7 +30,7 @@ class ProfileRepositoryImpl implements ProfileRepository {
             orElse: () => const AuthUserAttribute(userAttributeKey: AuthUserAttributeKey.preferredUsername, value: ''))
         .value;
     
-    // 要件 6.3.3: Cognitoカスタム属性の廃止に伴い、取得処理を修正 (DynamoDBへの移行が完了するまで空文字を返す)
+    // DynamoDB からのデータ取得が未実装のため、一旦空文字を返す
     const bio = ''; 
     const twitterId = ''; 
 
@@ -23,13 +39,34 @@ class ProfileRepositoryImpl implements ProfileRepository {
 
   @override
   Future<void> updateUserProfile(UserProfile profile) async {
-    final attributesToUpdate = [
-      AuthUserAttribute(
-        userAttributeKey: AuthUserAttributeKey.preferredUsername,
-        value: profile.username,
-      ),
-      // 要件 6.3.3: Cognitoカスタム属性の廃止に伴い、bio/twitterIdの更新を削除
-    ];
-    await Amplify.Auth.updateUserAttributes(attributes: attributesToUpdate);
+    // ★★★ 修正箇所: Cognito 直接更新から GraphQL Mutation (Lambda) 呼び出しへ切り替え (5.2.5) ★★★
+    try {
+      final request = GraphQLRequest(
+        document: _updateUserProfileMutation,
+        variables: {
+          'username': profile.username,
+          'bio': profile.bio,
+          // twitterId は Lambda 側で処理しないため、GraphQL Mutation の引数には含めない
+        },
+        authorizationMode: APIAuthorizationType.userPools,
+      );
+
+      final response = await Amplify.API.mutate(request: request).response;
+
+      if (response.hasErrors) {
+        throw Exception('GraphQL Error: ${response.errors.map((e) => e.message).join(", ")}');
+      }
+
+      final body = jsonDecode(response.data!);
+      final lambdaResponse = body['updateUserProfile'];
+      
+      if (lambdaResponse != null && lambdaResponse['error'] != null) {
+        throw Exception(lambdaResponse['error']);
+      }
+      
+    } on Exception catch (e) {
+      safePrint('Failed to update profile via Lambda: $e');
+      rethrow;
+    }
   }
 }

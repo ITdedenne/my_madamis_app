@@ -46,6 +46,7 @@ class ProfilePage extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _buildSectionTitle('自己紹介'),
                   const SizedBox(height: 8),
+                  // 6.2.7 準拠: 単純な Text ウィジェットで表示
                   Text(
                     profileState.profile!.bio.isNotEmpty
                         ? profileState.profile!.bio
@@ -53,14 +54,7 @@ class ProfilePage extends ConsumerWidget {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                   const SizedBox(height: 24),
-                  _buildSectionTitle('X (Twitter)'),
-                  const SizedBox(height: 8),
-                  Text(
-                    profileState.profile!.twitterId.isNotEmpty
-                        ? '@${profileState.profile!.twitterId}'
-                        : 'X IDが設定されていません。',
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
+                  // ★ 修正箇所: X (Twitter) ID のセクションを削除
                 ],
               ),
             ProfileStatus.initial => const SizedBox.shrink(),
