@@ -8,11 +8,10 @@ import 'package:my_madamis_app/features/profile/domain/repositories/profile_repo
 class ProfileRepositoryImpl implements ProfileRepository {
   
   // GraphQL Mutation (Lambda) を呼び出すためのドキュメント
-  // ★ 修正箇所: @function ディレクティブを削除
+  // ★ 修正箇所: @function ディレクティブを削除し、標準形式にする
   static const _updateUserProfileMutation = r'''
     mutation UpdateUserProfile($username: String!, $bio: String) {
       updateUserProfile(username: $username, bio: $bio)
-      // @function(name: "updateUserProfile-${env}") はスキーマ定義内のみ有効
     }
   ''';
 

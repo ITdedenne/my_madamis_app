@@ -99,7 +99,7 @@ type Query {
 type Mutation {
   updateUserProfile(username: String!, bio: String): String
     @function(name: "updateUserProfile-${env}")
-    @auth(rules: [{ allow: owner }])
+    @auth(rules: [{ allow: private }])
 
   deleteUserAccount: String
     @function(name: "deleteUserAccount-${env}")
