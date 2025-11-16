@@ -19,11 +19,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     // コンストラクタ内のダミーデータ生成ロジックは削除済み
   }
 
-  // --- 共通ヘルパー関数: 現在認証済みのユーザーIDを取得 (変更なし) ---
+  // --- 共通ヘルパー関数 (変更なし) ---
   Future<String> _getCurrentUserId() async {
     try {
       final attributes = await Amplify.Auth.fetchUserAttributes();
-      // CognitoのUser ID (sub) を取得
       return attributes
           .firstWhere((a) => a.userAttributeKey == AuthUserAttributeKey.sub) 
           .value;
@@ -33,9 +32,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     }
   }
 
-  // ヘルパー関数: UserScenarioをFilterで検索し、既存レコードのIDを取得 (変更なし)
   Future<amplify_models.UserScenario?> _findExistingUserScenario(String userId, String scenarioId) async {
-      // Raw GraphQL Queryを使用し、userIdとscenarioIdでレコードを検索
       const queryDoc = r'''
         query ListUserScenarios($filter: ModelUserScenarioFilterInput, $limit: Int) {
           listUserScenarios(filter: $filter, limit: $limit) {
@@ -46,7 +43,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           }
         }
       ''';
-
       final queryRequest = GraphQLRequest<PaginatedResult<amplify_models.UserScenario>>(
           document: queryDoc,
           modelType: const PaginatedModelType(amplify_models.UserScenario.classType),
@@ -55,21 +51,19 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
                   'userId': {'eq': userId},
                   'scenarioId': {'eq': scenarioId},
               },
-              'limit': 1, // 1件のみ取得
+              'limit': 1,
           },
           decodePath: 'listUserScenarios',
           authorizationMode: APIAuthorizationType.userPools,
       );
-
       final response = await Amplify.API.query(request: queryRequest).response;
-
       if (response.data == null || response.data!.items.isEmpty || response.hasErrors) {
           return null;
       }
       return response.data!.items.firstOrNull;
   }
 
-  // --- ★★★ ここから S3対応で修正 ★★★ ---
+  // --- ★★★ S3対応で修正 ★★★ ---
 
   // S3からAuthor Mapを取得する共通関数
   Future<Map<String, String>> _fetchAndCacheAuthorMap() async {
@@ -79,21 +73,18 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     
     try {
       // 1. S3から `Authors.json` をダウンロード
-      // (S3の権限設定 'authAccess: ["READ"]' に合わせ、.protected を使用)
       final authorDownload = await Amplify.Storage.downloadData(
-        key: 'Authors.json', // S3ルートに配置
+        key: 'public/Authors.json', // ★ 修正: 'public/' プレフィックス
         options: const StorageDownloadDataOptions(
-          accessLevel: StorageAccessLevel.protected, 
+          accessLevel: StorageAccessLevel.guest, // ★ 修正: .guest
         ),
       ).result;
       
-      // ★ 修正: .data.bytes -> .bytes
       final authorList = jsonDecode(utf8.decode(authorDownload.bytes)) as List;
       
       // 2. 高速アクセスのため Author Map を作成 (authorId -> authorName)
       final authorMap = <String, String>{};
       for (var author in authorList) {
-        // ★ isVisible: true の作者のみをマップに追加
         if (author['isVisible'] == true) {
           authorMap[author['authorId']] = author['authorName'];
         }
@@ -112,14 +103,13 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
   @override
   Future<List<Scenario>> fetchScenarios({
-    required int page, // (S3化により page, limit, searchTerm 等はリポジトリ層では無視されます)
+    required int page,
     int limit = 50,
     String? searchTerm,
     RangeValues? playerCountRange,
     GmRequirement? gmRequirement,
     String? authorName,
   }) async {
-    // 既にキャッシュがあればS3から再取得しない
     if (_cachedScenarios != null) {
       return _cachedScenarios!;
     }
@@ -130,21 +120,17 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
       // 2. S3から `Scenarios.json` をダウンロード
       final scenarioDownload = await Amplify.Storage.downloadData(
-        key: 'Scenarios.json', // S3ルートに配置
+        key: 'public/Scenarios.json', // ★ 修正: 'public/' プレフィックス
         options: const StorageDownloadDataOptions(
-          accessLevel: StorageAccessLevel.protected, 
+          accessLevel: StorageAccessLevel.guest, // ★ 修正: .guest
         ),
       ).result;
       
-      // ★ 修正: .data.bytes -> .bytes
       final scenarioList = jsonDecode(utf8.decode(scenarioDownload.bytes)) as List;
 
       // 3. JSONデータを Scenario エンティティに変換
       final List<Scenario> allScenarios = [];
       for (var scenarioJson in scenarioList) {
-        // ★ フィルタリング:
-        // 1. シナリオ自体が 'isVisible: true'
-        // 2. AND シナリオの作者が (isVisible: true の) authorMap に存在する
         if (scenarioJson['isVisible'] == true && authorMap.containsKey(scenarioJson['authorId'])) {
           final authorName = authorMap[scenarioJson['authorId']]!;
           allScenarios.add(Scenario.fromJson(scenarioJson, authorName));
@@ -190,7 +176,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   // --- ★★★ S3対応の修正ここまで ★★★ ---
 
 
-  // --- fetchMyList (変更なし。Scenario.fromModel を使う) ---
+  // --- fetchMyList (変更なし) ---
   @override
   Future<List<UserScenario>> fetchMyList() async {
     final userId = await _getCurrentUserId();
@@ -260,12 +246,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     final statusString = status.toStringValue();
 
     if (status.isUnregistered) {
-      // 未登録状態に戻す場合はレコードを削除
       await removeUserScenarioStatus(scenarioId);
       return;
     }
     
-    // 1. 既存レコードを検索してIDを取得
     final existing = await _findExistingUserScenario(userId, scenarioId);
 
     if (existing != null) {
@@ -284,7 +268,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         modelType: amplify_models.UserScenario.classType,
         variables: {
           'input': {
-            'id': existing.id, // 既存レコードのIDは必須
+            'id': existing.id,
             'status': statusString,
           }
         },
@@ -319,8 +303,8 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         variables: {
           'input': {
             'id': newId,
-            'userId': userId, // ★重要: userIdを直接渡す
-            'scenarioId': scenarioId, // ★重要: scenarioIdを直接渡す
+            'userId': userId,
+            'scenarioId': scenarioId,
             'status': statusString,
           }
         },
@@ -358,7 +342,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         modelType: amplify_models.UserScenario.classType,
         variables: {
           'input': {
-            'id': existing.id, // 削除にはIDが必須
+            'id': existing.id,
           }
         },
         authorizationMode: APIAuthorizationType.userPools,
