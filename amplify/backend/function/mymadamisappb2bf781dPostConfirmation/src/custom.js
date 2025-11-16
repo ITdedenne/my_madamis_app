@@ -1,31 +1,31 @@
+// /workspaces/my_madamis_app/amplify/backend/function/mymadamisappb2bf781dPostConfirmation/src/custom.js
+
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
 
-// =================================================================
-// ★ 修正箇所: 環境非依存の定義を削除し、直値でテーブル名を指定
-// WARNING: 本番環境デプロイ前にこの直値を動的変数に戻してください
-const USER_TABLE_NAME = 'User-eju77evq3javlfhhc6o5pecapy-dev'; 
-// =================================================================
+// ... (USER_TABLE_NAME, MAX_RETRIES, generatePublicUserId, ddbDocClient の定義は省略/維持) ...
+const USER_TABLE_NAME = 'User-eju77evq3javlfhhc6o5pecapy-dev'; // ★ 直値を使用
 const MAX_RETRIES = 5;
 
 // DynamoDBクライアントの初期化
 const client = new DynamoDBClient({ region: process.env.REGION });
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
-/**
- * 7桁のユニークな publicUserId を生成する (5.2.1)
- * @returns {string} 7桁の数字文字列
- */
-function generatePublicUserId() {
-  // 1000000 から 9999999 の範囲でランダムな整数を生成
-  return (Math.floor(Math.random() * 9000000) + 1000000).toString();
-}
+// ... (generatePublicUserId 関数は省略/維持) ...
 
 /**
  * Cognito Post Confirmation トリガーハンドラ (5.2.1)
  * @type {import('@types/aws-lambda').PostConfirmationTriggerHandler}
  */
 exports.handler = async (event) => {
+  // ★★★ 修正箇所: イベントソースの確認 ★★★
+  // 新規ユーザー登録イベント (ConfirmSignUp) 以外では処理をスキップ
+  if (event.triggerSource !== 'PostConfirmation_ConfirmSignUp') {
+    console.log(`Skipping Post Confirmation for triggerSource: ${event.triggerSource}`);
+    return event;
+  }
+  // ★★★ 修正箇所 終了 ★★★
+
   if (!event.request.userAttributes.sub) {
     console.error("No Cognito Sub ID found in event.");
     return event; 
