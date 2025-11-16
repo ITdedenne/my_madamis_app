@@ -2,6 +2,7 @@
 
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart'; // RangeValuesのために必要
+import 'dart:convert'; // ★ jsonDecode のために追加
 import 'package:my_madamis_app/models/ModelProvider.dart' as amplify_models;
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
@@ -9,11 +10,16 @@ import '../../domain/repositories/scenario_repository.dart';
 
 class ScenarioRepositoryImpl implements ScenarioRepository {
   
+  // ★ キャッシュ用の変数を追加
+  List<Scenario>? _cachedScenarios;
+  Map<String, String>? _cachedAuthorMap;
+  List<String>? _cachedAuthorNames;
+
   ScenarioRepositoryImpl() {
     // コンストラクタ内のダミーデータ生成ロジックは削除済み
   }
 
-  // --- 共通ヘルパー関数: 現在認証済みのユーザーIDを取得 ---
+  // --- 共通ヘルパー関数: 現在認証済みのユーザーIDを取得 (変更なし) ---
   Future<String> _getCurrentUserId() async {
     try {
       final attributes = await Amplify.Auth.fetchUserAttributes();
@@ -27,7 +33,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     }
   }
 
-  // ヘルパー関数: UserScenarioをFilterで検索し、既存レコードのIDを取得
+  // ヘルパー関数: UserScenarioをFilterで検索し、既存レコードのIDを取得 (変更なし)
   Future<amplify_models.UserScenario?> _findExistingUserScenario(String userId, String scenarioId) async {
       // Raw GraphQL Queryを使用し、userIdとscenarioIdでレコードを検索
       const queryDoc = r'''
@@ -63,172 +69,128 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       return response.data!.items.firstOrNull;
   }
 
-  // --- fetchScenarios, _calculateNextToken, fetchAllAuthorNames は変更なし ---
+  // --- ★★★ ここから S3対応で修正 ★★★ ---
+
+  // S3からAuthor Mapを取得する共通関数
+  Future<Map<String, String>> _fetchAndCacheAuthorMap() async {
+    if (_cachedAuthorMap != null) {
+      return _cachedAuthorMap!;
+    }
+    
+    try {
+      // 1. S3から `Authors.json` をダウンロード
+      // (S3の権限設定 'authAccess: ["READ"]' に合わせ、.protected を使用)
+      final authorDownload = await Amplify.Storage.downloadData(
+        key: 'Authors.json', // S3ルートに配置
+        options: const StorageDownloadDataOptions(
+          accessLevel: StorageAccessLevel.protected, 
+        ),
+      ).result;
+      
+      // ★ 修正: .data.bytes -> .bytes
+      final authorList = jsonDecode(utf8.decode(authorDownload.bytes)) as List;
+      
+      // 2. 高速アクセスのため Author Map を作成 (authorId -> authorName)
+      final authorMap = <String, String>{};
+      for (var author in authorList) {
+        // ★ isVisible: true の作者のみをマップに追加
+        if (author['isVisible'] == true) {
+          authorMap[author['authorId']] = author['authorName'];
+        }
+      }
+      _cachedAuthorMap = authorMap;
+      return _cachedAuthorMap!;
+
+    } on StorageException catch (e) {
+      safePrint('S3からのAuthorデータ取得に失敗しました: ${e.message}');
+      throw Exception('作者データの取得に失敗しました: ${e.message}');
+    } catch (e) {
+      safePrint('Authorデータのパースに失敗しました: $e');
+      throw Exception('作者データの処理に失敗しました: $e');
+    }
+  }
+
   @override
   Future<List<Scenario>> fetchScenarios({
-    required int page,
+    required int page, // (S3化により page, limit, searchTerm 等はリポジトリ層では無視されます)
     int limit = 50,
     String? searchTerm,
     RangeValues? playerCountRange,
     GmRequirement? gmRequirement,
     String? authorName,
   }) async {
-    try {
-      // 1. GraphQLクエリの準備 (既存のロジックを維持)
-      final Map<String, dynamic> filter = {};
-      final List<Map<String, dynamic>> orConditions = [];
-
-      if (searchTerm != null && searchTerm.isNotEmpty) {
-        orConditions.add({
-          'title': {'contains': searchTerm}
-        });
-      }
-
-      if (gmRequirement != null) {
-        filter['gmRequirement'] = {'eq': gmRequirement.toGraphQLString()};
-      }
-
-      if (playerCountRange != null) {
-        final start = playerCountRange.start.round();
-        final end = playerCountRange.end.round();
-        
-        filter['minPlayerCount'] = {'le': end};
-        filter['maxPlayerCount'] = {'ge': start};
-      }
-
-      if (orConditions.isNotEmpty) {
-        filter['or'] = orConditions;
-      }
-
-      final offset = (page - 1) * limit;
-
-      final Map<String, dynamic> queryVariables = {
-        'limit': limit,
-        'nextToken': page > 1 ? _calculateNextToken(offset) : null,
-      };
-      if (filter.isNotEmpty) {
-        queryVariables['filter'] = filter;
-      }
-
-      // GraphQLリクエストの作成
-      final request = GraphQLRequest<PaginatedResult<amplify_models.Scenario>>(
-        document: '''
-          query ListScenarios(\$filter: ModelScenarioFilterInput, \$limit: Int, \$nextToken: String) {
-            listScenarios(filter: \$filter, limit: \$limit, nextToken: \$nextToken) {
-              items {
-                id
-                title
-                minPlayerCount
-                maxPlayerCount
-                gmRequirement
-                storeUrl
-                author {
-                  id
-                  authorName
-                }
-              }
-              nextToken
-            }
-          }
-        ''',
-        modelType: const PaginatedModelType(amplify_models.Scenario.classType),
-        variables: queryVariables, 
-        decodePath: 'listScenarios', 
-        authorizationMode: APIAuthorizationType.apiKey,
-      );
-
-      safePrint('Executing GraphQL Query with variables: ${request.variables}');
-
-      final response = await Amplify.API.query(request: request).response;
-      final data = response.data;
-
-      if (data == null || response.hasErrors) {
-        safePrint('GraphQL Errors: ${response.errors}');
-        throw Exception('Failed to fetch scenarios: ${response.errors}');
-      }
-
-      // 2. 取得したAmplifyモデルをドメインエンティティに変換
-      List<Scenario> scenarios = data.items
-          .where((scenarioModel) => scenarioModel != null)
-          .map((scenarioModel) {
-              final authorNameStr = scenarioModel!.author?.authorName ?? '';
-              return Scenario.fromModel(scenarioModel, authorNameStr);
-            })
-          .toList();
-
-      // クライアントサイドでのフィルタリング
-      if (authorName != null && authorName.isNotEmpty) {
-        scenarios = scenarios.where((s) => s.authorName == authorName).toList();
-      }
-
-      if (searchTerm != null && searchTerm.isNotEmpty) {
-         scenarios = scenarios.where((s) => 
-           s.title.toLowerCase().contains(searchTerm.toLowerCase()) ||
-           s.authorName.toLowerCase().contains(searchTerm.toLowerCase())
-         ).toList();
-      }
-
-      return scenarios;
-
-    } on ApiException catch (e) {
-      safePrint('Failed to fetch scenarios: ${e.message}');
-      throw Exception('Failed to fetch scenarios: ${e.message}');
-    } catch (e) {
-      safePrint('An unexpected error occurred: $e');
-      rethrow;
+    // 既にキャッシュがあればS3から再取得しない
+    if (_cachedScenarios != null) {
+      return _cachedScenarios!;
     }
-  }
 
-  String _calculateNextToken(int offset) {
-    return '{"offset":$offset}'; 
+    try {
+      // 1. S3から `Authors.json` を取得 (キャッシュ利用)
+      final authorMap = await _fetchAndCacheAuthorMap();
+
+      // 2. S3から `Scenarios.json` をダウンロード
+      final scenarioDownload = await Amplify.Storage.downloadData(
+        key: 'Scenarios.json', // S3ルートに配置
+        options: const StorageDownloadDataOptions(
+          accessLevel: StorageAccessLevel.protected, 
+        ),
+      ).result;
+      
+      // ★ 修正: .data.bytes -> .bytes
+      final scenarioList = jsonDecode(utf8.decode(scenarioDownload.bytes)) as List;
+
+      // 3. JSONデータを Scenario エンティティに変換
+      final List<Scenario> allScenarios = [];
+      for (var scenarioJson in scenarioList) {
+        // ★ フィルタリング:
+        // 1. シナリオ自体が 'isVisible: true'
+        // 2. AND シナリオの作者が (isVisible: true の) authorMap に存在する
+        if (scenarioJson['isVisible'] == true && authorMap.containsKey(scenarioJson['authorId'])) {
+          final authorName = authorMap[scenarioJson['authorId']]!;
+          allScenarios.add(Scenario.fromJson(scenarioJson, authorName));
+        }
+      }
+      
+      _cachedScenarios = allScenarios;
+      return _cachedScenarios!;
+
+    } on StorageException catch (e) {
+      safePrint('S3からのScenarioデータ取得に失敗しました: ${e.message}');
+      throw Exception('シナリオデータの取得に失敗しました: ${e.message}');
+    } catch (e) {
+      safePrint('Scenarioデータのパースに失敗しました: $e');
+      throw Exception('シナリオデータの処理に失敗しました: $e');
+    }
   }
 
   @override
   Future<List<String>> fetchAllAuthorNames() async {
-     try {
-       const graphQLDocument = '''
-         query ListAuthors(\$limit: Int) {
-           listAuthors(limit: \$limit) {
-             items {
-               authorName
-             }
-           }
-         }
-       ''';
+    if (_cachedAuthorNames != null) {
+      return _cachedAuthorNames!;
+    }
+    
+    try {
+      // 1. S3から `Authors.json` を取得 (キャッシュ利用)
+      final authorMap = await _fetchAndCacheAuthorMap();
 
-      final request = GraphQLRequest<PaginatedResult<amplify_models.Author>>(
-         document: graphQLDocument,
-         modelType: const PaginatedModelType(amplify_models.Author.classType),
-         variables: {'limit': 1000},
-         decodePath: 'listAuthors',
-         authorizationMode: APIAuthorizationType.apiKey,
-      );
+      // 2. authorMap の値 (isVisible: true の authorName) からリストを作成
+      _cachedAuthorNames = authorMap.values
+          .toSet() // 重複除去
+          .toList()
+          ..sort(); // ソート
+          
+      return _cachedAuthorNames!;
 
-       final response = await Amplify.API.query(request: request).response;
-       final data = response.data;
-
-       if (data == null || response.hasErrors) {
-         safePrint('GraphQL Errors fetching authors: ${response.errors}');
-         throw Exception('Failed to fetch authors: ${response.errors}');
-       }
-
-       return data.items
-           .where((author) => author != null && author.authorName.isNotEmpty)
-           .map((author) => author!.authorName)
-           .toSet()
-           .toList()
-           ..sort();
-
-     } on ApiException catch (e) {
-       safePrint('Failed to fetch author names: ${e.message}');
-       throw Exception('Failed to fetch author names: ${e.message}');
-     } catch (e) {
-       safePrint('An unexpected error occurred fetching author names: $e');
-       rethrow;
-     }
+    } catch (e) {
+      safePrint('作者名の取得または処理に失敗しました: $e');
+      rethrow;
+    }
   }
   
-  // --- fetchMyList (変更なし) ---
+  // --- ★★★ S3対応の修正ここまで ★★★ ---
+
+
+  // --- fetchMyList (変更なし。Scenario.fromModel を使う) ---
   @override
   Future<List<UserScenario>> fetchMyList() async {
     final userId = await _getCurrentUserId();
@@ -248,6 +210,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
                 gmRequirement
                 storeUrl
                 author {
+                  id 
                   authorName
                 }
               }
@@ -277,9 +240,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       .where((us) => us.scenario != null) 
       .map((us) {
         final scenarioModel = us.scenario!;
+        // ★ 修正: Scenario.fromModel を正しく呼び出す
         final scenarioEntity = Scenario.fromModel(
           scenarioModel, 
-          scenarioModel.author?.authorName ?? '',
+          scenarioModel.author?.authorName ?? '不明な作者',
         );
         return UserScenario(
           scenario: scenarioEntity,
@@ -288,7 +252,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       }).toList();
   }
 
-  // --- updateUserScenarioStatus (Raw GraphQL Mutationに修正) ---
+  // --- updateUserScenarioStatus (変更なし) ---
   @override
   Future<void> updateUserScenarioStatus(
       String scenarioId, UserScenarioStatus status) async {
@@ -372,7 +336,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     }
   }
 
-  // --- removeUserScenarioStatus (Raw GraphQL Mutationに修正) ---
+  // --- removeUserScenarioStatus (変更なし) ---
   @override
   Future<void> removeUserScenarioStatus(String scenarioId) async {
     final userId = await _getCurrentUserId();

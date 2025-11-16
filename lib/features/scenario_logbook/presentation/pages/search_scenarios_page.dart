@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart'; // ★ 追加
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
@@ -38,8 +39,12 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
       }
     });
 
-    final state = ref.watch(searchScenariosViewModelProvider);
+    // ★ 修正: state -> searchState にリネーム (フィルターチップ表示用)
+    final searchState = ref.watch(searchScenariosViewModelProvider);
     final notifier = ref.read(searchScenariosViewModelProvider.notifier);
+    
+    // ★ 追加: フィルタリングされた結果(AsyncValue)を監視
+    final scenariosAsync = ref.watch(filteredScenariosProvider);
     
     // ユーザーのステータス全体を監視
     final userStatuses = ref.watch(userScenarioStatusProvider);
@@ -70,7 +75,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
                     context: context,
                     isScrollControlled: true,
                     builder: (_) => FilterBottomSheet(
-                      currentFilter: state.filter,
+                      currentFilter: searchState.filter, // ★ 修正
                       onApplyFilter: notifier.applyFilter,
                     ),
                   );
@@ -79,10 +84,10 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
             ],
           ),
         ),
-        _buildFilterChips(state, notifier),
-        Expanded(child: _buildBody(state, userStatuses)),
-        if (!state.isLoading && state.scenarios.isNotEmpty)
-          _buildPaginationControls(state, notifier),
+        _buildFilterChips(searchState, notifier), // ★ 修正
+        // ★ 修正: _buildBody の呼び出し
+        Expanded(child: _buildBody(context, scenariosAsync, userStatuses)),
+        // ★ 修正: ページネーションコントロールを削除
       ],
     );
   }
@@ -145,46 +150,39 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     );
   }
 
-  Widget _buildBody(SearchScenariosState state, Map<String, UserScenarioStatus> userStatuses) {
-    if (state.isLoading) return const Center(child: CircularProgressIndicator());
-    if (state.errorMessage != null) return Center(child: Text('エラー: ${state.errorMessage}'));
-    if (state.scenarios.isEmpty) return const Center(child: Text('シナリオが見つかりません。'));
+  // ★ 修正: _buildBody のシグネチャと内容を変更
+  Widget _buildBody(
+    BuildContext context, 
+    AsyncValue<List<Scenario>> scenariosAsync, 
+    Map<String, UserScenarioStatus> userStatuses
+  ) {
+    // AsyncValue を .when でハンドリング
+    return scenariosAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, stack) => Center(child: Text('エラー: ${e.toString()}')),
+      data: (scenarios) {
+        if (scenarios.isEmpty) {
+          return const Center(child: Text('シナリオが見つかりません。'));
+        }
 
-    return ListView.builder(
-      itemCount: state.scenarios.length,
-      itemBuilder: (context, index) {
-        final scenario = state.scenarios[index];
-        return ScenarioListItem(
-          scenario: scenario,
-          status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
-          onStatusChanged: (newStatus) {
-            // ステータス更新は一元管理されたNotifierに依頼
-            ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
-            ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
+        return ListView.builder(
+          itemCount: scenarios.length,
+          itemBuilder: (context, index) {
+            final scenario = scenarios[index];
+            return ScenarioListItem(
+              scenario: scenario,
+              status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
+              onStatusChanged: (newStatus) {
+                // ステータス更新は一元管理されたNotifierに依頼
+                ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
+                ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
+              },
+            );
           },
         );
       },
     );
   }
 
-  Widget _buildPaginationControls(SearchScenariosState state, SearchScenariosViewModel notifier) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 8,
-        runSpacing: 8,
-        children: List.generate(state.totalPages, (index) {
-          final page = index + 1;
-          return ElevatedButton(
-            onPressed: state.currentPage == page ? null : () => notifier.goToPage(page),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: state.currentPage == page ? Colors.blue.shade100 : null,
-            ),
-            child: Text('$page'),
-          );
-        }),
-      ),
-    );
-  }
+  // ★ 修正: _buildPaginationControls は不要になったため削除
 }

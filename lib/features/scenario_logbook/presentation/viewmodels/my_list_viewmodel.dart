@@ -53,10 +53,12 @@ final filteredAndSortedMyListProvider = Provider<Map<String, List<UserScenario>>
       });
 
       return groupBy(filtered, (UserScenario s) {
-        final key = (pageState.sortOrder == SortOrder.byTitle)
-            ? s.scenario.title.substring(0, 1)
-            : s.scenario.authorName.substring(0, 1);
-        return key.toUpperCase();
+        // ★ 修正: 空文字の場合のクラッシュ回避
+        final keySource = (pageState.sortOrder == SortOrder.byTitle)
+            ? s.scenario.title
+            : s.scenario.authorName;
+        if (keySource.isEmpty) return '?';
+        return keySource.substring(0, 1).toUpperCase();
       });
     },
     loading: () => {}, // ロード中は空のマップ
@@ -65,11 +67,12 @@ final filteredAndSortedMyListProvider = Provider<Map<String, List<UserScenario>>
 });
 
 
-// 全シナリオデータを保持するProvider（Repositoryから一度だけ取得）
+// 全シナリオデータを保持するProvider（RepositoryからS3経由で一度だけ取得）
 final allScenariosProvider = FutureProvider<List<Scenario>>((ref) async {
   final repo = ref.watch(scenarioRepositoryProvider);
-  // ページングなしで全件取得
-  return repo.fetchScenarios(page: 1, limit: 200);
+  // ★ 修正: ページング引数を削除 (S3から全件取得する)
+  // (page: 1 はリポジトリ側で無視されるが、明示的に引数なしで呼ぶ)
+  return repo.fetchScenarios(page: 1);
 });
 
 class MyListPageState {

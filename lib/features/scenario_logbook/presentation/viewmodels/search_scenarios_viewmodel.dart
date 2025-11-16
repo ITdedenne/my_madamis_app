@@ -4,10 +4,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_scenarios_usecase.dart';
-import 'package:my_madamis_app/providers.dart';
+// ★ 修正: UseCaseとProviderのインポートを削除
+// ★ 修正: my_list_viewmodel.dart をインポート
+import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart'; 
 
-final getScenariosUseCaseProvider = Provider((ref) => GetScenariosUseCase(ref.watch(scenarioRepositoryProvider)));
+// ★ 修正: getScenariosUseCaseProvider を削除
 
 class SearchFilter {
   final RangeValues playerCountRange;
@@ -30,92 +31,120 @@ class SearchFilter {
 }
 
 class SearchScenariosState {
-  final bool isLoading;
+  // ★ 修正: isLoading, scenarios, pagination を削除
   final String? errorMessage;
-  final List<Scenario> scenarios;
-  final int currentPage;
-  final int totalPages;
   final String? successMessage;
   final SearchFilter filter;
+  final String searchTerm; // ★ 検索クエリをStateで管理
 
   SearchScenariosState({
-    this.isLoading = false,
     this.errorMessage,
-    this.scenarios = const [],
-    this.currentPage = 1,
-    this.totalPages = 1,
     this.successMessage,
     SearchFilter? filter,
+    this.searchTerm = '',
   }) : filter = filter ?? SearchFilter.initial();
 
   SearchScenariosState copyWith({
-    bool? isLoading,
     String? errorMessage,
+    String? successMessage,
+    SearchFilter? filter,
+    String? searchTerm,
+    // ★ 修正: null許容型に変更
+    bool? isLoading,
     List<Scenario>? scenarios,
     int? currentPage,
     int? totalPages,
-    String? successMessage,
-    SearchFilter? filter,
   }) {
     return SearchScenariosState(
-      isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
-      scenarios: scenarios ?? this.scenarios,
-      currentPage: currentPage ?? this.currentPage,
-      totalPages: totalPages ?? this.totalPages,
       successMessage: successMessage,
       filter: filter ?? this.filter,
+      searchTerm: searchTerm ?? this.searchTerm,
     );
   }
 }
 
+// ★ 修正: ViewModelProvider の定義 (StateNotifierProvider)
 final searchScenariosViewModelProvider =
     StateNotifierProvider<SearchScenariosViewModel, SearchScenariosState>((ref) {
-  final getScenarios = ref.watch(getScenariosUseCaseProvider);
-  return SearchScenariosViewModel(getScenarios);
+  // ★ 修正: Usecaseの依存を削除
+  return SearchScenariosViewModel();
 });
 
+// ★ 追加: フィルタリングされた結果を返す Provider
+final filteredScenariosProvider = Provider<AsyncValue<List<Scenario>>>((ref) {
+  // 1. S3からの全シナリオデータを監視
+  final allScenariosAsync = ref.watch(allScenariosProvider);
+  // 2. UIの検索/フィルター条件を監視
+  final searchState = ref.watch(searchScenariosViewModelProvider);
+
+  return allScenariosAsync.when(
+    data: (allScenarios) {
+      List<Scenario> filtered = allScenarios;
+
+      // 3. クライアントサイド フィルタリング
+      final filter = searchState.filter;
+      final term = searchState.searchTerm.toLowerCase();
+      
+      // 3a. 検索
+      if (term.isNotEmpty) {
+        filtered = filtered.where((s) {
+          return s.title.toLowerCase().contains(term) ||
+                 s.authorName.toLowerCase().contains(term);
+        }).toList();
+      }
+      
+      // 3b. フィルター (人数)
+      final start = filter.playerCountRange.start.round();
+      final end = filter.playerCountRange.end.round();
+      if (start > 1 || end < 15) {
+         filtered = filtered.where((s) {
+          // (min <= end) AND (max >= start)
+          return s.minPlayerCount <= end && s.maxPlayerCount >= start;
+        }).toList();
+      }
+
+      // 3c. フィルター (GM)
+      if (filter.gmRequirement != null) {
+        filtered = filtered.where((s) => s.gmRequirement == filter.gmRequirement).toList();
+      }
+
+      // 3d. フィルター (作者)
+      if (filter.authorName != null && filter.authorName!.isNotEmpty) {
+        filtered = filtered.where((s) => s.authorName == filter.authorName).toList();
+      }
+      
+      return AsyncValue.data(filtered);
+    },
+    loading: () => const AsyncValue.loading(),
+    error: (e, s) => AsyncValue.error(e, s),
+  );
+});
+
+
+// ★ 修正: ViewModel は フィルター/検索クエリの "状態" のみを管理
 class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
-  final GetScenariosUseCase _getScenarios;
   Timer? _debounce;
-  static const int _limit = 50;
-  static const int _totalScenarios = 175;
+  // ★ 修正: Usecase と ページネーション関連の変数を削除
 
-  SearchScenariosViewModel(this._getScenarios) : super(SearchScenariosState()) {
-    goToPage(1);
+  // ★ 修正: Usecaseの依存を削除
+  SearchScenariosViewModel() : super(SearchScenariosState()) {
+    // ★ 修正: goToPage(1) の呼び出しを削除
   }
 
-  Future<void> goToPage(int page, {String? searchTerm}) async {
-    state = state.copyWith(isLoading: true, currentPage: page, errorMessage: null);
-    try {
-      final newScenarios = await _getScenarios(
-        page: page,
-        limit: _limit,
-        searchTerm: searchTerm,
-        playerCountRange: state.filter.playerCountRange,
-        gmRequirement: state.filter.gmRequirement,
-        authorName: state.filter.authorName,
-      );
-      state = state.copyWith(
-        isLoading: false,
-        scenarios: newScenarios,
-        totalPages: (_totalScenarios / _limit).ceil(),
-      );
-    } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
-    }
-  }
+  // ★ 修正: ページネーション (goToPage) は削除
 
   void onSearchTermChanged(String term) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
-    _debounce = Timer(const Duration(milliseconds: 500), () {
-      goToPage(1, searchTerm: term);
+    _debounce = Timer(const Duration(milliseconds: 300), () {
+      // APIコールはせず、Stateを更新するだけ
+      state = state.copyWith(searchTerm: term);
     });
   }
 
   void applyFilter(SearchFilter newFilter) {
+    // APIコールはせず、Stateを更新するだけ
     state = state.copyWith(filter: newFilter);
-    goToPage(1);
   }
 
   void showSuccessMessage(String message) {
