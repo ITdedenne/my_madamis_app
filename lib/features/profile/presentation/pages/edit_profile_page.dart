@@ -18,8 +18,7 @@ class EditProfilePage extends ConsumerStatefulWidget {
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   late final TextEditingController _usernameController;
   late final TextEditingController _bioController;
-  // 修正: _twitterController を削除
-  // late final TextEditingController _twitterController; 
+  // 修正: _twitterController は削除済み
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -27,16 +26,14 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     super.initState();
     _usernameController = TextEditingController(text: widget.initialProfile.username);
     _bioController = TextEditingController(text: widget.initialProfile.bio);
-    // 修正: _twitterController の初期化を削除
-    // _twitterController = TextEditingController(text: widget.initialProfile.twitterId);
+    // _twitterController は削除済み
   }
 
   @override
   void dispose() {
     _usernameController.dispose();
     _bioController.dispose();
-    // 修正: _twitterController の破棄を削除
-    // _twitterController.dispose();
+    // _twitterController.dispose() は削除済み
     super.dispose();
   }
 
@@ -79,8 +76,7 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                 maxLines: 5,
                 maxLength: 160, 
               ),
-              const SizedBox(height: 24), // X ID の SizedBox 削除に伴いマージ
-              // ★ 修正箇所: X (Twitter) ID の入力フィールドを削除
+              const SizedBox(height: 24), 
               PrimaryButton(
                 text: '変更を保存',
                 isLoading: viewModelState.status == EditProfileStatus.loading,
@@ -89,7 +85,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
                     notifier.updateProfile(
                       username: _usernameController.text,
                       bio: _bioController.text,
-                      // 修正: twitterId は空文字を渡すか、引数を省略する (今回は空文字)
                       twitterId: '', 
                     );
                   }
