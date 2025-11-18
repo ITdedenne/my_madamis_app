@@ -26,9 +26,10 @@ import 'package:amplify_core/amplify_core.dart' as amplify_core;
 /** This is an auto generated class representing the UserRelationship type in your schema. */
 class UserRelationship extends amplify_core.Model {
   static const classType = const _UserRelationshipModelType();
-  final String id;
+  final String? _followingId;
+  final String? _followedId;
+  final User? _followingUser;
   final User? _followedUser;
-  final User? _followerUser;
   final amplify_core.TemporalDateTime? _createdAt;
   final amplify_core.TemporalDateTime? _updatedAt;
 
@@ -37,20 +38,56 @@ class UserRelationship extends amplify_core.Model {
   
   @Deprecated('[getId] is being deprecated in favor of custom primary key feature. Use getter [modelIdentifier] to get model identifier.')
   @override
-  String getId() => id;
+  String getId() => modelIdentifier.serializeAsString();
   
   UserRelationshipModelIdentifier get modelIdentifier {
+    try {
       return UserRelationshipModelIdentifier(
-        id: id
+        followingId: _followingId!,
+        followedId: _followedId!
       );
+    } catch(e) {
+      throw amplify_core.AmplifyCodeGenModelException(
+          amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
+          recoverySuggestion:
+            amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastRecoverySuggestion,
+          underlyingException: e.toString()
+          );
+    }
+  }
+  
+  String get followingId {
+    try {
+      return _followingId!;
+    } catch(e) {
+      throw amplify_core.AmplifyCodeGenModelException(
+          amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
+          recoverySuggestion:
+            amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastRecoverySuggestion,
+          underlyingException: e.toString()
+          );
+    }
+  }
+  
+  String get followedId {
+    try {
+      return _followedId!;
+    } catch(e) {
+      throw amplify_core.AmplifyCodeGenModelException(
+          amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
+          recoverySuggestion:
+            amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastRecoverySuggestion,
+          underlyingException: e.toString()
+          );
+    }
+  }
+  
+  User? get followingUser {
+    return _followingUser;
   }
   
   User? get followedUser {
     return _followedUser;
-  }
-  
-  User? get followerUser {
-    return _followerUser;
   }
   
   amplify_core.TemporalDateTime? get createdAt {
@@ -61,13 +98,14 @@ class UserRelationship extends amplify_core.Model {
     return _updatedAt;
   }
   
-  const UserRelationship._internal({required this.id, followedUser, followerUser, createdAt, updatedAt}): _followedUser = followedUser, _followerUser = followerUser, _createdAt = createdAt, _updatedAt = updatedAt;
+  const UserRelationship._internal({required followingId, required followedId, followingUser, followedUser, createdAt, updatedAt}): _followingId = followingId, _followedId = followedId, _followingUser = followingUser, _followedUser = followedUser, _createdAt = createdAt, _updatedAt = updatedAt;
   
-  factory UserRelationship({String? id, User? followedUser, User? followerUser}) {
+  factory UserRelationship({required String followingId, required String followedId, User? followingUser, User? followedUser}) {
     return UserRelationship._internal(
-      id: id == null ? amplify_core.UUID.getUUID() : id,
-      followedUser: followedUser,
-      followerUser: followerUser);
+      followingId: followingId,
+      followedId: followedId,
+      followingUser: followingUser,
+      followedUser: followedUser);
   }
   
   bool equals(Object other) {
@@ -78,9 +116,10 @@ class UserRelationship extends amplify_core.Model {
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
     return other is UserRelationship &&
-      id == other.id &&
-      _followedUser == other._followedUser &&
-      _followerUser == other._followerUser;
+      _followingId == other._followingId &&
+      _followedId == other._followedId &&
+      _followingUser == other._followingUser &&
+      _followedUser == other._followedUser;
   }
   
   @override
@@ -91,68 +130,74 @@ class UserRelationship extends amplify_core.Model {
     var buffer = new StringBuffer();
     
     buffer.write("UserRelationship {");
-    buffer.write("id=" + "$id" + ", ");
-    buffer.write("followedUser=" + (_followedUser != null ? _followedUser.toString() : "null") + ", ");
-    buffer.write("followerUser=" + (_followerUser != null ? _followerUser.toString() : "null") + ", ");
-    buffer.write("createdAt=" + (_createdAt != null ? _createdAt.format() : "null") + ", ");
-    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt.format() : "null"));
+    buffer.write("followingId=" + "$_followingId" + ", ");
+    buffer.write("followedId=" + "$_followedId" + ", ");
+    buffer.write("followingUser=" + (_followingUser != null ? _followingUser!.toString() : "null") + ", ");
+    buffer.write("followedUser=" + (_followedUser != null ? _followedUser!.toString() : "null") + ", ");
+    buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
+    buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
     
     return buffer.toString();
   }
   
-  UserRelationship copyWith({User? followedUser, User? followerUser}) {
+  UserRelationship copyWith({User? followingUser, User? followedUser}) {
     return UserRelationship._internal(
-      id: id,
-      followedUser: followedUser ?? this.followedUser,
-      followerUser: followerUser ?? this.followerUser);
+      followingId: followingId,
+      followedId: followedId,
+      followingUser: followingUser ?? this.followingUser,
+      followedUser: followedUser ?? this.followedUser);
   }
   
   UserRelationship copyWithModelFieldValues({
-    ModelFieldValue<User?>? followedUser,
-    ModelFieldValue<User?>? followerUser
+    ModelFieldValue<User?>? followingUser,
+    ModelFieldValue<User?>? followedUser
   }) {
     return UserRelationship._internal(
-      id: id,
-      followedUser: followedUser == null ? this.followedUser : followedUser.value,
-      followerUser: followerUser == null ? this.followerUser : followerUser.value
+      followingId: followingId,
+      followedId: followedId,
+      followingUser: followingUser == null ? this.followingUser : followingUser.value,
+      followedUser: followedUser == null ? this.followedUser : followedUser.value
     );
   }
   
   UserRelationship.fromJson(Map<String, dynamic> json)  
-    : id = json['id'],
+    : _followingId = json['followingId'],
+      _followedId = json['followedId'],
+      _followingUser = json['followingUser'] != null
+        ? json['followingUser']['serializedData'] != null
+          ? User.fromJson(new Map<String, dynamic>.from(json['followingUser']['serializedData']))
+          : User.fromJson(new Map<String, dynamic>.from(json['followingUser']))
+        : null,
       _followedUser = json['followedUser'] != null
         ? json['followedUser']['serializedData'] != null
           ? User.fromJson(new Map<String, dynamic>.from(json['followedUser']['serializedData']))
           : User.fromJson(new Map<String, dynamic>.from(json['followedUser']))
         : null,
-      _followerUser = json['followerUser'] != null
-        ? json['followerUser']['serializedData'] != null
-          ? User.fromJson(new Map<String, dynamic>.from(json['followerUser']['serializedData']))
-          : User.fromJson(new Map<String, dynamic>.from(json['followerUser']))
-        : null,
       _createdAt = json['createdAt'] != null ? amplify_core.TemporalDateTime.fromString(json['createdAt']) : null,
       _updatedAt = json['updatedAt'] != null ? amplify_core.TemporalDateTime.fromString(json['updatedAt']) : null;
   
   Map<String, dynamic> toJson() => {
-    'id': id, 'followedUser': _followedUser?.toJson(), 'followerUser': _followerUser?.toJson(), 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
+    'followingId': _followingId, 'followedId': _followedId, 'followingUser': _followingUser?.toJson(), 'followedUser': _followedUser?.toJson(), 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
   };
   
   Map<String, Object?> toMap() => {
-    'id': id,
+    'followingId': _followingId,
+    'followedId': _followedId,
+    'followingUser': _followingUser,
     'followedUser': _followedUser,
-    'followerUser': _followerUser,
     'createdAt': _createdAt,
     'updatedAt': _updatedAt
   };
 
   static final amplify_core.QueryModelIdentifier<UserRelationshipModelIdentifier> MODEL_IDENTIFIER = amplify_core.QueryModelIdentifier<UserRelationshipModelIdentifier>();
-  static final ID = amplify_core.QueryField(fieldName: "id");
+  static final FOLLOWINGID = amplify_core.QueryField(fieldName: "followingId");
+  static final FOLLOWEDID = amplify_core.QueryField(fieldName: "followedId");
+  static final FOLLOWINGUSER = amplify_core.QueryField(
+    fieldName: "followingUser",
+    fieldType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.model, ofModelName: 'User'));
   static final FOLLOWEDUSER = amplify_core.QueryField(
     fieldName: "followedUser",
-    fieldType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.model, ofModelName: 'User'));
-  static final FOLLOWERUSER = amplify_core.QueryField(
-    fieldName: "followerUser",
     fieldType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.model, ofModelName: 'User'));
   static var schema = amplify_core.Model.defineSchema(define: (amplify_core.ModelSchemaDefinition modelSchemaDefinition) {
     modelSchemaDefinition.name = "UserRelationship";
@@ -166,28 +211,40 @@ class UserRelationship extends amplify_core.Model {
         provider: amplify_core.AuthRuleProvider.USERPOOLS,
         operations: const [
           amplify_core.ModelOperation.CREATE,
-          amplify_core.ModelOperation.DELETE,
-          amplify_core.ModelOperation.READ
+          amplify_core.ModelOperation.READ,
+          amplify_core.ModelOperation.DELETE
         ])
     ];
     
     modelSchemaDefinition.indexes = [
-      amplify_core.ModelIndex(fields: const ["followingId", "followedId"], name: "byFollowing")
+      amplify_core.ModelIndex(fields: const ["followingId", "followedId"], name: null),
+      amplify_core.ModelIndex(fields: const ["followingId"], name: "byFollowing"),
+      amplify_core.ModelIndex(fields: const ["followedId", "followingId"], name: "byFollowed")
     ];
     
-    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.id());
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
+      key: UserRelationship.FOLLOWINGID,
+      isRequired: true,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
+      key: UserRelationship.FOLLOWEDID,
+      isRequired: true,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
+    ));
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.belongsTo(
+      key: UserRelationship.FOLLOWINGUSER,
+      isRequired: false,
+      targetNames: ['followingId'],
+      ofModelName: 'User'
+    ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.belongsTo(
       key: UserRelationship.FOLLOWEDUSER,
       isRequired: false,
       targetNames: ['followedId'],
-      ofModelName: 'User'
-    ));
-    
-    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.belongsTo(
-      key: UserRelationship.FOLLOWERUSER,
-      isRequired: false,
-      targetNames: ['followingId'],
       ofModelName: 'User'
     ));
     
@@ -226,15 +283,21 @@ class _UserRelationshipModelType extends amplify_core.ModelType<UserRelationship
  * of [UserRelationship] in your schema.
  */
 class UserRelationshipModelIdentifier implements amplify_core.ModelIdentifier<UserRelationship> {
-  final String id;
+  final String followingId;
+  final String followedId;
 
-  /** Create an instance of UserRelationshipModelIdentifier using [id] the primary key. */
+  /**
+   * Create an instance of UserRelationshipModelIdentifier using [followingId] the primary key.
+   * And [followedId] the sort key.
+   */
   const UserRelationshipModelIdentifier({
-    required this.id});
+    required this.followingId,
+    required this.followedId});
   
   @override
   Map<String, dynamic> serializeAsMap() => (<String, dynamic>{
-    'id': id
+    'followingId': followingId,
+    'followedId': followedId
   });
   
   @override
@@ -247,7 +310,7 @@ class UserRelationshipModelIdentifier implements amplify_core.ModelIdentifier<Us
   String serializeAsString() => serializeAsMap().values.join('#');
   
   @override
-  String toString() => 'UserRelationshipModelIdentifier(id: $id)';
+  String toString() => 'UserRelationshipModelIdentifier(followingId: $followingId, followedId: $followedId)';
   
   @override
   bool operator ==(Object other) {
@@ -256,10 +319,12 @@ class UserRelationshipModelIdentifier implements amplify_core.ModelIdentifier<Us
     }
     
     return other is UserRelationshipModelIdentifier &&
-      id == other.id;
+      followingId == other.followingId &&
+      followedId == other.followedId;
   }
   
   @override
   int get hashCode =>
-    id.hashCode;
+    followingId.hashCode ^
+    followedId.hashCode;
 }

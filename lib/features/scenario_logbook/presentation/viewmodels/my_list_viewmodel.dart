@@ -7,29 +7,31 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_sc
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/providers.dart';
 
-enum MyListFilter { all, played, possessed }
+// 要件 3.3.5: マイリストフィルタ (GM検討中を追加)
+enum MyListFilter { all, played, possessed, wantsToGm }
 enum SortOrder { byTitle, byAuthor }
 
-// このViewModelはUIの状態（フィルターやソート順）のみを管理する
+// UI状態（フィルターとソート順）
 final myListPageStateProvider = StateProvider<MyListPageState>((ref) {
   return MyListPageState();
 });
 
-// 表示用のデータを生成するProvider
+// フィルタリング済みリストを提供するProvider
 final filteredAndSortedMyListProvider = Provider<Map<String, List<UserScenario>>>((ref) {
   final allScenariosAsync = ref.watch(allScenariosProvider);
   final userStatuses = ref.watch(userScenarioStatusProvider);
   final pageState = ref.watch(myListPageStateProvider);
 
-  // 全シナリオデータがロードされるまで待つ
   return allScenariosAsync.when(
     data: (allScenarios) {
+      // ステータスがあるものだけを結合
       final myList = userStatuses.entries.map((entry) {
         final scenario = allScenarios.firstWhereOrNull((s) => s.id == entry.key);
         if (scenario == null) return null;
         return UserScenario(scenario: scenario, status: entry.value);
       }).whereType<UserScenario>().toList();
 
+      // フィルタリング
       List<UserScenario> filtered;
       switch (pageState.filter) {
         case MyListFilter.played:
@@ -38,11 +40,15 @@ final filteredAndSortedMyListProvider = Provider<Map<String, List<UserScenario>>
         case MyListFilter.possessed:
           filtered = myList.where((s) => s.status.isPossessed).toList();
           break;
+        case MyListFilter.wantsToGm: // ★ 追加
+          filtered = myList.where((s) => s.status.wantsToGm).toList();
+          break;
         case MyListFilter.all:
           filtered = myList;
           break;
       }
       
+      // ソート
       filtered.sort((a, b) {
         switch (pageState.sortOrder) {
           case SortOrder.byTitle:
@@ -52,8 +58,8 @@ final filteredAndSortedMyListProvider = Provider<Map<String, List<UserScenario>>
         }
       });
 
+      // グルーピング (頭文字など)
       return groupBy(filtered, (UserScenario s) {
-        // ★ 修正: 空文字の場合のクラッシュ回避
         final keySource = (pageState.sortOrder == SortOrder.byTitle)
             ? s.scenario.title
             : s.scenario.authorName;
@@ -61,17 +67,14 @@ final filteredAndSortedMyListProvider = Provider<Map<String, List<UserScenario>>
         return keySource.substring(0, 1).toUpperCase();
       });
     },
-    loading: () => {}, // ロード中は空のマップ
-    error: (err, stack) => {}, // エラー時も空のマップ
+    loading: () => {},
+    error: (err, stack) => {},
   );
 });
 
-
-// 全シナリオデータを保持するProvider（RepositoryからS3経由で一度だけ取得）
+// S3から全シナリオを取得するProvider
 final allScenariosProvider = FutureProvider<List<Scenario>>((ref) async {
   final repo = ref.watch(scenarioRepositoryProvider);
-  // ★ 修正: ページング引数を削除 (S3から全件取得する)
-  // (page: 1 はリポジトリ側で無視されるが、明示的に引数なしで呼ぶ)
   return repo.fetchScenarios(page: 1);
 });
 
