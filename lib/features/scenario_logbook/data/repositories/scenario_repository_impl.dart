@@ -4,7 +4,7 @@ import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:collection/collection.dart'; // firstWhereOrNull用
+import 'package:collection/collection.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart' as amplify_models;
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
@@ -30,7 +30,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     }
   }
 
-  // 複合キー対応。IDではなく、UserScenarioオブジェクト自体を返すかnullを返す
+  // 複合キーを使って既存レコードを取得する
   Future<amplify_models.UserScenario?> _findExistingUserScenario(String userId, String scenarioId) async {
       try {
         final request = ModelQueries.get(
@@ -48,7 +48,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       }
   }
 
-  // --- S3関連処理 ---
+  // --- S3関連処理 (変更なし) ---
   Future<Map<String, String>> _fetchAndCacheAuthorMap() async {
     if (_cachedAuthorMap != null) return _cachedAuthorMap!;
     
@@ -112,12 +112,11 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     return _cachedAuthorNames!;
   }
   
-  // --- fetchMyList ---
+  // --- fetchMyList (変更なし) ---
   @override
   Future<List<UserScenario>> fetchMyList() async {
     final userId = await _getCurrentUserId();
 
-    // 1. DynamoDBからUserScenario（ステータスのみ）を取得
     const queryDoc = r'''
       query ListUserScenarios($userId: ID!) {
         listUserScenarios(filter: { userId: { eq: $userId } }, limit: 2000) {
@@ -147,13 +146,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
     final userScenarioModels = response.data!.items.whereType<amplify_models.UserScenario>().toList();
 
-    // 2. S3から全シナリオ情報を取得 (キャッシュ活用)
     final allScenarios = await fetchScenarios(page: 1);
 
-    // 3. メモリ上で結合 (Join)
     final List<UserScenario> result = [];
     for (var usModel in userScenarioModels) {
-      // scenarioId でマッチング
       final scenario = allScenarios.firstWhereOrNull((s) => s.id == usModel.scenarioId);
       
       if (scenario != null) {
@@ -167,7 +163,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         ));
       }
     }
-
     return result;
   }
 
@@ -177,12 +172,14 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       String scenarioId, UserScenarioStatus status) async {
     final userId = await _getCurrentUserId();
 
+    // 【ここが重要】全てfalse (isUnregistered) なら削除処理へ分岐
     if (status.isUnregistered) {
+      safePrint('Status is all false. Removing UserScenario: $scenarioId');
       await removeUserScenarioStatus(scenarioId);
       return;
     }
     
-    // Modelのコンストラクタとメソッドを使って作成・更新
+    // 登録・更新用のモデルを作成
     final userScenario = amplify_models.UserScenario(
       userId: userId,
       scenarioId: scenarioId,
@@ -195,7 +192,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       final existing = await _findExistingUserScenario(userId, scenarioId);
       
       if (existing != null) {
-         // 更新: PKを指定して更新
+         // 更新
          final updatedItem = existing.copyWith(
             isPlayed: status.isPlayed,
             isPossessed: status.isPossessed,
@@ -220,27 +217,26 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     final userId = await _getCurrentUserId();
 
     try {
-      // 削除対象のモデルを作成（IDのみでOK）
-      final userScenarioToDelete = amplify_models.UserScenario(
-          userId: userId, 
-          scenarioId: scenarioId, 
-          isPlayed: false, isPossessed: false, wantsToGm: false // ダミー値
-      );
-      
-      // ★★★ 修正箇所 ★★★
-      // .userId ではなく .USERID (大文字) を使用
-      // .scenarioId ではなく .SCENARIOID (大文字) を使用
-      final request = ModelMutations.delete(
-          userScenarioToDelete,
-          where: amplify_models.UserScenario.USERID.eq(userId) & 
-                 amplify_models.UserScenario.SCENARIOID.eq(scenarioId)
-      );
+      // 1. まず確実に既存データを取得する
+      final existing = await _findExistingUserScenario(userId, scenarioId);
 
-      await Amplify.API.mutate(request: request).response;
-      safePrint('Removed UserScenario: $scenarioId');
+      if (existing != null) {
+        // 2. 取得したモデルインスタンスそのものを渡して削除する（最も確実な方法）
+        final request = ModelMutations.delete(existing);
+        final response = await Amplify.API.mutate(request: request).response;
+        
+        if (response.hasErrors) {
+           safePrint('削除中にGraphQLエラーが発生しました: ${response.errors}');
+        } else {
+           safePrint('Removed UserScenario successfully: $scenarioId');
+        }
+      } else {
+        safePrint('削除対象のUserScenarioが見つかりませんでした (すでに削除済みの可能性があります): $scenarioId');
+      }
     } catch (e) {
-      // 既にない場合は無視
-      safePrint('Error deleting scenario (might not exist): $e');
+      safePrint('Error deleting scenario: $e');
+      // 削除に関しては、すでに無い場合のエラーは無視してもUX上問題ない場合が多いですが、
+      // ログには残しておきます。
     }
   }
 }
