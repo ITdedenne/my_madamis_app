@@ -1,103 +1,39 @@
 // ファイルパス: lib/features/friends/presentation/pages/friends_page.dart
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/friends/presentation/pages/friends_list_page.dart';
 import 'package:my_madamis_app/features/friends/presentation/pages/user_search_page.dart';
-import 'package:my_madamis_app/features/friends/presentation/viewmodels/friends_viewmodel.dart';
-import 'package:my_madamis_app/features/friends/presentation/pages/friend_mylist_page.dart';
 
-class FriendsPage extends ConsumerWidget {
+class FriendsPage extends StatelessWidget {
   const FriendsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(friendsViewModelProvider);
-    final notifier = ref.read(friendsViewModelProvider.notifier);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('フレンズ'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_add),
-            tooltip: 'ユーザー検索',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const UserSearchPage()),
-              );
-            },
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2, // タブの数
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('フレンズ'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(
+                icon: Icon(Icons.person_search),
+                text: '探す',
+              ),
+              Tab(
+                icon: Icon(Icons.people),
+                text: '一覧',
+              ),
+            ],
           ),
-        ],
+        ),
+        body: const TabBarView(
+          children: [
+            UserSearchPage(),  // 0番目のタブ: 検索
+            FriendsListPage(), // 1番目のタブ: 一覧
+          ],
+        ),
       ),
-      body: state.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : state.followingUsers.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: const [
-                      Icon(Icons.people_outline, size: 64, color: Colors.grey),
-                      SizedBox(height: 16),
-                      Text(
-                        'まだフレンズがいません。\n右上のアイコンから検索して追加しましょう！',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                )
-              : RefreshIndicator(
-                  onRefresh: () => notifier.loadFollowingUsers(),
-                  child: ListView.builder(
-                    itemCount: state.followingUsers.length,
-                    itemBuilder: (context, index) {
-                      final user = state.followingUsers[index];
-                      return ListTile(
-                        leading: const CircleAvatar(child: Icon(Icons.person)),
-                        title: Text(user.username),
-                        subtitle: Text('ID: ${user.publicUserId}'),
-                        trailing: OutlinedButton(
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                title: const Text('フォロー解除'),
-                                content: Text('${user.username}さんのフォローを解除しますか？'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(context), 
-                                    child: const Text('キャンセル')
-                                  ),
-                                  TextButton(
-                                    onPressed: () {
-                                      notifier.unfollowUser(user.id);
-                                      Navigator.pop(context);
-                                    },
-                                    child: const Text('解除', style: TextStyle(color: Colors.red)),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                          child: const Text('解除'),
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => FriendMyListPage(
-                                targetUserId: user.id,
-                                targetUsername: user.username,
-                                targetBio: user.bio ?? '',
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
     );
   }
 }
