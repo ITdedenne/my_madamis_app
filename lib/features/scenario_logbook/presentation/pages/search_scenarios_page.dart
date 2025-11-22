@@ -10,7 +10,7 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/sc
 // --- レイアウト定数 (Magic Numbersの排除) ---
 const double _kMobileBreakpoint = 600.0; // スマホ/タブレット・PCの境界線
 const double _kMinCardWidth = 300.0;     // グリッド表示時のカード最小幅
-const double _kGridAspectRatio = 1.5;    // カードのアスペクト比 (3:2)
+const double _kGridAspectRatio = 2.0;    // PC: かなり横長 (テキスト専用に最適化)
 const double _kGridSpacing = 16.0;       // グリッド間のスペース
 const double _kListSpacing = 8.0;        // リスト間のスペース
 const double _kHorizontalPadding = 8.0;  // 画面左右のパディング
