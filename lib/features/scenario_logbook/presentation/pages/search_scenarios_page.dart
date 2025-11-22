@@ -1,13 +1,19 @@
-// ファイルパス: lib/features/scenario_logbook/presentation/pages/search_scenarios_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart'; // ★ 追加
+import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
+
+// --- レイアウト定数 (Magic Numbersの排除) ---
+const double _kMobileBreakpoint = 600.0; // スマホ/タブレット・PCの境界線
+const double _kMinCardWidth = 300.0;     // グリッド表示時のカード最小幅
+const double _kGridAspectRatio = 1.5;    // カードのアスペクト比 (3:2)
+const double _kGridSpacing = 16.0;       // グリッド間のスペース
+const double _kListSpacing = 8.0;        // リスト間のスペース
+const double _kHorizontalPadding = 8.0;  // 画面左右のパディング
 
 class SearchScenariosPage extends ConsumerStatefulWidget {
   const SearchScenariosPage({super.key});
@@ -39,20 +45,15 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
       }
     });
 
-    // ★ 修正: state -> searchState にリネーム (フィルターチップ表示用)
     final searchState = ref.watch(searchScenariosViewModelProvider);
     final notifier = ref.read(searchScenariosViewModelProvider.notifier);
-    
-    // ★ 追加: フィルタリングされた結果(AsyncValue)を監視
     final scenariosAsync = ref.watch(filteredScenariosProvider);
-    
-    // ユーザーのステータス全体を監視
     final userStatuses = ref.watch(userScenarioStatusProvider);
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+          padding: const EdgeInsets.fromLTRB(_kHorizontalPadding, 8, _kHorizontalPadding, 0),
           child: Row(
             children: [
               Expanded(
@@ -75,7 +76,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
                     context: context,
                     isScrollControlled: true,
                     builder: (_) => FilterBottomSheet(
-                      currentFilter: searchState.filter, // ★ 修正
+                      currentFilter: searchState.filter,
                       onApplyFilter: notifier.applyFilter,
                     ),
                   );
@@ -84,10 +85,10 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
             ],
           ),
         ),
-        _buildFilterChips(searchState, notifier), // ★ 修正
-        // ★ 修正: _buildBody の呼び出し
+        _buildFilterChips(searchState, notifier),
+        
+        // メインコンテンツ部分
         Expanded(child: _buildBody(context, scenariosAsync, userStatuses)),
-        // ★ 修正: ページネーションコントロールを削除
       ],
     );
   }
@@ -98,7 +99,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     }
     
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: _kHorizontalPadding, vertical: 4.0),
       child: Wrap(
         spacing: 6.0,
         runSpacing: 4.0,
@@ -150,13 +151,11 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     );
   }
 
-  // ★ 修正: _buildBody のシグネチャと内容を変更
   Widget _buildBody(
     BuildContext context, 
     AsyncValue<List<Scenario>> scenariosAsync, 
     Map<String, UserScenarioStatus> userStatuses
   ) {
-    // AsyncValue を .when でハンドリング
     return scenariosAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, stack) => Center(child: Text('エラー: ${e.toString()}')),
@@ -165,24 +164,52 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
           return const Center(child: Text('シナリオが見つかりません。'));
         }
 
-        return ListView.builder(
-          itemCount: scenarios.length,
-          itemBuilder: (context, index) {
-            final scenario = scenarios[index];
-            return ScenarioListItem(
-              scenario: scenario,
-              status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
-              onStatusChanged: (newStatus) {
-                // ステータス更新は一元管理されたNotifierに依頼
-                ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
-                ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
-              },
-            );
+        // ★ レスポンシブレイアウトの適用
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            // 画面幅が境界値を超えている場合はグリッド表示 (PC/タブレット)
+            if (constraints.maxWidth >= _kMobileBreakpoint) {
+              // 画面幅に合わせて列数を計算（最低幅を確保）
+              final crossAxisCount = (constraints.maxWidth / _kMinCardWidth).floor();
+              
+              return GridView.builder(
+                padding: const EdgeInsets.all(_kGridSpacing),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount > 0 ? crossAxisCount : 1, // 安全策
+                  childAspectRatio: _kGridAspectRatio, // カード比率 3:2
+                  crossAxisSpacing: _kGridSpacing,
+                  mainAxisSpacing: _kGridSpacing,
+                ),
+                itemCount: scenarios.length,
+                itemBuilder: (context, index) => _buildScenarioItem(scenarios[index], userStatuses),
+              );
+            } 
+            // 画面幅が狭い場合はリスト表示 (スマホ)
+            else {
+              return ListView.builder(
+                padding: const EdgeInsets.all(_kListSpacing),
+                itemCount: scenarios.length,
+                itemBuilder: (context, index) => Padding(
+                  padding: const EdgeInsets.only(bottom: _kListSpacing),
+                  child: _buildScenarioItem(scenarios[index], userStatuses),
+                ),
+              );
+            }
           },
         );
       },
     );
   }
 
-  // ★ 修正: _buildPaginationControls は不要になったため削除
+  // グリッドとリストで共通して使うアイテム生成メソッド
+  Widget _buildScenarioItem(Scenario scenario, Map<String, UserScenarioStatus> userStatuses) {
+    return ScenarioListItem(
+      scenario: scenario,
+      status: userStatuses[scenario.id] ?? const UserScenarioStatus(),
+      onStatusChanged: (newStatus) {
+        ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
+        ref.read(searchScenariosViewModelProvider.notifier).showSuccessMessage('手帳を更新しました');
+      },
+    );
+  }
 }
