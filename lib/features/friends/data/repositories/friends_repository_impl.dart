@@ -16,7 +16,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
 
   @override
   Future<List<User>> searchUsers(String query) async {
-    // 空白除去（前回の修正内容）
     final trimmedQuery = query.trim();
     
     if (trimmedQuery.isEmpty) return [];
@@ -33,7 +32,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
       where: User.USERNAME.contains(trimmedQuery),
     );
 
-    // 並列実行
     final responses = await Future.wait([
       Amplify.API.query(request: publicIdRequest).response,
       Amplify.API.query(request: usernameRequest).response,
@@ -69,17 +67,25 @@ class FriendsRepositoryImpl implements FriendsRepository {
     final response = await Amplify.API.mutate(request: request).response;
     
     if (response.hasErrors) {
-      // 重複エラー（既にフォロー済み）は無視して正常終了扱いにする（前回の修正内容）
-      final isAlreadyExistsError = response.errors.any(
-        (e) => e.message.contains('The conditional request failed')
-      );
+      // --- 暫定処置: 以下のエラーは無視して成功扱いにする ---
+      final errorMessage = response.errors.first.message;
+      
+      // 1. 既にフォロー済み (重複エラー)
+      final isAlreadyExists = errorMessage.contains('The conditional request failed');
+      
+      // 2. データ不整合による取得失敗 (ID不一致など)
+      final isDataMismatch = errorMessage.contains('Cannot return null for non-nullable type');
+      
+      // 3. サーバー側のシリアライズエラー (日付不正など)
+      final isSerializationError = errorMessage.contains('Can\'t serialize value') || 
+                                   errorMessage.contains('Unable to serialize');
 
-      if (isAlreadyExistsError) {
-        safePrint('User relationship already exists. Treating as success.');
-        return; 
+      if (isAlreadyExists || isDataMismatch || isSerializationError) {
+        safePrint('⚠️ 暫定対応: エラーを無視して成功とみなします: $errorMessage');
+        return; // エラーを投げずに終了
       }
 
-      throw Exception('Follow failed: ${response.errors.first.message}');
+      throw Exception('Follow failed: $errorMessage');
     }
   }
 
@@ -87,32 +93,31 @@ class FriendsRepositoryImpl implements FriendsRepository {
   Future<void> unfollowUser(String followedUserId) async {
     final currentUserId = await _getCurrentUserId();
     
-    // 削除対象を特定するためのモデルを作成 (PKとSKを設定)
     final relationship = UserRelationship(
-        followingId: currentUserId, 
-        followedId: followedUserId
+      followingId: currentUserId, 
+      followedId: followedUserId
     );
     
-    // ★ 修正ポイント: where句を削除し、シンプルな削除リクエストにする
-    // キー(relationship)さえ合っていれば削除されます。
-    // 権限チェック(@auth)はAmplify側で自動的に行われます。
     final request = ModelMutations.delete(relationship);
     
     final response = await Amplify.API.mutate(request: request).response;
     if (response.hasErrors) {
-      // 「既に存在しない」エラーは無視して良い
-      final isNotExistsError = response.errors.any(
-        (e) => e.message.contains('The conditional request failed') || 
-               e.message.contains('DynamoDB:ConditionalCheckFailedException')
-      );
-      
-      if (isNotExistsError) {
-         safePrint('Relationship not found or already deleted.');
+      // --- 暫定処置: 以下のエラーは無視して成功扱いにする ---
+      final errorMessage = response.errors.first.message;
+
+      // 1. 既に削除済み、または存在しない
+      final isNotExists = errorMessage.contains('The conditional request failed') || 
+                          errorMessage.contains('DynamoDB:ConditionalCheckFailedException');
+                          
+      // 2. データ不整合による取得失敗
+      final isDataMismatch = errorMessage.contains('Cannot return null for non-nullable type');
+
+      if (isNotExists || isDataMismatch) {
+         safePrint('⚠️ 暫定対応: エラーを無視して成功とみなします: $errorMessage');
          return;
       }
 
-      safePrint('Unfollow error: ${response.errors}');
-      throw Exception('Unfollow failed: ${response.errors.first.message}');
+      throw Exception('Unfollow failed: $errorMessage');
     }
   }
 
@@ -120,7 +125,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
   Future<List<User>> fetchFollowingUsers() async {
     final currentUserId = await _getCurrentUserId();
 
-    // PK(followingId)を直接クエリ
     final request = ModelQueries.list(
       UserRelationship.classType,
       where: UserRelationship.FOLLOWINGID.eq(currentUserId),
@@ -134,7 +138,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
 
     final relationships = response.data?.items.whereType<UserRelationship>() ?? [];
     
-    // リレーション (@belongsTo) から User オブジェクトを抽出
     return relationships
         .map((r) => r.followedUser)
         .whereType<User>()
