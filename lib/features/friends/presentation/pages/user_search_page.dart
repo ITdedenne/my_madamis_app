@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/friends/presentation/viewmodels/friends_viewmodel.dart';
 import 'package:my_madamis_app/features/friends/presentation/viewmodels/user_search_viewmodel.dart';
 
 class UserSearchPage extends ConsumerStatefulWidget {
@@ -22,25 +23,46 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(userSearchViewModelProvider);
-    final notifier = ref.read(userSearchViewModelProvider.notifier);
+    // 検索結果の状態
+    final searchState = ref.watch(userSearchViewModelProvider);
+    final searchNotifier = ref.read(userSearchViewModelProvider.notifier);
+    
+    // ★ 追加: フォロー状況を確認するためにフレンズ一覧の状態も監視する
+    final friendsState = ref.watch(friendsViewModelProvider);
+    final friendsNotifier = ref.read(friendsViewModelProvider.notifier);
 
+    // 検索用スナックバー制御 (フォロー成功/エラー)
     ref.listen<UserSearchState>(userSearchViewModelProvider, (prev, next) {
       if (next.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.errorMessage!), backgroundColor: Colors.red),
         );
-        notifier.clearMessages();
+        searchNotifier.clearMessages();
       }
       if (next.successMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.successMessage!)),
         );
-        notifier.clearMessages();
+        searchNotifier.clearMessages();
       }
     });
 
-    // Scaffoldを削除し、Columnで構成する
+    // ★ 追加: フレンズ用スナックバー制御 (解除成功/エラー)
+    ref.listen<FriendsState>(friendsViewModelProvider, (prev, next) {
+      if (next.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.errorMessage!), backgroundColor: Colors.red),
+        );
+        friendsNotifier.clearMessages();
+      }
+      if (next.successMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.successMessage!)),
+        );
+        friendsNotifier.clearMessages();
+      }
+    });
+
     return Column(
       children: [
         // 検索バーエリア
@@ -55,28 +77,31 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
-              contentPadding: EdgeInsets.zero, // 高さを少し抑える
+              contentPadding: EdgeInsets.zero,
               suffixIcon: IconButton(
                 icon: const Icon(Icons.arrow_forward),
-                onPressed: () => notifier.search(_searchController.text),
+                onPressed: () => searchNotifier.search(_searchController.text),
               ),
             ),
-            onSubmitted: (value) => notifier.search(value),
+            onSubmitted: (value) => searchNotifier.search(value),
           ),
         ),
 
         // 検索結果エリア
         Expanded(
-          child: state.isLoading
+          child: searchState.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : state.searchResults.isEmpty && _searchController.text.isNotEmpty && !state.isLoading
-                  // 検索したが結果が0件の場合の表示（オプション）
+              : searchState.searchResults.isEmpty && _searchController.text.isNotEmpty && !searchState.isLoading
                   ? const Center(child: Text('ユーザーが見つかりません'))
                   : ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      itemCount: state.searchResults.length,
+                      itemCount: searchState.searchResults.length,
                       itemBuilder: (context, index) {
-                        final user = state.searchResults[index];
+                        final user = searchState.searchResults[index];
+                        
+                        // ★ 追加: 既にフォローしているか判定
+                        final isFollowing = friendsState.followingUsers.any((u) => u.id == user.id);
+
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8.0),
                           elevation: 2,
@@ -107,16 +132,48 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
                                         ],
                                       ),
                                     ),
+                                    
+                                    // ★ 修正: ボタンの出し分け
                                     ElevatedButton(
-                                      onPressed: state.isProcessing
+                                      onPressed: searchState.isProcessing
                                           ? null
-                                          : () => notifier.followUser(user),
+                                          : () {
+                                              if (isFollowing) {
+                                                // ★ フォロー解除ダイアログを表示
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (_) => AlertDialog(
+                                                    title: const Text('フォロー解除'),
+                                                    content: Text('${user.username}さんのフォローを解除しますか？'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('キャンセル'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          friendsNotifier.unfollowUser(user.id);
+                                                          Navigator.pop(context);
+                                                        },
+                                                        child: const Text('解除', style: TextStyle(color: Colors.red)),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              } else {
+                                                // ★ フォロー実行
+                                                searchNotifier.followUser(user);
+                                              }
+                                            },
                                       style: ElevatedButton.styleFrom(
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(20),
                                         ),
+                                        // フォロー済みの場合は色を変える（オプション）
+                                        backgroundColor: isFollowing ? Colors.grey[300] : null,
+                                        foregroundColor: isFollowing ? Colors.black87 : null,
                                       ),
-                                      child: const Text('フォロー'),
+                                      child: Text(isFollowing ? 'フォロー済' : 'フォロー'),
                                     ),
                                   ],
                                 ),

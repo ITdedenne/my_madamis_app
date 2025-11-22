@@ -39,7 +39,8 @@ class UserSearchState {
   }
 }
 
-final userSearchViewModelProvider = StateNotifierProvider<UserSearchViewModel, UserSearchState>((ref) {
+// ★ 修正: autoDispose を追加。これにより、画面（このProviderを監視するWidget）が破棄されると状態もリセットされます。
+final userSearchViewModelProvider = StateNotifierProvider.autoDispose<UserSearchViewModel, UserSearchState>((ref) {
   return UserSearchViewModel(ref.watch(friendsRepositoryProvider), ref);
 });
 
@@ -78,8 +79,8 @@ class UserSearchViewModel extends StateNotifier<UserSearchState> {
         successMessage: '${user.username}さんをフォローしました',
       );
       
-      // フレンズ一覧を更新
-      _ref.read(friendsViewModelProvider.notifier).loadFollowingUsers();
+      // フレンズ一覧を更新して、検索画面側のボタン状態（フォロー済）にも即座に反映させる
+      await _ref.read(friendsViewModelProvider.notifier).loadFollowingUsers();
 
     } catch (e) {
       state = state.copyWith(isProcessing: false, errorMessage: e.toString());
@@ -94,5 +95,10 @@ class UserSearchViewModel extends StateNotifier<UserSearchState> {
       errorMessage: null,
       successMessage: null,
     );
+  }
+
+  // ★ 追加: 手動で検索結果をリセットしたい場合に使用
+  void clearSearch() {
+    state = UserSearchState();
   }
 }

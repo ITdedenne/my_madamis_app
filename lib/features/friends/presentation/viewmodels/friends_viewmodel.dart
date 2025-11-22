@@ -9,22 +9,26 @@ class FriendsState {
   final bool isLoading;
   final List<User> followingUsers;
   final String? errorMessage;
+  final String? successMessage; // ★ 追加: 成功メッセージ
 
   FriendsState({
     this.isLoading = false,
     this.followingUsers = const [],
     this.errorMessage,
+    this.successMessage,
   });
 
   FriendsState copyWith({
     bool? isLoading,
     List<User>? followingUsers,
     String? errorMessage,
+    String? successMessage,
   }) {
     return FriendsState(
       isLoading: isLoading ?? this.isLoading,
       followingUsers: followingUsers ?? this.followingUsers,
-      errorMessage: errorMessage,
+      errorMessage: errorMessage, // nullを渡せばクリアされる挙動はNotifierで制御
+      successMessage: successMessage,
     );
   }
 }
@@ -51,12 +55,34 @@ class FriendsViewModel extends StateNotifier<FriendsState> {
   }
 
   Future<void> unfollowUser(String userId) async {
+    // メッセージをクリアしてから処理開始
+    state = FriendsState(
+      isLoading: state.isLoading,
+      followingUsers: state.followingUsers,
+    );
+
     try {
       await _repository.unfollowUser(userId);
+      
+      // リストから削除してUI更新
       final updatedList = state.followingUsers.where((u) => u.id != userId).toList();
-      state = state.copyWith(followingUsers: updatedList);
+      
+      state = state.copyWith(
+        followingUsers: updatedList,
+        successMessage: '解除しました', // ★ 追加: 解除メッセージ
+      );
     } catch (e) {
       state = state.copyWith(errorMessage: 'フォロー解除に失敗しました: $e');
     }
+  }
+
+  // ★ 追加: メッセージクリア用
+  void clearMessages() {
+    state = FriendsState(
+      isLoading: state.isLoading,
+      followingUsers: state.followingUsers,
+      errorMessage: null,
+      successMessage: null,
+    );
   }
 }
