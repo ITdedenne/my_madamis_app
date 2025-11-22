@@ -189,7 +189,8 @@ class _StatusChip extends StatelessWidget {
           // ignore: deprecated_member_use
           color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(_kChipBorderRadius),
-          border: Border.all(color: color.withValues(alpha: 0.5)),
+          // ignore: deprecated_member_use
+          border: Border.all(color: color.withOpacity(0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
