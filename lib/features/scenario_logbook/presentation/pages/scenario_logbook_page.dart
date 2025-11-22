@@ -22,7 +22,7 @@ class ScenarioLogbookPage extends StatelessWidget {
                 text: '探す',
               ),
               Tab(
-                icon: Icon(Icons.book),
+                icon: Icon(Icons.history_edu),
                 text: 'マイリスト',
               ),
             ],

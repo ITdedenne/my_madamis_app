@@ -35,8 +35,7 @@
         },
         "mymadamisappb2bf781dPostConfirmation": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-8d52f-deployment",
-          "s3Key": "amplify-builds/mymadamisappb2bf781dPostConfirmation-4f705841694f6a487655-build.zip",
-          "dummy": "1"
+          "s3Key": "amplify-builds/mymadamisappb2bf781dPostConfirmation-4f705841694f6a487655-build.zip"
         }
       },
       "api": {

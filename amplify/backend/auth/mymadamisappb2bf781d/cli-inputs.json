@@ -1,6 +1,8 @@
 {
   "version": "1",
   "cognitoConfig": {
+    "identityPoolName": "mymadamisappb2bf781d_identitypool_4bf6ddeb",
+    "allowUnauthenticatedIdentities": false,
     "resourceNameTruncated": "mymadab2bf781d",
     "userPoolName": "mymadamisappb2bf781d_userpool_b2bf781d",
     "autoVerifiedAttributes": [
@@ -34,7 +36,7 @@
     "userpoolClientSetAttributes": false,
     "sharedId": "b2bf781d",
     "resourceName": "mymadamisappb2bf781d",
-    "authSelections": "userPoolOnly",
+    "authSelections": "identityPoolAndUserPool",
     "useDefault": "manual",
     "usernameAttributes": [
       "email"
@@ -80,6 +82,7 @@
     },
     "authTriggerConnections": "[\n  {\n    \"triggerType\": \"PostConfirmation\",\n    \"lambdaFunctionName\": \"mymadamisappb2bf781dPostConfirmation\"\n  }\n]",
     "permissions": [],
-    "authProviders": []
+    "authProviders": [],
+    "thirdPartyAuth": false
   }
 }

@@ -90,7 +90,13 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
             title: Text(_authorName ?? '指定なし'),
             trailing: const Icon(Icons.arrow_forward_ios),
             onTap: () async {
+              // 1. 非同期でデータを取得
               final allAuthors = await ref.read(scenarioRepositoryProvider).fetchAllAuthorNames();
+              
+              // ★ 修正: Contextを使用する前にマウント状態を確認
+              if (!context.mounted) return;
+
+              // 2. 画面遷移
               final selectedAuthor = await Navigator.of(context).push<String>(
                 MaterialPageRoute(
                   builder: (_) => AuthorSearchPage(allAuthors: allAuthors),

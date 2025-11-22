@@ -1,7 +1,7 @@
 // ファイルパス: lib/features/scenario_logbook/domain/entities/scenario.dart
+
 import 'package:equatable/equatable.dart';
-// Amplifyモデルを参照するためにインポートエイリアスを使用
-import 'package:my_madamis_app/models/ModelProvider.dart' as amplify_models;
+// ★ 修正: amplify_models のインポートを削除
 
 // GMの要否を表すEnum
 enum GmRequirement { required, optional, none }
@@ -10,21 +10,21 @@ class Scenario extends Equatable {
   final String id;
   final String title;
   final String authorName;
-  final String authorId; // ★ 追加: Authorテーブルとの連携用
+  final String authorId; 
   final int minPlayerCount;
   final int maxPlayerCount;
   final GmRequirement gmRequirement;
-  final String? storeUrl; // ★ 追加: storeUrlも表示等で使う可能性を考慮
+  final String? storeUrl; 
 
   const Scenario({
     required this.id,
     required this.title,
     required this.authorName,
-    required this.authorId, // ★ 追加
+    required this.authorId, 
     required this.minPlayerCount,
     required this.maxPlayerCount,
     required this.gmRequirement,
-    this.storeUrl, // ★ 追加
+    this.storeUrl, 
   });
 
   @override
@@ -32,19 +32,17 @@ class Scenario extends Equatable {
         id,
         title,
         authorName,
-        authorId, // ★ 追加
+        authorId, 
         minPlayerCount,
         maxPlayerCount,
         gmRequirement,
-        storeUrl, // ★ 追加
+        storeUrl, 
       ];
 
-  // ★ 追加: Amplifyモデルからドメインエンティティへの変換メソッド
-  factory Scenario.fromModel(
-      amplify_models.Scenario scenarioModel, String authorName) {
-    // GmRequirementのマッピング (AmplifyモデルのStringからEnumへ)
+  // JSON (S3) からの変換用
+  factory Scenario.fromJson(Map<String, dynamic> json, String authorName) {
     GmRequirement gmReq;
-    switch (scenarioModel.gmRequirement?.toLowerCase()) {
+    switch (json['gmRequirement']?.toLowerCase()) {
       case 'required':
         gmReq = GmRequirement.required;
         break;
@@ -52,25 +50,27 @@ class Scenario extends Equatable {
         gmReq = GmRequirement.optional;
         break;
       case 'none':
-      default: // 不明な値やnullの場合は 'none' にフォールバック
+      default: 
         gmReq = GmRequirement.none;
         break;
     }
 
     return Scenario(
-      id: scenarioModel.id,
-      title: scenarioModel.title,
-      authorName: authorName, // 引数で受け取る
-      authorId: scenarioModel.author?.id ?? '', // AuthorモデルからIDを取得
-      minPlayerCount: scenarioModel.minPlayerCount ?? 0, // nullの場合は0にフォールバック
-      maxPlayerCount: scenarioModel.maxPlayerCount ?? 0, // nullの場合は0にフォールバック
+      id: json['scenarioId'],
+      title: json['title'],
+      authorName: authorName, 
+      authorId: json['authorId'],
+      minPlayerCount: (json['minPlayerCount'] as num?)?.toInt() ?? 0,
+      maxPlayerCount: (json['maxPlayerCount'] as num?)?.toInt() ?? 0,
       gmRequirement: gmReq,
-      storeUrl: scenarioModel.storeUrl,
+      storeUrl: json['storeUrl'],
     );
   }
+  
+  // ★ 修正: fromModel ファクトリを削除しました。
 }
 
-// ★ 追加: GmRequirementをGraphQLで使いやすい文字列に変換する拡張
+// 拡張メソッド (変更なし)
 extension GmRequirementGraphQLExtension on GmRequirement {
   String? toGraphQLString() {
     switch (this) {
