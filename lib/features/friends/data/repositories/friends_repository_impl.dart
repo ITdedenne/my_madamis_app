@@ -16,27 +16,19 @@ class FriendsRepositoryImpl implements FriendsRepository {
 
   @override
   Future<List<User>> searchUsers(String query) async {
-    // ★ 修正ポイント1: 入力された文字列の前後の空白を除去する
     final trimmedQuery = query.trim();
-    
-    // 空文字になった場合は検索しない
     if (trimmedQuery.isEmpty) return [];
 
-    // publicUserId (7桁ID) での完全一致検索
     final publicIdRequest = ModelQueries.list(
       User.classType,
-      // ★ 修正ポイント2: trim済みの文字列を使用する
       where: User.PUBLICUSERID.eq(trimmedQuery),
     );
     
-    // username での部分一致検索
     final usernameRequest = ModelQueries.list(
       User.classType,
-      // ★ 修正ポイント3: trim済みの文字列を使用する
       where: User.USERNAME.contains(trimmedQuery),
     );
 
-    // 並列実行
     final responses = await Future.wait([
       Amplify.API.query(request: publicIdRequest).response,
       Amplify.API.query(request: usernameRequest).response,
@@ -50,7 +42,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
       }
     }
     
-    // 自分自身は検索結果から除外（仕様）
     try {
       final myId = await _getCurrentUserId();
       results.removeWhere((u) => u.id == myId);
@@ -72,6 +63,16 @@ class FriendsRepositoryImpl implements FriendsRepository {
     final response = await Amplify.API.mutate(request: request).response;
     
     if (response.hasErrors) {
+      // ★ 修正箇所: 条件付きリクエストエラー（重複エラー）の場合は無視して正常終了とする
+      final isAlreadyExistsError = response.errors.any(
+        (e) => e.message.contains('The conditional request failed')
+      );
+
+      if (isAlreadyExistsError) {
+        safePrint('User relationship already exists. Treating as success.');
+        return; // エラーを投げずに終了
+      }
+
       throw Exception('Follow failed: ${response.errors.first.message}');
     }
   }
@@ -95,6 +96,16 @@ class FriendsRepositoryImpl implements FriendsRepository {
     
     final response = await Amplify.API.mutate(request: request).response;
     if (response.hasErrors) {
+      // アンフォロー時も「既に存在しない」エラーは無視して良い
+      final isNotExistsError = response.errors.any(
+        (e) => e.message.contains('The conditional request failed')
+      );
+      
+      if (isNotExistsError) {
+         safePrint('Relationship not found or already deleted.');
+         return;
+      }
+
       safePrint('Unfollow error: ${response.errors}');
       throw Exception('Unfollow failed: ${response.errors.first.message}');
     }
@@ -104,7 +115,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
   Future<List<User>> fetchFollowingUsers() async {
     final currentUserId = await _getCurrentUserId();
 
-    // PK(followingId)を直接クエリ
     final request = ModelQueries.list(
       UserRelationship.classType,
       where: UserRelationship.FOLLOWINGID.eq(currentUserId),
@@ -118,7 +128,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
 
     final relationships = response.data?.items.whereType<UserRelationship>() ?? [];
     
-    // リレーション (@belongsTo) から User オブジェクトを抽出
     return relationships
         .map((r) => r.followedUser)
         .whereType<User>()
