@@ -18,6 +18,8 @@ abstract class ScenarioRepository {
 
   Future<List<UserScenario>> fetchMyList();
 
+  Future<List<UserScenario>> fetchUserScenarios(String userId);
+
   Future<void> updateUserScenarioStatus(String scenarioId, UserScenarioStatus status);
 
   Future<void> removeUserScenarioStatus(String scenarioId);

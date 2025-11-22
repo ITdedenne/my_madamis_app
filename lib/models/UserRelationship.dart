@@ -218,7 +218,6 @@ class UserRelationship extends amplify_core.Model {
     
     modelSchemaDefinition.indexes = [
       amplify_core.ModelIndex(fields: const ["followingId", "followedId"], name: null),
-      amplify_core.ModelIndex(fields: const ["followingId"], name: "byFollowing"),
       amplify_core.ModelIndex(fields: const ["followedId", "followingId"], name: "byFollowed")
     ];
     
