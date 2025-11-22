@@ -186,8 +186,8 @@ class _StatusChip extends StatelessWidget {
           vertical: _kChipVerticalPadding,
         ),
         decoration: BoxDecoration(
-          // ★ 修正: withOpacity -> withValues(alpha: ...)
-          color: color.withValues(alpha: 0.1),
+          // ignore: deprecated_member_use
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(_kChipBorderRadius),
           border: Border.all(color: color.withValues(alpha: 0.5)),
         ),
