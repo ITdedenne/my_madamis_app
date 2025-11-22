@@ -2,7 +2,9 @@ import json
 import os
 import boto3
 from html.parser import HTMLParser
-from decimal import Decimal
+# Decimalは不要になりますが、念のためimportを残しておいても問題ありません
+from decimal import Decimal 
+import datetime # ★追加: 日付操作用
 
 # =================================================================
 # ★ 修正箇所: 直値でテーブル名と User Pool ID を指定
@@ -83,6 +85,9 @@ def handler(event, context):
         )
 
         # (5) DynamoDB の更新 (5.2.5 - username/bio の同期)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        iso_now = now.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
         update_expression = "SET #un = :new_un, #bio = :new_bio, updatedAt = :updatedAt"
         expression_attribute_names = {
             '#un': 'username',
@@ -91,7 +96,7 @@ def handler(event, context):
         expression_attribute_values = {
             ':new_un': new_username,
             ':new_bio': sanitized_bio,
-            ':updatedAt': str(Decimal(context.get_remaining_time_in_millis() / 1000)),
+            ':updatedAt': iso_now, # ★修正: 正しい形式の日付文字列をセット
         }
         
         user_table.update_item(
