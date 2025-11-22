@@ -49,7 +49,6 @@ class UserScenarioStatusNotifier extends StateNotifier<Map<String, UserScenarioS
       }
     } catch (e) {
       // TODO: エラーハンドリング (SnackBar表示など)
-      print('Failed to update status: $e');
     }
   }
   
