@@ -9,7 +9,8 @@ class UserListItem extends StatelessWidget {
   final bool isProcessing;
   final VoidCallback? onActionButtonPressed;
   final VoidCallback? onTap;
-  final String actionButtonLabel;
+  /// ボタンのラベル。nullの場合はボタンを表示しません（表示専用モード）
+  final String? actionButtonLabel;
   final Color? actionButtonColor;
   final Color? actionButtonTextColor;
 
@@ -18,9 +19,9 @@ class UserListItem extends StatelessWidget {
     required this.user,
     this.isFollowing = false,
     this.isProcessing = false,
-    required this.onActionButtonPressed,
+    this.onActionButtonPressed,
     this.onTap,
-    required this.actionButtonLabel,
+    this.actionButtonLabel,
     this.actionButtonColor,
     this.actionButtonTextColor,
   });
@@ -30,6 +31,7 @@ class UserListItem extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 16.0),
       elevation: 0,
+      // Material 3のSurfaceContainer系を使用してモダンな色合いに
       color: Theme.of(context).colorScheme.surfaceContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
@@ -38,8 +40,9 @@ class UserListItem extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(12.0),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // アイコン
+              // ユーザーアイコン
               CircleAvatar(
                 radius: 24,
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
@@ -53,7 +56,7 @@ class UserListItem extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               
-              // ユーザー情報
+              // ユーザー情報 (名前, ID, Bio)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,12 +76,11 @@ class UserListItem extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    // Bio (あれば表示)
                     if (user.bio != null && user.bio!.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
                         user.bio!,
-                        maxLines: 1,
+                        maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context).colorScheme.outline,
@@ -89,43 +91,45 @@ class UserListItem extends StatelessWidget {
                 ),
               ),
 
-              // アクションボタン (フォロー/解除)
-              const SizedBox(width: 8),
-              SizedBox(
-                height: 36,
-                child: isFollowing 
-                ? OutlinedButton(
-                    onPressed: isProcessing ? null : onActionButtonPressed,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: actionButtonTextColor ?? Theme.of(context).colorScheme.onSurface,
-                      side: BorderSide(color: actionButtonColor ?? Theme.of(context).colorScheme.outline),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      shape: const StadiumBorder(),
-                    ),
-                    child: isProcessing 
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Text(actionButtonLabel),
-                  )
-                : FilledButton(
-                    onPressed: isProcessing ? null : onActionButtonPressed,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: actionButtonColor,
-                      foregroundColor: actionButtonTextColor,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      shape: const StadiumBorder(),
-                    ),
-                    child: isProcessing 
-                      ? SizedBox(
-                          width: 14, 
-                          height: 14, 
-                          child: CircularProgressIndicator(
-                            color: Theme.of(context).colorScheme.onPrimary, 
-                            strokeWidth: 2
+              // アクションボタン (ラベルがある場合のみ表示)
+              if (actionButtonLabel != null) ...[
+                const SizedBox(width: 8),
+                SizedBox(
+                  height: 36,
+                  child: isFollowing 
+                  ? OutlinedButton(
+                      onPressed: isProcessing ? null : onActionButtonPressed,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: actionButtonTextColor ?? Theme.of(context).colorScheme.onSurface,
+                        side: BorderSide(color: actionButtonColor ?? Theme.of(context).colorScheme.outline),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: isProcessing 
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Text(actionButtonLabel!),
+                    )
+                  : FilledButton(
+                      onPressed: isProcessing ? null : onActionButtonPressed,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: actionButtonColor,
+                        foregroundColor: actionButtonTextColor,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        shape: const StadiumBorder(),
+                      ),
+                      child: isProcessing 
+                        ? SizedBox(
+                            width: 14, 
+                            height: 14, 
+                            child: CircularProgressIndicator(
+                              color: Theme.of(context).colorScheme.onPrimary, 
+                              strokeWidth: 2
+                            )
                           )
-                        )
-                      : Text(actionButtonLabel),
-                  ),
-              ),
+                        : Text(actionButtonLabel!),
+                    ),
+                ),
+              ],
             ],
           ),
         ),

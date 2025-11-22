@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/friends/presentation/viewmodels/friends_viewmodel.dart';
 import 'package:my_madamis_app/features/friends/presentation/viewmodels/user_search_viewmodel.dart';
 import 'package:my_madamis_app/common/widgets/user_list_item.dart';
+import 'package:my_madamis_app/features/friends/presentation/pages/friend_mylist_page.dart';
 
 class UserSearchPage extends ConsumerStatefulWidget {
   const UserSearchPage({super.key});
@@ -49,10 +50,10 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
     });
 
     return CustomScrollView(
-      // ★ 改善点: スクロール時に自動的にキーボードを閉じる（必須レベルのUX）
+      // ★ 重要: スクロール時に自動的にキーボードを閉じる
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
-        // ★ 改善点: 検索バーをSliverとして配置
+        // 検索バーをSliverとして配置 (スクロールに合わせて隠れるような挙動も可能)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -96,19 +97,18 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
                 // 既にフォローしているか判定
                 final isFollowing = friendsState.followingUsers.any((u) => u.id == user.id);
 
-                // ★ 改善点: 共通コンポーネントを使用
                 return UserListItem(
                   user: user,
                   isFollowing: isFollowing,
                   isProcessing: searchState.isProcessing,
                   actionButtonLabel: isFollowing ? 'フォロー済' : 'フォロー',
-                  // フォロー済みの場合はグレーアウトさせて「押せない感」または「完了感」を出す
+                  // フォロー済みの場合は薄くして「完了感」を出す
                   actionButtonColor: isFollowing ? Colors.grey[300] : null, 
                   actionButtonTextColor: isFollowing ? Colors.black54 : null,
                   
                   onActionButtonPressed: () {
                     if (isFollowing) {
-                      // フォロー解除ダイアログ
+                      // フォロー解除確認ダイアログ
                       showDialog(
                         context: context,
                         builder: (_) => AlertDialog(
@@ -133,6 +133,15 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
                       // フォロー実行
                       searchNotifier.followUser(user);
                     }
+                  },
+                  onTap: () {
+                    // 詳細画面（他人のマイリスト）へ遷移
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FriendMyListPage(targetUser: user),
+                      ),
+                    );
                   },
                 );
               },

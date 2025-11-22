@@ -2,9 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/common/widgets/user_list_item.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_user_scenarios_usecase.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
+import 'package:my_madamis_app/models/ModelProvider.dart' hide UserScenario; // Userモデル用
 import 'package:my_madamis_app/providers.dart';
 
 final otherUserScenariosProvider = FutureProvider.family<List<UserScenario>, String>((ref, userId) async {
@@ -13,37 +15,32 @@ final otherUserScenariosProvider = FutureProvider.family<List<UserScenario>, Str
 });
 
 class FriendMyListPage extends ConsumerWidget {
-  final String targetUserId;
-  final String targetUsername;
-  final String targetBio;
+  // ★ 修正: 個別のフィールドではなく User オブジェクトを受け取る
+  final User targetUser;
 
   const FriendMyListPage({
     super.key,
-    required this.targetUserId,
-    required this.targetUsername,
-    required this.targetBio,
+    required this.targetUser,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final scenariosAsync = ref.watch(otherUserScenariosProvider(targetUserId));
+    final scenariosAsync = ref.watch(otherUserScenariosProvider(targetUser.id));
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('$targetUsername のマイリスト'),
+        title: Text('${targetUser.username} のマイリスト'),
       ),
       body: Column(
         children: [
-          if (targetBio.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              width: double.infinity,
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              child: Text(
-                targetBio, 
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
+          // ★ 修正: 共通コンポーネントを使用してリッチなプロフィールヘッダーを表示
+          // ボタンラベルを指定しないことで、表示専用モードになる
+          UserListItem(
+            user: targetUser,
+            onActionButtonPressed: null,
+            actionButtonLabel: null, // 表示専用
+          ),
+          const Divider(height: 1), // 区切り線
           
           Expanded(
             child: scenariosAsync.when(
@@ -64,7 +61,7 @@ class FriendMyListPage extends ConsumerWidget {
                         scenario: item.scenario,
                         status: item.status,
                         onStatusChanged: (_) {},
-                        isReadOnly: true, // 重要: 編集不可
+                        isReadOnly: true, 
                       ),
                     );
                   },
