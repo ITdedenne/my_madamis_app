@@ -5,7 +5,7 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_sc
 // --- デザイン定数 (Magic Numbersの排除) ---
 const double _kCardElevation = 2.0;
 const double _kCardBorderRadius = 12.0;
-const double _kCardPadding = 12.0;
+const double _kCardPadding = 10.0;
 const double _kTitleFontSize = 16.0;
 const double _kStatusIconSize = 14.0;
 const double _kStatusLabelSize = 10.0;
@@ -13,7 +13,7 @@ const double _kChipHorizontalPadding = 6.0;
 const double _kChipVerticalPadding = 2.0;
 const double _kChipBorderRadius = 4.0;
 const double _kIconSpacing = 4.0;
-const double _kDividerHeight = 16.0;
+const double _kDividerHeight = 8.0;
 const double _kSubtitleSpacing = 4.0;
 const double _kColorBarWidth = 6.0; // 左端のカラーバーの太さ
 
@@ -186,9 +186,10 @@ class _StatusChip extends StatelessWidget {
           vertical: _kChipVerticalPadding,
         ),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          // ★ 修正: withOpacity -> withValues(alpha: ...)
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(_kChipBorderRadius),
-          border: Border.all(color: color.withOpacity(0.5)),
+          border: Border.all(color: color.withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

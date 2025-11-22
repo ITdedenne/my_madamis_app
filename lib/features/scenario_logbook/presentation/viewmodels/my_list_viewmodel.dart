@@ -6,7 +6,7 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/
 import 'package:my_madamis_app/providers.dart';
 
 enum MyListFilter { all, played, possessed, wantsToGm }
-enum SortOrder { byTitle, byAuthor, newest } // "newest" (登録順) もあると便利かもですが一旦既存維持
+enum SortOrder { byTitle, byAuthor }
 
 // UI状態
 class MyListPageState {
@@ -33,12 +33,9 @@ final myListPageStateProvider = StateProvider<MyListPageState>((ref) {
 // S3から全シナリオを取得するProvider
 final allScenariosProvider = FutureProvider<List<Scenario>>((ref) async {
   final repo = ref.watch(scenarioRepositoryProvider);
-  // 全件取得 (ページネーションなし、あるいは十分大きなリミットで取得)
-  // ※実運用ではキャッシュ戦略が重要ですが、現状のアーキテクチャに従います
   return repo.fetchScenarios(page: 1, limit: 4000); 
 });
 
-// ★ 修正: Mapではなく List<UserScenario> を返すように変更
 final filteredAndSortedMyListProvider = Provider<AsyncValue<List<UserScenario>>>((ref) {
   final allScenariosAsync = ref.watch(allScenariosProvider);
   final userStatuses = ref.watch(userScenarioStatusProvider);
@@ -64,8 +61,8 @@ final filteredAndSortedMyListProvider = Provider<AsyncValue<List<UserScenario>>>
       case MyListFilter.wantsToGm:
         filtered = myList.where((s) => s.status.wantsToGm).toList();
         break;
+      // ★ 修正: default 節を削除し、MyListFilter.all でカバー
       case MyListFilter.all:
-      default:
         filtered = myList;
         break;
     }
@@ -77,12 +74,9 @@ final filteredAndSortedMyListProvider = Provider<AsyncValue<List<UserScenario>>>
           return a.scenario.title.compareTo(b.scenario.title);
         case SortOrder.byAuthor:
           return a.scenario.authorName.compareTo(b.scenario.authorName);
-        default:
-          return 0;
       }
     });
 
-    // ★ グループ化せず、フラットなリストを返す
     return filtered;
   });
 });

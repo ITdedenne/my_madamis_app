@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:my_madamis_app/features/auth/domain/usecases/sign_in_usecase.dart';
 import 'package:my_madamis_app/providers.dart';
-import 'package:amplify_flutter/amplify_flutter.dart'; // ★ safePrint のためにインポート
+import 'package:amplify_flutter/amplify_flutter.dart'; 
 
 enum ConfirmationStatus { initial, loading, success, error }
 
@@ -45,15 +45,11 @@ class ConfirmationViewModel extends StateNotifier<ConfirmationState> {
   }) async {
     state = state.copyWith(status: ConfirmationStatus.loading, errorMessage: null);
     try {
-      
-      // --- ▼▼▼ 修正箇所 ▼▼▼ ---
       try {
         // 1. まず確認コードの送信を試みる
         await _authRepository.confirmSignUp(username: email, confirmationCode: confirmationCode);
       } catch (e) {
-        // 2. もしエラーが「既に確認済み」であった場合は、
-        //    (ダブルクリックや再試行などの理由で)
-        //    エラーを無視してログイン処理に進む
+        // 2. もしエラーが「既に確認済み」であった場合はエラーを無視して続行
         final errorMessage = e.toString().toLowerCase();
         if (errorMessage.contains('user cannot be confirmed') || 
             errorMessage.contains('user is already confirmed') ||
@@ -61,8 +57,9 @@ class ConfirmationViewModel extends StateNotifier<ConfirmationState> {
           safePrint('User is already confirmed, proceeding to sign in.');
           // エラーを無視して続行
         } else {
-          // 3. 「コードが違う」など、その他のエラーの場合は、それをスローする
-          throw e; 
+          // 3. 「コードが違う」など、その他のエラーの場合は再スロー
+          // ★ 修正: rethrow を使用
+          rethrow; 
         }
       }
       
@@ -71,7 +68,6 @@ class ConfirmationViewModel extends StateNotifier<ConfirmationState> {
        
       // 5. すべて成功
       state = state.copyWith(status: ConfirmationStatus.success);
-      // --- ▲▲▲ 修正完了 ▲▲▲ ---
 
     } catch (e) {
       // 6. 確認コードエラー or ログインエラー
