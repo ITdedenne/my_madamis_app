@@ -16,18 +16,24 @@ class FriendsRepositoryImpl implements FriendsRepository {
 
   @override
   Future<List<User>> searchUsers(String query) async {
-    if (query.trim().isEmpty) return [];
+    // ★ 修正ポイント1: 入力された文字列の前後の空白を除去する
+    final trimmedQuery = query.trim();
+    
+    // 空文字になった場合は検索しない
+    if (trimmedQuery.isEmpty) return [];
 
     // publicUserId (7桁ID) での完全一致検索
     final publicIdRequest = ModelQueries.list(
       User.classType,
-      where: User.PUBLICUSERID.eq(query),
+      // ★ 修正ポイント2: trim済みの文字列を使用する
+      where: User.PUBLICUSERID.eq(trimmedQuery),
     );
     
     // username での部分一致検索
     final usernameRequest = ModelQueries.list(
       User.classType,
-      where: User.USERNAME.contains(query),
+      // ★ 修正ポイント3: trim済みの文字列を使用する
+      where: User.USERNAME.contains(trimmedQuery),
     );
 
     // 並列実行
@@ -44,7 +50,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
       }
     }
     
-    // 自分自身は除外
+    // 自分自身は検索結果から除外（仕様）
     try {
       final myId = await _getCurrentUserId();
       results.removeWhere((u) => u.id == myId);
@@ -75,7 +81,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
     final currentUserId = await _getCurrentUserId();
     
     // 削除用のモデル識別子を指定して削除するためのダミーモデルを作成
-    // (Composite Keyの場合、PKとSKの両方を指定)
     final relationship = UserRelationship(
         followingId: currentUserId, 
         followedId: followedUserId
@@ -99,11 +104,11 @@ class FriendsRepositoryImpl implements FriendsRepository {
   Future<List<User>> fetchFollowingUsers() async {
     final currentUserId = await _getCurrentUserId();
 
-    // ★ スキーマ変更対応: GSIではなくPK(followingId)を直接クエリ
+    // PK(followingId)を直接クエリ
     final request = ModelQueries.list(
       UserRelationship.classType,
       where: UserRelationship.FOLLOWINGID.eq(currentUserId),
-      limit: 1000, // 100人上限なので十分
+      limit: 1000, 
     );
 
     final response = await Amplify.API.query(request: request).response;
