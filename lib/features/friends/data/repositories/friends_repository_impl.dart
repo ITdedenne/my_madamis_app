@@ -16,19 +16,24 @@ class FriendsRepositoryImpl implements FriendsRepository {
 
   @override
   Future<List<User>> searchUsers(String query) async {
+    // 空白除去（前回の修正内容）
     final trimmedQuery = query.trim();
+    
     if (trimmedQuery.isEmpty) return [];
 
+    // publicUserId (7桁ID) での完全一致検索
     final publicIdRequest = ModelQueries.list(
       User.classType,
       where: User.PUBLICUSERID.eq(trimmedQuery),
     );
     
+    // username での部分一致検索
     final usernameRequest = ModelQueries.list(
       User.classType,
       where: User.USERNAME.contains(trimmedQuery),
     );
 
+    // 並列実行
     final responses = await Future.wait([
       Amplify.API.query(request: publicIdRequest).response,
       Amplify.API.query(request: usernameRequest).response,
@@ -42,6 +47,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
       }
     }
     
+    // 自分自身は除外
     try {
       final myId = await _getCurrentUserId();
       results.removeWhere((u) => u.id == myId);
@@ -63,14 +69,14 @@ class FriendsRepositoryImpl implements FriendsRepository {
     final response = await Amplify.API.mutate(request: request).response;
     
     if (response.hasErrors) {
-      // ★ 修正箇所: 条件付きリクエストエラー（重複エラー）の場合は無視して正常終了とする
+      // 重複エラー（既にフォロー済み）は無視して正常終了扱いにする（前回の修正内容）
       final isAlreadyExistsError = response.errors.any(
         (e) => e.message.contains('The conditional request failed')
       );
 
       if (isAlreadyExistsError) {
         safePrint('User relationship already exists. Treating as success.');
-        return; // エラーを投げずに終了
+        return; 
       }
 
       throw Exception('Follow failed: ${response.errors.first.message}');
@@ -81,24 +87,23 @@ class FriendsRepositoryImpl implements FriendsRepository {
   Future<void> unfollowUser(String followedUserId) async {
     final currentUserId = await _getCurrentUserId();
     
-    // 削除用のモデル識別子を指定して削除するためのダミーモデルを作成
+    // 削除対象を特定するためのモデルを作成 (PKとSKを設定)
     final relationship = UserRelationship(
         followingId: currentUserId, 
         followedId: followedUserId
     );
     
-    // where句で確実に自分のレコードであることを指定して削除
-    final request = ModelMutations.delete(
-        relationship, 
-        where: UserRelationship.FOLLOWINGID.eq(currentUserId)
-            .and(UserRelationship.FOLLOWEDID.eq(followedUserId))
-    );
+    // ★ 修正ポイント: where句を削除し、シンプルな削除リクエストにする
+    // キー(relationship)さえ合っていれば削除されます。
+    // 権限チェック(@auth)はAmplify側で自動的に行われます。
+    final request = ModelMutations.delete(relationship);
     
     final response = await Amplify.API.mutate(request: request).response;
     if (response.hasErrors) {
-      // アンフォロー時も「既に存在しない」エラーは無視して良い
+      // 「既に存在しない」エラーは無視して良い
       final isNotExistsError = response.errors.any(
-        (e) => e.message.contains('The conditional request failed')
+        (e) => e.message.contains('The conditional request failed') || 
+               e.message.contains('DynamoDB:ConditionalCheckFailedException')
       );
       
       if (isNotExistsError) {
@@ -115,6 +120,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
   Future<List<User>> fetchFollowingUsers() async {
     final currentUserId = await _getCurrentUserId();
 
+    // PK(followingId)を直接クエリ
     final request = ModelQueries.list(
       UserRelationship.classType,
       where: UserRelationship.FOLLOWINGID.eq(currentUserId),
@@ -128,6 +134,7 @@ class FriendsRepositoryImpl implements FriendsRepository {
 
     final relationships = response.data?.items.whereType<UserRelationship>() ?? [];
     
+    // リレーション (@belongsTo) から User オブジェクトを抽出
     return relationships
         .map((r) => r.followedUser)
         .whereType<User>()
