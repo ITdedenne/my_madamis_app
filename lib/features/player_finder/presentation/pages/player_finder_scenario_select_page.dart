@@ -7,7 +7,6 @@ import 'package:my_madamis_app/features/player_finder/presentation/viewmodels/pl
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
-import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart'; // allScenariosProvider用
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
@@ -29,7 +28,6 @@ class _PlayerFinderScenarioSelectPageState extends ConsumerState<PlayerFinderSce
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     
-    // 初期検索ワードの反映
     final currentSearchTerm = ref.read(playerFinderSearchViewModelProvider).searchTerm;
     _searchController.text = currentSearchTerm;
   }
@@ -52,7 +50,7 @@ class _PlayerFinderScenarioSelectPageState extends ConsumerState<PlayerFinderSce
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'マイリスト'), // 名称変更: 手持ちから -> マイリスト
+            Tab(text: 'マイリスト'),
             Tab(text: 'すべて'),
           ],
         ),
@@ -90,7 +88,6 @@ class _PlayerFinderScenarioSelectPageState extends ConsumerState<PlayerFinderSce
                   ),
                 ),
                 const SizedBox(width: 8),
-                // フィルターボタン追加
                 Stack(
                   alignment: Alignment.topRight,
                   children: [
@@ -107,7 +104,6 @@ class _PlayerFinderScenarioSelectPageState extends ConsumerState<PlayerFinderSce
                         );
                       },
                     ),
-                    // フィルター適用中はバッジを表示
                     if (!searchState.filter.isInitial)
                       Container(
                         margin: const EdgeInsets.only(top: 8, right: 8),
@@ -124,7 +120,6 @@ class _PlayerFinderScenarioSelectPageState extends ConsumerState<PlayerFinderSce
             ),
           ),
           
-          // フィルター条件の表示チップ (適用中のみ表示)
           if (!searchState.filter.isInitial)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -154,7 +149,7 @@ class _PlayerFinderScenarioSelectPageState extends ConsumerState<PlayerFinderSce
   }
 }
 
-// --- タブ1: マイリスト (旧: 手持ちから) ---
+// --- タブ1: マイリスト ---
 class _MyListTab extends ConsumerStatefulWidget {
   const _MyListTab();
 
@@ -163,8 +158,6 @@ class _MyListTab extends ConsumerStatefulWidget {
 }
 
 class _MyListTabState extends ConsumerState<_MyListTab> {
-  // ローカルで管理するマイリスト内の絞り込み状態
-  // null = 全て表示
   bool? _showPossessed = true; // デフォルトは所持
   bool? _showWantsToGm;
   bool? _showPlayed;
@@ -172,18 +165,7 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
   @override
   Widget build(BuildContext context) {
     final notifier = ref.read(playerFinderSearchViewModelProvider.notifier);
-    // マイリスト用には専用のフィルタリングロジックを適用しても良いが、
-    // 検索バーの条件（人数など）も適用したいので、検索結果(_playerFinderFilteredScenariosProvider)をベースにさらに絞り込む形をとる。
-    // ただし、_playerFinderFilteredScenariosProvider はページネーション前の全件を持っているので、
-    // ここでマイリスト条件でフィルタリングするのは効率的。
-    
-    // 検索条件(ViewModel)に合致した全シナリオを取得
-    // ※ displayedScenariosProviderではなく、フィルタリング済みの全件を取得する方がマイリストには適している
-    // （マイリストは件数が少ないため、ページネーション不要で全件出した方が使いやすい）
     final allFilteredScenariosAsync = ref.watch(playerFinderDisplayedScenariosProvider); 
-    // ↑ ページネーション対応版を使っていますが、マイリストなら件数少ないので全件でもOK。
-    // 今回は統一感を出すためページネーション版を使用し、スクロール検知を入れる。
-
     final userStatuses = ref.watch(userScenarioStatusProvider);
 
     return Column(
@@ -194,30 +176,35 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
             children: [
-              _buildFilterChip(label: 'すべて', isSelected: _isAllSelected(), onTap: _selectAll),
+              // ★ チップのデザインと呼び出しを刷新
+              _buildFilterChip(
+                label: 'すべて', 
+                isSelected: _isAllSelected(), 
+                onTap: _selectAll,
+              ),
               const SizedBox(width: 8),
               _buildFilterChip(
                   label: '所持', 
                   isSelected: _showPossessed == true, 
                   onTap: () => _toggleFilter('possessed'),
-                  color: Colors.blue.shade100,
-                  selectedColor: Colors.blue.shade300
+                  // 選択時の色を指定 (濃いめの青)
+                  selectedColor: Colors.blue.shade700
               ),
               const SizedBox(width: 8),
               _buildFilterChip(
                   label: 'GM検討', 
                   isSelected: _showWantsToGm == true, 
                   onTap: () => _toggleFilter('wantsToGm'),
-                  color: Colors.orange.shade100,
-                  selectedColor: Colors.orange.shade300
+                  // 選択時の色を指定 (濃いめのオレンジ)
+                  selectedColor: Colors.orange.shade700
               ),
               const SizedBox(width: 8),
               _buildFilterChip(
                   label: '通過済', 
                   isSelected: _showPlayed == true, 
                   onTap: () => _toggleFilter('played'),
-                  color: Colors.green.shade100,
-                  selectedColor: Colors.green.shade300
+                  // 選択時の色を指定 (濃いめの緑)
+                  selectedColor: Colors.green.shade700
               ),
             ],
           ),
@@ -235,16 +222,12 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('エラー: $e')),
               data: (scenarios) {
-                // ここでマイリスト条件 & チップ条件で絞り込み
                 final myListScenarios = scenarios.where((s) {
                   final status = userStatuses[s.id];
-                  if (status == null) return false; // ステータスなしは除外
-
-                  // 基本的にマイリストに含まれるものだけ
+                  if (status == null) return false;
                   if (status.isUnregistered) return false;
 
-                  // チップによる絞り込みロジック
-                  if (_isAllSelected()) return true; // 「すべて」選択時は、何らかのステータスがあればOK
+                  if (_isAllSelected()) return true;
 
                   if (_showPossessed == true && status.isPossessed) return true;
                   if (_showWantsToGm == true && status.wantsToGm) return true;
@@ -298,32 +281,44 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
 
   void _toggleFilter(String type) {
     setState(() {
-      // 他をfalseにして、選択したものだけをtrueにする（ラジオボタン的な挙動）
-      // または複数選択可能にするか。ここでは「見たいものを絞り込む」UXとして単一選択（+すべて）にする。
       _showPossessed = type == 'possessed';
       _showWantsToGm = type == 'wantsToGm';
       _showPlayed = type == 'played';
     });
   }
 
+  // ★ 修正: 視認性を高めたチップウィジェット
   Widget _buildFilterChip({
     required String label, 
     required bool isSelected, 
     required VoidCallback onTap,
-    Color? color,
     Color? selectedColor,
   }) {
+    // デフォルトの選択色（「すべて」など）
+    final activeColor = selectedColor ?? Theme.of(context).colorScheme.primary;
+
     return FilterChip(
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onTap(),
-      backgroundColor: color ?? Colors.grey.shade200,
-      selectedColor: selectedColor ?? Theme.of(context).colorScheme.primaryContainer,
-      showCheckmark: false,
+      
+      // 選択時のスタイル: 濃い背景色 + 白文字 + チェックマーク
+      selectedColor: activeColor,
+      checkmarkColor: Colors.white,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.black : Colors.black87,
+        color: isSelected ? Colors.white : Colors.black87,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
+      
+      // 非選択時のスタイル: 透明/白背景 + 枠線
+      backgroundColor: Colors.white,
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: isSelected ? Colors.transparent : Colors.grey.shade300,
+        ),
+      ),
+      elevation: 0,
+      pressElevation: 2,
     );
   }
 }
@@ -335,6 +330,7 @@ class _AllScenariosTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(playerFinderSearchViewModelProvider.notifier);
+    // ★ ViewModel側でソート済みのリストが返ってくる
     final scenariosAsync = ref.watch(playerFinderDisplayedScenariosProvider);
     final userStatuses = ref.watch(userScenarioStatusProvider);
 

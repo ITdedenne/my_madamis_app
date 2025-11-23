@@ -1,15 +1,13 @@
+// ファイルパス: lib/features/player_finder/presentation/viewmodels/player_finder_search_viewmodel.dart
+
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
-import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart'; // allScenariosProviderを利用
-import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart'; // クラス定義のみ再利用
+import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
+import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 
-// -----------------------------------------------------------------------------
-// プレイヤーファインダー機能専用の検索Provider定義
-// -----------------------------------------------------------------------------
-
-// 1. 検索状態管理
-// ★改善: autoDispose を付与。この画面を離れたら検索条件をリセットする。
+// 1. 検索状態管理 (autoDisposeあり)
 final playerFinderSearchViewModelProvider =
     StateNotifierProvider.autoDispose<PlayerFinderSearchViewModel, SearchScenariosState>((ref) {
   return PlayerFinderSearchViewModel();
@@ -18,28 +16,30 @@ final playerFinderSearchViewModelProvider =
 // 2. フィルタリングロジック (計算用)
 final _playerFinderFilteredScenariosProvider = Provider.autoDispose<AsyncValue<List<Scenario>>>((ref) {
   final allScenariosAsync = ref.watch(allScenariosProvider);
-  // ★重要: プレイヤーファインダー専用の検索状態を監視
   final searchState = ref.watch(playerFinderSearchViewModelProvider);
 
   return allScenariosAsync.when(
     data: (allScenarios) {
-      List<Scenario> filtered = allScenarios;
+      // リストをコピーして変更可能な状態にする
+      List<Scenario> filtered = List.of(allScenarios);
+
+      // ★ 修正点: ここで強制的にタイトル順にソートし、「所持優先」の並びをリセットする
+      // (よみがなフィールドがあれば compareTo(b.yomigana) を推奨)
+      filtered.sort((a, b) => a.title.compareTo(b.title));
+
+      // --- 以下、検索フィルターロジック (変更なし) ---
       final filter = searchState.filter;
-      
-      // ★改善: スペース区切りのAND検索に対応
       final rawTerm = searchState.searchTerm.toLowerCase().trim();
+      
       if (rawTerm.isNotEmpty) {
-        // 全角スペースを半角に変換して分割
         final keywords = rawTerm.replaceAll('　', ' ').split(' ').where((w) => w.isNotEmpty);
-        
         filtered = filtered.where((s) {
-          // すべてのキーワードが含まれているか (AND検索)
           return keywords.every((keyword) =>
-              s.titleLower.contains(keyword) || s.authorNameLower.contains(keyword));
+              s.titleLower.contains(keyword) || 
+              s.authorNameLower.contains(keyword));
         }).toList();
       }
       
-      // 人数フィルター
       final start = filter.playerCountRange.start.round();
       final end = filter.playerCountRange.end.round();
       if (start > 1 || end < 15) {
@@ -48,12 +48,10 @@ final _playerFinderFilteredScenariosProvider = Provider.autoDispose<AsyncValue<L
         }).toList();
       }
 
-      // GM要否
       if (filter.gmRequirement != null) {
         filtered = filtered.where((s) => s.gmRequirement == filter.gmRequirement).toList();
       }
 
-      // 作者名
       if (filter.authorName != null && filter.authorName!.isNotEmpty) {
         filtered = filtered.where((s) => s.authorName == filter.authorName).toList();
       }
@@ -78,8 +76,6 @@ final playerFinderDisplayedScenariosProvider = Provider.autoDispose<AsyncValue<L
   });
 });
 
-// クラス自体は継承して利用（ロジックは共通なため）
 class PlayerFinderSearchViewModel extends SearchScenariosViewModel {
-  // 必要であればプレイヤーファインダー特有のメソッドをここでオーバーライド可能
-  // 例: プレイヤーファインダーでは「リスト更新時の成功メッセージ」は不要など
+  // 必要なオーバーライドがあれば記述
 }
