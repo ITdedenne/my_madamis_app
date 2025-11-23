@@ -1,7 +1,5 @@
 // ファイルパス: lib/features/player_finder/presentation/viewmodels/player_finder_search_viewmodel.dart
 
-import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
