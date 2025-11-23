@@ -64,6 +64,7 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
                 hintText: 'ユーザー名またはID(7桁)で検索',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
+                // ignore: deprecated_member_use
                 fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),

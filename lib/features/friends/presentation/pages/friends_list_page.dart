@@ -19,10 +19,10 @@ class FriendsListPage extends ConsumerWidget {
     }
 
     if (state.followingUsers.isEmpty) {
-      return Center(
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children:  [
             Icon(Icons.people_outline, size: 64, color: Colors.grey),
             SizedBox(height: 16),
             Text(
