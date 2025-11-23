@@ -23,7 +23,7 @@
         },
         "findGroupScenarios": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-8d52f-deployment",
-          "s3Key": "amplify-builds/findGroupScenarios-6478724456712f414e63-build.zip"
+          "s3Key": "amplify-builds/findGroupScenarios-79565944713269705a78-build.zip"
         },
         "updateUserProfile": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-8d52f-deployment",

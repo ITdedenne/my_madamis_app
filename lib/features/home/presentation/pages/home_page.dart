@@ -8,6 +8,7 @@ import 'package:my_madamis_app/features/settings/presentation/pages/settings_pag
 import 'package:my_madamis_app/features/scenario_logbook/presentation/pages/scenario_logbook_page.dart';
 import 'package:my_madamis_app/features/friends/presentation/pages/friends_page.dart';
 import 'package:my_madamis_app/features/player_finder/presentation/pages/player_finder_scenario_select_page.dart';
+import 'package:my_madamis_app/features/group_search/presentation/pages/group_search_settings_page.dart'; 
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -139,7 +140,7 @@ class HomePage extends ConsumerWidget {
 
             const SizedBox(height: 16),
 
-            // --- ★ 追加: プレイヤーファインダーカード ---
+            // --- プレイヤーファインダーカード ---
             Card(
               elevation: 2,
               color: Colors.purple.shade50,
@@ -159,9 +160,41 @@ class HomePage extends ConsumerWidget {
                       const SizedBox(height: 8),
                       Text('プレイヤーを探す', style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 4),
-                      // ★ 修正: 機能の意図をより具体的に説明
                       const Text(
                         '遊びたいシナリオを指定して、未通過のフレンズを検索できます。',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // --- ★ 追加: シナリオグループ検索カード ---
+            Card(
+              elevation: 2,
+              color: Colors.teal.shade50,
+              child: InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const GroupSearchSettingsPage()),
+                  );
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.groups, size: 40, color: Colors.teal),
+                      const SizedBox(height: 8),
+                      Text('グループ検索', style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 4),
+                      const Text(
+                        '集まったメンバー全員が遊べる（未通過の）シナリオを一括検索します。',
                         textAlign: TextAlign.center,
                         style: TextStyle(color: Colors.grey),
                       ),
