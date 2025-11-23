@@ -6,17 +6,18 @@ import 'package:my_madamis_app/features/player_finder/domain/repositories/player
 import 'package:my_madamis_app/models/ModelProvider.dart';
 
 class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
+  // ★改善: マジックストリングを定数として定義
+  static const String _kQueryKey = 'findUnplayedFriends';
   
   @override
   Future<List<User>> findUnplayedFriends(String scenarioId) async {
-    // Lambdaは JSON文字列 を返す仕様なので、戻り値は String
     const query = r'''
       query FindUnplayedFriends($scenarioId: String!) {
         findUnplayedFriends(scenarioId: $scenarioId)
       }
     ''';
 
-    // decodePath は使わず、生のレスポンスを受け取って手動で解析します
+    // decodePathを使用せず、手動パースで柔軟に対応
     final request = GraphQLRequest<String>(
       document: query,
       variables: {'scenarioId': scenarioId},
@@ -25,59 +26,50 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
     try {
       final response = await Amplify.API.query(request: request).response;
 
-      // 1. エラーチェック
+      // 1. GraphQLレベルのエラーチェック
       if (response.hasErrors) {
-        safePrint('GraphQL Errors: ${response.errors}');
-        throw Exception('Failed to find unplayed friends: ${response.errors}');
+        // ★改善: エラー内容を含めて例外をスロー
+        final errors = response.errors.map((e) => e.message).join(', ');
+        throw Exception('GraphQL Errors: $errors');
       }
 
       final responseData = response.data;
       if (responseData == null) {
-        safePrint('Response data is null');
-        return [];
+        throw Exception('Response data is null');
       }
 
-      safePrint('Raw Response Data: $responseData');
-
-      // 2. レスポンスの解析 (二重デコード対応)
-      // Amplifyのレスポンスは {"findUnplayedFriends": "[{...}, {...}]"} という形のJSON文字列で返ってくることが多い
-      
-      // まず全体をMapとしてデコード
+      // 2. レスポンスの解析
       final Map<String, dynamic> outerMap = jsonDecode(responseData);
       
-      // "findUnplayedFriends" キーの中身（これがLambdaが返したJSON文字列）を取り出す
-      final String? innerJsonString = outerMap['findUnplayedFriends'];
+      // ★改善: 定数を使用して値を取得
+      final String? innerJsonString = outerMap[_kQueryKey];
       
       if (innerJsonString == null) {
-        safePrint('Key "findUnplayedFriends" not found or null');
-        return [];
+        throw Exception('Key "$_kQueryKey" not found in response');
       }
 
-      // 3. Lambdaが返したJSON文字列をリストとしてデコード
-      // "[{\"id\": ...}, ...]" -> List<dynamic>
+      // 3. JSON文字列のリストへのデコード
       final dynamic decodedList = jsonDecode(innerJsonString);
 
       if (decodedList is! List) {
-        safePrint('Decoded JSON is not a List: $decodedList');
-        return [];
+         throw Exception('Decoded JSON is not a List');
       }
 
-      safePrint('Parsed List Length: ${decodedList.length}');
-
-      // 4. Userモデルへ変換
+      // 4. Userモデルへの変換
       return decodedList.map((json) {
-        // JSONパース時の安全策（念のためMapであることを確認）
         if (json is Map<String, dynamic>) {
           return User.fromJson(json);
         }
-        return null; // 不正なデータは無視
-      }).whereType<User>().toList(); // nullを除外してリスト化
+        return null;
+      }).whereType<User>().toList();
 
     } catch (e, stackTrace) {
       safePrint('Error in findUnplayedFriends: $e');
       safePrint('Stack trace: $stackTrace');
-      // 画面がクラッシュしないよう、エラー時は空リストを返す
-      return [];
+      
+      // ★改善: エラーを握りつぶさず再スローする
+      // これによりViewModelが「0件」と「エラー」を区別できるようになる
+      rethrow;
     }
   }
 }
