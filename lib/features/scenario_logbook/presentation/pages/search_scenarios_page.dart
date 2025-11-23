@@ -1,3 +1,5 @@
+// ファイルパス: lib/features/scenario_logbook/presentation/pages/search_scenarios_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
@@ -23,7 +25,16 @@ class SearchScenariosPage extends ConsumerStatefulWidget {
 }
 
 class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
-  final TextEditingController _searchController = TextEditingController();
+  // late で宣言し、initStateで初期化する
+  late final TextEditingController _searchController;
+
+  @override
+  void initState() {
+    super.initState();
+    // ★ 改善: ViewModelに保存されている検索ワードを初期値としてセットする
+    final currentSearchTerm = ref.read(searchScenariosViewModelProvider).searchTerm;
+    _searchController = TextEditingController(text: currentSearchTerm);
+  }
 
   @override
   void dispose() {
@@ -48,7 +59,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     final searchState = ref.watch(searchScenariosViewModelProvider);
     final notifier = ref.read(searchScenariosViewModelProvider.notifier);
     
-    // ★ 修正: ページネーション適用済みのリストを監視
+    // ページネーション適用済みのリストを監視
     final scenariosAsync = ref.watch(displayedScenariosProvider);
     
     final userStatuses = ref.watch(userScenarioStatusProvider);
@@ -63,12 +74,28 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'シナリオ名・作者名で検索...',
+                    hintText: 'シナリオ名・作者名 (スペースでAND検索)', // ヒントも更新
                     prefixIcon: const Icon(Icons.search),
+                    // 検索ワードが入っている時だけクリアボタンを表示するUX改善
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              notifier.onSearchTermChanged('');
+                              // setStateでsuffixIconの表示を更新
+                              setState(() {}); 
+                            },
+                          )
+                        : null,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     contentPadding: EdgeInsets.zero,
                   ),
-                  onChanged: notifier.onSearchTermChanged,
+                  onChanged: (value) {
+                    notifier.onSearchTermChanged(value);
+                    // 入力状態に応じてクリアボタンの出し分け更新
+                    setState(() {}); 
+                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -91,7 +118,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
         _buildFilterChips(searchState, notifier),
         
         Expanded(
-          // ★ 追加: スクロール検知
+          // スクロール検知
           child: NotificationListener<ScrollNotification>(
             onNotification: (ScrollNotification scrollInfo) {
               // スクロールが最下部に達したらロード
@@ -107,18 +134,14 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
     );
   }
   
-  // _buildFilterChips は変更なし (前回のコードを使用)
   Widget _buildFilterChips(SearchScenariosState state, SearchScenariosViewModel notifier) {
-     // ... (省略) ...
      if (state.filter.isInitial) return const SizedBox(height: 8);
      return Padding(
-       // ... (前回の実装と同じ)
        padding: const EdgeInsets.symmetric(horizontal: _kHorizontalPadding, vertical: 4.0),
        child: Wrap(
         spacing: 6.0,
         runSpacing: 4.0,
         children: [
-          // ... (Chipの実装)
            ActionChip(
             label: const Text('全クリア'),
             onPressed: () => notifier.applyFilter(SearchFilter.initial()),

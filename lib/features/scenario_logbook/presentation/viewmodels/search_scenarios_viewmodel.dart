@@ -77,14 +77,20 @@ final _filteredAllScenariosProvider = Provider<AsyncValue<List<Scenario>>>((ref)
 
       // 検索フィルターロジック
       final filter = searchState.filter;
-      final term = searchState.searchTerm.toLowerCase();
+      // ★ 改善: トリムして前後の空白を除去
+      final rawTerm = searchState.searchTerm.toLowerCase().trim();
       
-      // 検索ワードによる絞り込み
-      if (term.isNotEmpty) {
+      // 検索ワードによる絞り込み (AND検索対応)
+      if (rawTerm.isNotEmpty) {
+        // 全角スペースを半角に変換してから分割し、空文字を除外
+        final keywords = rawTerm.replaceAll('　', ' ').split(' ').where((w) => w.isNotEmpty);
+
         filtered = filtered.where((s) {
-          // ★ 修正: 事前計算済みのフィールドを使うことで高速化
-          return s.titleLower.contains(term) ||
-                 s.authorNameLower.contains(term);
+          // すべてのキーワードが含まれているか (AND検索)
+          // タイトルか作者名のどちらかにキーワードが含まれていればヒットとみなす
+          return keywords.every((keyword) =>
+              s.titleLower.contains(keyword) || 
+              s.authorNameLower.contains(keyword));
         }).toList();
       }
       
