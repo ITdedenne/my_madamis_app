@@ -183,32 +183,20 @@ class _ClickableScenarioItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
-      child: Stack(
-        children: [
-          ScenarioListItem(
-            scenario: scenario,
-            status: status, // 自分のステータスを表示
-            isReadOnly: true, 
-            onStatusChanged: (_) {},
-          ),
-          // カード全体をタップ可能にするための透明なレイヤー
-          Positioned.fill(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PlayerFinderPage(scenario: scenario),
-                    ),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-              ),
+      child: ScenarioListItem(
+        scenario: scenario,
+        status: status,
+        isReadOnly: true, // ステータス変更は無効化
+        onStatusChanged: (_) {},
+        // ★ Stackを使わず、直接onTapを指定できる
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => PlayerFinderPage(scenario: scenario),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
