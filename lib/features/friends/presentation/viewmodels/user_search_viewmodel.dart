@@ -1,6 +1,7 @@
 // ファイルパス: lib/features/friends/presentation/viewmodels/user_search_viewmodel.dart
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/core/constants/app_constants.dart'; 
 import 'package:my_madamis_app/features/friends/domain/repositories/friends_repository.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
@@ -39,7 +40,7 @@ class UserSearchState {
   }
 }
 
-// ★ 修正: autoDispose を追加。これにより、画面（このProviderを監視するWidget）が破棄されると状態もリセットされます。
+// autoDisposeにより、画面破棄時に状態もリセット
 final userSearchViewModelProvider = StateNotifierProvider.autoDispose<UserSearchViewModel, UserSearchState>((ref) {
   return UserSearchViewModel(ref.watch(friendsRepositoryProvider), ref);
 });
@@ -68,8 +69,10 @@ class UserSearchViewModel extends StateNotifier<UserSearchState> {
     try {
       // 上限チェック
       final currentCount = await _repository.getFollowingCount();
-      if (currentCount >= 100) {
-        throw Exception('フレンズの上限（100人）に達しているため、これ以上フォローできません。');
+      
+      // ★ 修正: マジックナンバー(100)を定数に変更
+      if (currentCount >= AppConstants.maxFriendsCount) {
+        throw Exception('フレンズの上限（${AppConstants.maxFriendsCount}人）に達しているため、これ以上フォローできません。');
       }
 
       await _repository.followUser(user.id);
@@ -97,7 +100,6 @@ class UserSearchViewModel extends StateNotifier<UserSearchState> {
     );
   }
 
-  // ★ 追加: 手動で検索結果をリセットしたい場合に使用
   void clearSearch() {
     state = UserSearchState();
   }
