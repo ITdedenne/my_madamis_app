@@ -18,22 +18,31 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
     final request = GraphQLRequest<String>(
       document: query,
       variables: {'scenarioId': scenarioId},
+      // ★★★ 修正箇所: decodePath を追加 ★★★
+      // これがないと {"findUnplayedFriends": "[...]"} というMap全体の文字列が返ってきてしまい、
+      // 下の jsonDecode で List として扱えずエラーになります。
+      decodePath: 'findUnplayedFriends', 
     );
 
-    final response = await Amplify.API.query(request: request).response;
-
-    if (response.hasErrors) {
-      throw Exception('Failed to find unplayed friends: ${response.errors}');
-    }
-
-    final jsonString = response.data;
-    if (jsonString == null) return [];
-
     try {
+      final response = await Amplify.API.query(request: request).response;
+
+      if (response.hasErrors) {
+        throw Exception('Failed to find unplayed friends: ${response.errors}');
+      }
+
+      final jsonString = response.data;
+      if (jsonString == null) return [];
+
+      // LambdaからはJSON形式の文字列が返ってくるので、それをデコードしてUserオブジェクトに変換
       final List<dynamic> list = jsonDecode(jsonString);
+      
+      // User.fromJsonを使ってモデルに変換
       return list.map((json) => User.fromJson(json)).toList();
+      
     } catch (e) {
-      safePrint('Error parsing findUnplayedFriends response: $e');
+      safePrint('Error in findUnplayedFriends: $e');
+      // エラー発生時は空リストを返す（画面には「見つかりません」と表示される）
       return [];
     }
   }
