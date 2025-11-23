@@ -1,3 +1,20 @@
 {
-  "lambdaLayers": []
+  "lambdaLayers": [],
+  "permissions": {
+    "auth": {
+      "mymadamisappb2bf781d": [
+        "create",
+        "read",
+        "update",
+        "delete"
+      ]
+    },
+    "api": {
+      "mymadamisapp": [
+        "Query",
+        "Mutation",
+        "Subscription"
+      ]
+    }
+  }
 }

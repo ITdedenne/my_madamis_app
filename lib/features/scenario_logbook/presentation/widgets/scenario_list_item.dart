@@ -22,6 +22,7 @@ class ScenarioListItem extends StatelessWidget {
   final UserScenarioStatus status;
   final Function(UserScenarioStatus newStatus) onStatusChanged;
   final bool isReadOnly;
+  final VoidCallback? onTap;
 
   const ScenarioListItem({
     super.key,
@@ -29,6 +30,7 @@ class ScenarioListItem extends StatelessWidget {
     this.status = const UserScenarioStatus(),
     required this.onStatusChanged,
     this.isReadOnly = false,
+    this.onTap,
   });
 
   /// ステータスに基づいて「優先表示カラー」を決定する
@@ -51,7 +53,7 @@ class ScenarioListItem extends StatelessWidget {
         borderRadius: BorderRadius.circular(_kCardBorderRadius),
       ),
       child: InkWell(
-        onTap: isReadOnly ? null : () => _showStatusMenu(context),
+        onTap: onTap ?? (isReadOnly ? null : () => _showStatusMenu(context)),
         // IntrinsicHeight: カラーバーの高さをコンテンツに合わせて自動伸縮させるために必須
         child: IntrinsicHeight(
           child: Row(
