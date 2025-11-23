@@ -6,14 +6,15 @@ import 'package:my_madamis_app/features/player_finder/domain/repositories/player
 import 'package:my_madamis_app/models/ModelProvider.dart';
 
 class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
-  // ★改善: マジックストリングを定数として定義
+  // 定数化: API定義と紐付いていることを明示
   static const String _kQueryKey = 'findUnplayedFriends';
   
   @override
   Future<List<User>> findUnplayedFriends(String scenarioId) async {
+    // 文字列埋め込みを使用してクエリを作成
     const query = r'''
       query FindUnplayedFriends($scenarioId: String!) {
-        findUnplayedFriends(scenarioId: $scenarioId)
+        ''' + _kQueryKey + r'''(scenarioId: $scenarioId)
       }
     ''';
 
@@ -28,7 +29,6 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
 
       // 1. GraphQLレベルのエラーチェック
       if (response.hasErrors) {
-        // ★改善: エラー内容を含めて例外をスロー
         final errors = response.errors.map((e) => e.message).join(', ');
         throw Exception('GraphQL Errors: $errors');
       }
@@ -38,10 +38,10 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
         throw Exception('Response data is null');
       }
 
-      // 2. レスポンスの解析
+      // 2. レスポンスの解析 (Mapとしてデコード)
       final Map<String, dynamic> outerMap = jsonDecode(responseData);
       
-      // ★改善: 定数を使用して値を取得
+      // 定数を使用して値を取得
       final String? innerJsonString = outerMap[_kQueryKey];
       
       if (innerJsonString == null) {
@@ -67,8 +67,7 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
       safePrint('Error in findUnplayedFriends: $e');
       safePrint('Stack trace: $stackTrace');
       
-      // ★改善: エラーを握りつぶさず再スローする
-      // これによりViewModelが「0件」と「エラー」を区別できるようになる
+      // エラーを握りつぶさず再スローする (ViewModelでハンドリングするため)
       rethrow;
     }
   }

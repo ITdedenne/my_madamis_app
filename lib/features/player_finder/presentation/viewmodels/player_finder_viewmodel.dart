@@ -5,68 +5,38 @@ import 'package:my_madamis_app/features/player_finder/domain/usecases/find_unpla
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
 
-class PlayerFinderState {
-  final bool isLoading;
-  final List<User> unplayedFriends;
-  final String? errorMessage;
-
-  PlayerFinderState({
-    this.isLoading = false,
-    this.unplayedFriends = const [],
-    this.errorMessage,
-  });
-
-  PlayerFinderState copyWith({
-    bool? isLoading,
-    List<User>? unplayedFriends,
-    String? errorMessage,
-  }) {
-    return PlayerFinderState(
-      isLoading: isLoading ?? this.isLoading,
-      unplayedFriends: unplayedFriends ?? this.unplayedFriends,
-      errorMessage: errorMessage, // nullを渡せばクリアされるようにする
-    );
-  }
-}
-
+// UseCaseのプロバイダー
 final findUnplayedFriendsUseCaseProvider = Provider<FindUnplayedFriendsUseCase>((ref) {
   return FindUnplayedFriendsUseCase(ref.watch(playerFinderRepositoryProvider));
 });
 
-final playerFinderViewModelProvider = StateNotifierProvider.autoDispose<PlayerFinderViewModel, PlayerFinderState>((ref) {
-  return PlayerFinderViewModel(ref.watch(findUnplayedFriendsUseCaseProvider));
+// familyを使ってシナリオIDごとに状態を管理する (AutoDisposeで自動破棄)
+// AsyncValue<List<User>> が状態となるため、独自のStateクラスは廃止
+final playerFinderProvider = StateNotifierProvider.autoDispose
+    .family<PlayerFinderViewModel, AsyncValue<List<User>>, String>((ref, scenarioId) {
+  return PlayerFinderViewModel(
+    ref.watch(findUnplayedFriendsUseCaseProvider),
+    scenarioId,
+  );
 });
 
-class PlayerFinderViewModel extends StateNotifier<PlayerFinderState> {
+class PlayerFinderViewModel extends StateNotifier<AsyncValue<List<User>>> {
   final FindUnplayedFriendsUseCase _useCase;
+  final String _scenarioId;
 
-  PlayerFinderViewModel(this._useCase) : super(PlayerFinderState());
+  // 初期化時に loading 状態にする
+  PlayerFinderViewModel(this._useCase, this._scenarioId) : super(const AsyncValue.loading()) {
+    _init();
+  }
 
-  Future<void> loadUnplayedFriends(String scenarioId) async {
-    // ローディング開始、エラーメッセージはクリア
-    // ★重要: errorMessageにnullを明示的に渡してリセットする
-    state = PlayerFinderState(
-      isLoading: true,
-      unplayedFriends: state.unplayedFriends, // 前のリストを維持するか空にするかは要件次第（ここでは維持）
-      errorMessage: null,
-    );
-    
-    try {
-      final friends = await _useCase(scenarioId);
-      
-      // 成功時: エラーなし、リスト更新
-      state = state.copyWith(
-        isLoading: false,
-        unplayedFriends: friends,
-      );
-    } catch (e) {
-      // ★改善: エラー発生時、errorMessageを設定
-      state = state.copyWith(
-        isLoading: false,
-        errorMessage: 'データの取得に失敗しました: ${e.toString()}',
-        // エラー時はリストを空にするか、古いデータを残すか。ここでは誤解を防ぐため空にするか検討
-        // 今回は「取得失敗」を表示するので、リスト更新は行わない（copyWithのデフォルト動作）
-      );
-    }
+  Future<void> _init() async {
+    // AsyncValue.guard が try-catch を代行し、エラー時は AsyncError に変換してくれる
+    state = await AsyncValue.guard(() => _useCase(_scenarioId));
+  }
+  
+  // リトライなどのために手動で再取得するメソッド
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(() => _useCase(_scenarioId));
   }
 }
