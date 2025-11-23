@@ -2,16 +2,20 @@ import json
 import os
 import boto3
 from html.parser import HTMLParser
-from decimal import Decimal
+import datetime
 
 # =================================================================
-# ★ 修正箇所: 直値でテーブル名と User Pool ID を指定
-# WARNING: 本番環境デプロイ前にこの直値を動的変数に戻してください
-USER_TABLE_NAME = 'User-eju77evq3javlfhhc6o5pecapy-dev'
-COGNITO_USER_POOL_ID = 'ap-northeast-1_cNMzs7UkA' # ★ Cognito User Pool ID の直値
+# ★ 修正: 環境変数から動的に値を取得 (IaC準拠)
 # =================================================================
+# Amplifyによって自動的に注入される環境変数を使用します
+ENV = os.environ['ENV']
+REGION = os.environ['REGION']
+API_ID = os.environ['API_MYMADAMISAPP_GRAPHQLAPIIDOUTPUT']
+USER_POOL_ID = os.environ['AUTH_MYMADAMISAPPB2BF781D_USERPOOLID']
 
-REGION = os.environ.get('REGION')
+# テーブル名を動的に構築 (User-APIID-ENV の形式)
+USER_TABLE_NAME = f'User-{API_ID}-{ENV}'
+# =================================================================
 
 cognito_client = boto3.client('cognito-idp', region_name=REGION)
 dynamodb_client = boto3.resource('dynamodb', region_name=REGION)
@@ -71,8 +75,9 @@ def handler(event, context):
             raise ValueError("自己紹介は160文字以下である必要があります。")
 
         # (4) Cognito User Pool の更新 (5.2.5 - preferred_username の同期)
+        # 指定された環境のUser Poolを更新
         cognito_client.admin_update_user_attributes(
-            UserPoolId=COGNITO_USER_POOL_ID, # ★ 直値を使用
+            UserPoolId=USER_POOL_ID, 
             Username=cognito_username,
             UserAttributes=[
                 {
@@ -83,6 +88,10 @@ def handler(event, context):
         )
 
         # (5) DynamoDB の更新 (5.2.5 - username/bio の同期)
+        now = datetime.datetime.now(datetime.timezone.utc)
+        # DynamoDB用のISOフォーマット (ミリ秒3桁+Z)
+        iso_now = now.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3] + 'Z'
+
         update_expression = "SET #un = :new_un, #bio = :new_bio, updatedAt = :updatedAt"
         expression_attribute_names = {
             '#un': 'username',
@@ -91,7 +100,7 @@ def handler(event, context):
         expression_attribute_values = {
             ':new_un': new_username,
             ':new_bio': sanitized_bio,
-            ':updatedAt': str(Decimal(context.get_remaining_time_in_millis() / 1000)),
+            ':updatedAt': iso_now,
         }
         
         user_table.update_item(

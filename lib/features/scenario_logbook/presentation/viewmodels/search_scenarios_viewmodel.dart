@@ -1,3 +1,5 @@
+// ファイルパス: lib/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +10,6 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels
 const int _kPageLimit = 48;
 
 class SearchFilter {
-  // ... (変更なし)
   final RangeValues playerCountRange;
   final GmRequirement? gmRequirement;
   final String? authorName;
@@ -33,14 +34,14 @@ class SearchScenariosState {
   final String? successMessage;
   final SearchFilter filter;
   final String searchTerm;
-  final int displayLimit; // ★ 追加: 現在の表示上限数
+  final int displayLimit; // 現在の表示上限数
 
   SearchScenariosState({
     this.errorMessage,
     this.successMessage,
     SearchFilter? filter,
     this.searchTerm = '',
-    this.displayLimit = _kPageLimit, // 初期値は48件
+    this.displayLimit = _kPageLimit,
   }) : filter = filter ?? SearchFilter.initial();
 
   SearchScenariosState copyWith({
@@ -65,7 +66,7 @@ final searchScenariosViewModelProvider =
   return SearchScenariosViewModel();
 });
 
-// ★ 1. まず全件から絞り込んだリストを作成するProvider (計算用)
+// 1. まず全件から絞り込んだリストを作成するProvider (計算用)
 final _filteredAllScenariosProvider = Provider<AsyncValue<List<Scenario>>>((ref) {
   final allScenariosAsync = ref.watch(allScenariosProvider);
   final searchState = ref.watch(searchScenariosViewModelProvider);
@@ -78,13 +79,16 @@ final _filteredAllScenariosProvider = Provider<AsyncValue<List<Scenario>>>((ref)
       final filter = searchState.filter;
       final term = searchState.searchTerm.toLowerCase();
       
+      // 検索ワードによる絞り込み
       if (term.isNotEmpty) {
         filtered = filtered.where((s) {
-          return s.title.toLowerCase().contains(term) ||
-                 s.authorName.toLowerCase().contains(term);
+          // ★ 修正: 事前計算済みのフィールドを使うことで高速化
+          return s.titleLower.contains(term) ||
+                 s.authorNameLower.contains(term);
         }).toList();
       }
       
+      // 人数による絞り込み
       final start = filter.playerCountRange.start.round();
       final end = filter.playerCountRange.end.round();
       if (start > 1 || end < 15) {
@@ -93,10 +97,12 @@ final _filteredAllScenariosProvider = Provider<AsyncValue<List<Scenario>>>((ref)
         }).toList();
       }
 
+      // GM要否による絞り込み
       if (filter.gmRequirement != null) {
         filtered = filtered.where((s) => s.gmRequirement == filter.gmRequirement).toList();
       }
 
+      // 作者名による絞り込み
       if (filter.authorName != null && filter.authorName!.isNotEmpty) {
         filtered = filtered.where((s) => s.authorName == filter.authorName).toList();
       }
@@ -108,13 +114,12 @@ final _filteredAllScenariosProvider = Provider<AsyncValue<List<Scenario>>>((ref)
   );
 });
 
-// ★ 2. UIに渡す「表示用」リストのProvider (表示上限数でカット)
+// 2. UIに渡す「表示用」リストのProvider (表示上限数でカット)
 final displayedScenariosProvider = Provider<AsyncValue<List<Scenario>>>((ref) {
   final filteredAsync = ref.watch(_filteredAllScenariosProvider);
   final limit = ref.watch(searchScenariosViewModelProvider).displayLimit;
 
   return filteredAsync.whenData((scenarios) {
-    // displayLimit件数分だけ切り出して返す
     if (scenarios.length > limit) {
       return scenarios.sublist(0, limit);
     }
@@ -130,7 +135,6 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   void onSearchTermChanged(String term) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 300), () {
-      // 検索条件が変わったら表示件数をリセット
       state = state.copyWith(
         searchTerm: term,
         displayLimit: _kPageLimit, 
@@ -139,14 +143,12 @@ class SearchScenariosViewModel extends StateNotifier<SearchScenariosState> {
   }
 
   void applyFilter(SearchFilter newFilter) {
-    // フィルターが変わったら表示件数をリセット
     state = state.copyWith(
       filter: newFilter,
       displayLimit: _kPageLimit,
     );
   }
 
-  // ★ 追加: 無限スクロール用 (もっと読み込む)
   void loadMore() {
     state = state.copyWith(displayLimit: state.displayLimit + _kPageLimit);
   }

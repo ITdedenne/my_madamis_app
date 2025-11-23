@@ -1,3 +1,5 @@
+// ファイルパス: lib/features/scenario_logbook/data/repositories/scenario_repository_impl.dart
+
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/foundation.dart'; // compute用
@@ -9,14 +11,11 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenari
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import '../../domain/repositories/scenario_repository.dart';
 
-// --- 定数定義 (マジックナンバー/ストリングの排除) ---
-const String _kScenariosFileName = 'Scenarios.json'; // S3上のファイル名
-const String _kAuthorsFileName = 'Authors.json';     // S3上のファイル名
+// --- 定数定義 ---
+const String _kScenariosFileName = 'Scenarios.json';
+const String _kAuthorsFileName = 'Authors.json';
 
 // --- トップレベル関数 (compute用) ---
-// compute関数はトップレベル関数またはstaticメソッドである必要があります。
-
-/// シナリオデータのJSONパース処理
 List<Scenario> _parseScenarios(Map<String, dynamic> data) {
   final jsonString = data['jsonString'] as String;
   final authorMap = data['authorMap'] as Map<String, String>;
@@ -24,7 +23,6 @@ List<Scenario> _parseScenarios(Map<String, dynamic> data) {
   final scenarioList = jsonDecode(jsonString) as List;
   final List<Scenario> allScenarios = [];
   for (var scenarioJson in scenarioList) {
-    // isVisibleチェックとauthorMapの存在確認
     if (scenarioJson['isVisible'] == true && authorMap.containsKey(scenarioJson['authorId'])) {
       final authorName = authorMap[scenarioJson['authorId']]!;
       allScenarios.add(Scenario.fromJson(scenarioJson, authorName));
@@ -33,7 +31,6 @@ List<Scenario> _parseScenarios(Map<String, dynamic> data) {
   return allScenarios;
 }
 
-/// 作者データのJSONパース処理
 Map<String, String> _parseAuthors(String jsonString) {
   final authorList = jsonDecode(jsonString) as List;
   final authorMap = <String, String>{};
@@ -93,10 +90,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       ).result;
 
       final jsonString = utf8.decode(authorDownload.bytes);
-
-      // ★ computeを使ってバックグラウンドでパース
       _cachedAuthorMap = await compute(_parseAuthors, jsonString);
-
       return _cachedAuthorMap!;
     } catch (e) {
       throw Exception('Failed to fetch authors: $e');
@@ -116,7 +110,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
     try {
       final authorMap = await _fetchAndCacheAuthorMap();
-
       final scenarioDownload = await Amplify.Storage.downloadData(
         key: _kScenariosFileName,
         options: const StorageDownloadDataOptions(
@@ -124,14 +117,10 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       ).result;
 
       final jsonString = utf8.decode(scenarioDownload.bytes);
-
-      // ★ computeを使ってバックグラウンドでパース
-      // computeは引数を1つしか渡せないため、Mapにまとめて渡す
       _cachedScenarios = await compute(_parseScenarios, {
         'jsonString': jsonString,
         'authorMap': authorMap,
       });
-
       return _cachedScenarios!;
     } catch (e) {
       throw Exception('Failed to fetch scenarios: $e');
@@ -146,11 +135,16 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     return _cachedAuthorNames!;
   }
 
+  // ★ 修正: 自身のIDを取得して fetchUserScenarios に委譲
   @override
   Future<List<UserScenario>> fetchMyList() async {
     final userId = await _getCurrentUserId();
+    return fetchUserScenarios(userId);
+  }
 
-    // DynamoDBの制限値などを定数化しても良いですが、クエリ内なのでここではリテラルで記述します
+  // ★ 追加: 指定ユーザーのシナリオ取得
+  @override
+  Future<List<UserScenario>> fetchUserScenarios(String userId) async {
     const queryDoc = r'''
       query ListUserScenarios($userId: ID!) {
         listUserScenarios(filter: { userId: { eq: $userId } }, limit: 2000) {
@@ -165,11 +159,9 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       }
     ''';
 
-    final request =
-        GraphQLRequest<PaginatedResult<amplify_models.UserScenario>>(
+    final request = GraphQLRequest<PaginatedResult<amplify_models.UserScenario>>(
       document: queryDoc,
-      modelType:
-          const PaginatedModelType(amplify_models.UserScenario.classType),
+      modelType: const PaginatedModelType(amplify_models.UserScenario.classType),
       variables: {'userId': userId},
       decodePath: 'listUserScenarios',
       authorizationMode: APIAuthorizationType.userPools,
@@ -177,7 +169,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
     final response = await Amplify.API.query(request: request).response;
     if (response.data == null || response.hasErrors) {
-      throw Exception('Failed to fetch my list: ${response.errors}');
+      throw Exception('Failed to fetch user scenarios: ${response.errors}');
     }
 
     final userScenarioModels = response.data!.items
@@ -188,8 +180,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
     final List<UserScenario> result = [];
     for (var usModel in userScenarioModels) {
-      final scenario =
-          allScenarios.firstWhereOrNull((s) => s.id == usModel.scenarioId);
+      final scenario = allScenarios.firstWhereOrNull((s) => s.id == usModel.scenarioId);
 
       if (scenario != null) {
         result.add(UserScenario(
@@ -211,7 +202,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     final userId = await _getCurrentUserId();
 
     if (status.isUnregistered) {
-      safePrint('Status is all false. Removing UserScenario: $scenarioId');
       await removeUserScenarioStatus(scenarioId);
       return;
     }
@@ -233,15 +223,9 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           isPossessed: status.isPossessed,
           wantsToGm: status.wantsToGm,
         );
-        await Amplify.API
-            .mutate(request: ModelMutations.update(updatedItem))
-            .response;
-        safePrint('Updated UserScenario: $scenarioId');
+        await Amplify.API.mutate(request: ModelMutations.update(updatedItem)).response;
       } else {
-        await Amplify.API
-            .mutate(request: ModelMutations.create(userScenario))
-            .response;
-        safePrint('Created UserScenario: $scenarioId');
+        await Amplify.API.mutate(request: ModelMutations.create(userScenario)).response;
       }
     } catch (e) {
       safePrint('Error updating scenario status: $e');
@@ -258,16 +242,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
       if (existing != null) {
         final request = ModelMutations.delete(existing);
-        final response = await Amplify.API.mutate(request: request).response;
-
-        if (response.hasErrors) {
-          safePrint('削除中にGraphQLエラーが発生しました: ${response.errors}');
-        } else {
-          safePrint('Removed UserScenario successfully: $scenarioId');
-        }
-      } else {
-        safePrint(
-            '削除対象のUserScenarioが見つかりませんでした (すでに削除済みの可能性があります): $scenarioId');
+        await Amplify.API.mutate(request: request).response;
       }
     } catch (e) {
       safePrint('Error deleting scenario: $e');

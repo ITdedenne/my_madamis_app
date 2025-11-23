@@ -27,7 +27,7 @@ type User @model
 
   # ----- リレーション -----
   userScenarios: [UserScenario] @hasMany(indexName: "byUser", fields: ["id"])
-  following: [UserRelationship] @hasMany(indexName: "byFollowing", fields: ["id"])
+  following: [UserRelationship] @hasMany(fields: ["id"])
 }
 
 
@@ -39,17 +39,10 @@ type UserRelationship @model
     { allow: owner, ownerField: "followingId", operations: [create, read, delete] }
   ])
 {
-  # 5.3: PK: (followingId, followedId)。followingIdがPK、followedIdがSK。
   followingId: ID! @primaryKey(sortKeyFields: ["followedId"])
-  # GSI byFollowing の定義（@hasMany の参照先として必須）
-  @index(name: "byFollowing", queryField: "listByFollowing") 
   
-  # 5.3: followedId はSKとして利用
-  followedId: ID! 
-  # GSI: byFollowed on followedId (followedIdがPK、followingIdがSK)
-  @index(name: "byFollowed", sortKeyFields: ["followingId"], queryField: "listByFollowed")
+  followedId: ID! @index(name: "byFollowed", sortKeyFields: ["followingId"], queryField: "listByFollowed")
   
-  # ----- リレーション -----
   followingUser: User @belongsTo(fields: ["followingId"])
   followedUser: User @belongsTo(fields: ["followedId"])
 }
