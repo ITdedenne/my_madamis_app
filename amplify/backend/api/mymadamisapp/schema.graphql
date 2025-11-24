@@ -71,6 +71,7 @@ type UserScenario @model
   isPlayed: Boolean!
   isPossessed: Boolean!
   wantsToGm: Boolean!
+  wantsToPlay: Boolean # ★追加: PL希望 (Nullable)
   # ----- リレーション -----
   user: User @belongsTo(fields: ["userId"])
 }

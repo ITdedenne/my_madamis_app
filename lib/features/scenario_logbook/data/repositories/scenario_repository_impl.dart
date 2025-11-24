@@ -1,5 +1,3 @@
-// ファイルパス: lib/features/scenario_logbook/data/repositories/scenario_repository_impl.dart
-
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/foundation.dart'; // compute用
@@ -135,14 +133,12 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     return _cachedAuthorNames!;
   }
 
-  // ★ 修正: 自身のIDを取得して fetchUserScenarios に委譲
   @override
   Future<List<UserScenario>> fetchMyList() async {
     final userId = await _getCurrentUserId();
     return fetchUserScenarios(userId);
   }
 
-  // ★ 追加: 指定ユーザーのシナリオ取得
   @override
   Future<List<UserScenario>> fetchUserScenarios(String userId) async {
     const queryDoc = r'''
@@ -154,6 +150,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
             isPlayed
             isPossessed
             wantsToGm
+            wantsToPlay
           }
         }
       }
@@ -189,6 +186,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
             isPlayed: usModel.isPlayed,
             isPossessed: usModel.isPossessed,
             wantsToGm: usModel.wantsToGm,
+            wantsToPlay: usModel.wantsToPlay ?? false, // ★ 追加: Nullable対応
           ),
         ));
       }
@@ -212,6 +210,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       isPlayed: status.isPlayed,
       isPossessed: status.isPossessed,
       wantsToGm: status.wantsToGm,
+      wantsToPlay: status.wantsToPlay, // ★ 追加
     );
 
     try {
@@ -222,6 +221,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           isPlayed: status.isPlayed,
           isPossessed: status.isPossessed,
           wantsToGm: status.wantsToGm,
+          wantsToPlay: status.wantsToPlay, // ★ 追加
         );
         await Amplify.API.mutate(request: ModelMutations.update(updatedItem)).response;
       } else {

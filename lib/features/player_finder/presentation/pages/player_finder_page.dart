@@ -1,5 +1,3 @@
-// ファイルパス: lib/features/player_finder/presentation/pages/player_finder_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/player_finder/presentation/viewmodels/player_finder_viewmodel.dart';
@@ -13,7 +11,6 @@ class PlayerFinderPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // ref.watchするだけで取得開始＆状態監視
     final asyncState = ref.watch(playerFinderProvider(scenario.id));
 
     return Scaffold(
@@ -30,7 +27,6 @@ class PlayerFinderPage extends ConsumerWidget {
           ],
         ),
       ),
-      // .when を使って 3つの状態を宣言的に記述
       body: asyncState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(
@@ -63,15 +59,19 @@ class PlayerFinderPage extends ConsumerWidget {
           }
           
           return ListView.builder(
-            // FABがなくなったので、bottomの余白は不要
             padding: const EdgeInsets.all(8.0),
             itemCount: unplayedFriends.length,
             itemBuilder: (context, index) {
-              final user = unplayedFriends[index];
+              final searchedUser = unplayedFriends[index];
+              final user = searchedUser.user;
+              
+              // ★ リストアイテムのカスタマイズ (PL希望バッジ)
               return UserListItem(
                 user: user,
-                actionButtonLabel: null, // 表示専用
-                // タップ時の遷移先などが未定の場合は null にしておくとリップルエフェクトが出ず、UXが良い
+                // PL希望がある場合はボタンラベルとして表示し、色を変えて目立たせる
+                actionButtonLabel: searchedUser.wantsToPlay ? 'PL希望' : null,
+                actionButtonColor: searchedUser.wantsToPlay ? Colors.pink.shade50 : null,
+                actionButtonTextColor: searchedUser.wantsToPlay ? Colors.pink : null,
                 onTap: null, 
               );
             },
