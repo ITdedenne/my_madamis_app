@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:my_madamis_app/features/player_finder/domain/entities/searched_user.dart'; // ★ 追加
+import 'package:my_madamis_app/features/player_finder/domain/entities/searched_user.dart';
 import 'package:my_madamis_app/features/player_finder/data/repositories/player_finder_repository.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 
@@ -8,16 +8,21 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
   static const String _kQueryKey = 'findUnplayedFriends';
   
   @override
-  Future<List<SearchedUser>> findUnplayedFriends(String scenarioId) async {
+  // ★ mode引数を追加
+  Future<List<SearchedUser>> findUnplayedFriends(String scenarioId, {String mode = 'player'}) async {
+    // ★ queryに $mode 変数を追加
     const query = r'''
-      query FindUnplayedFriends($scenarioId: String!) {
-        ''' + _kQueryKey + r'''(scenarioId: $scenarioId)
+      query FindUnplayedFriends($scenarioId: String!, $mode: String) {
+        ''' + _kQueryKey + r'''(scenarioId: $scenarioId, mode: $mode)
       }
     ''';
     
     final request = GraphQLRequest<String>(
       document: query,
-      variables: {'scenarioId': scenarioId},
+      variables: {
+        'scenarioId': scenarioId,
+        'mode': mode, // ★ 変数にセット
+      },
     );
 
     try {
@@ -46,15 +51,19 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
          throw Exception('Decoded JSON is not a List');
       }
 
-      // ★ 変換ロジックを更新: JSONからwantsToPlayを取り出しSearchedUserを作成
+      // ★ 変換ロジックを更新: ステータス情報をパース
       return decodedList.map((json) {
         if (json is Map<String, dynamic>) {
           // Userモデルの復元
           final user = User.fromJson(json);
-          // 拡張フィールドの取得
-          final wantsToPlay = json['wantsToPlay'] as bool? ?? false;
           
-          return SearchedUser(user: user, wantsToPlay: wantsToPlay);
+          return SearchedUser(
+            user: user,
+            wantsToPlay: json['wantsToPlay'] as bool? ?? false,
+            isPlayed: json['isPlayed'] as bool? ?? false,
+            isPossessed: json['isPossessed'] as bool? ?? false,
+            wantsToGm: json['wantsToGm'] as bool? ?? false,
+          );
         }
         return null;
       }).whereType<SearchedUser>().toList();

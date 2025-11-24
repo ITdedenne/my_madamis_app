@@ -81,7 +81,7 @@ type UserScenario @model
 # 5.2: カスタムLambda関数 (Query / Mutation)
 # =================================================================
 type Query {
-  findUnplayedFriends(scenarioId: String!): String
+  findUnplayedFriends(scenarioId: String!,mode: String): String
     @function(name: "findUnplayedFriends-${env}")
     @auth(rules: [{ allow: private }])
 

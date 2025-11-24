@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/player_finder/domain/entities/searched_user.dart';
 import 'package:my_madamis_app/features/player_finder/presentation/viewmodels/player_finder_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/common/widgets/user_list_item.dart';
@@ -11,14 +12,15 @@ class PlayerFinderPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final asyncState = ref.watch(playerFinderProvider(scenario.id));
+    final state = ref.watch(playerFinderProvider(scenario.id));
+    final notifier = ref.read(playerFinderProvider(scenario.id).notifier);
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('未通過フレンズ', style: TextStyle(fontSize: 16)),
+            const Text('フレンズを探す', style: TextStyle(fontSize: 16)),
             Text(
               scenario.title,
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
@@ -27,56 +29,160 @@ class PlayerFinderPage extends ConsumerWidget {
           ],
         ),
       ),
-      body: asyncState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Colors.red),
-              const SizedBox(height: 16),
-              Text('エラーが発生しました:\n$error', textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.read(playerFinderProvider(scenario.id).notifier).refresh(),
-                child: const Text('再読み込み'),
-              ),
-            ],
+      body: Column(
+        children: [
+          // --- ★ モード切替タブ ---
+          Container(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _ModeTabButton(
+                    label: 'プレイヤーを探す',
+                    isSelected: state.mode == PlayerFinderMode.player,
+                    onTap: () => notifier.setMode(PlayerFinderMode.player),
+                    activeColor: Colors.pink,
+                  ),
+                ),
+                Expanded(
+                  child: _ModeTabButton(
+                    label: 'GMを探す',
+                    isSelected: state.mode == PlayerFinderMode.gm,
+                    onTap: () => notifier.setMode(PlayerFinderMode.gm),
+                    activeColor: Colors.orange,
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        data: (unplayedFriends) {
-          if (unplayedFriends.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  '未通過のフレンズは見つかりませんでした。\n全員通過済か、フレンズがいません。',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
+          const Divider(height: 1),
+
+          // --- リスト表示 ---
+          Expanded(
+            child: state.users.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const SizedBox(height: 16),
+                    Text('エラーが発生しました:\n$error', textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => notifier.refresh(),
+                      child: const Text('再読み込み'),
+                    ),
+                  ],
                 ),
               ),
-            );
-          }
-          
-          return ListView.builder(
-            padding: const EdgeInsets.all(8.0),
-            itemCount: unplayedFriends.length,
-            itemBuilder: (context, index) {
-              final searchedUser = unplayedFriends[index];
-              final user = searchedUser.user;
-              
-              // ★ リストアイテムのカスタマイズ (PL希望バッジ)
-              return UserListItem(
-                user: user,
-                // PL希望がある場合はボタンラベルとして表示し、色を変えて目立たせる
-                actionButtonLabel: searchedUser.wantsToPlay ? 'PL希望' : null,
-                actionButtonColor: searchedUser.wantsToPlay ? Colors.pink.shade50 : null,
-                actionButtonTextColor: searchedUser.wantsToPlay ? Colors.pink : null,
-                onTap: null, 
-              );
-            },
-          );
-        },
+              data: (users) {
+                if (users.isEmpty) {
+                  final emptyMessage = state.mode == PlayerFinderMode.player
+                      ? '未通過のフレンズは見つかりませんでした。'
+                      : 'GM可能なフレンズは見つかりませんでした。\n(所持・通過済・購入検討)';
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        emptyMessage,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(8.0),
+                  itemCount: users.length,
+                  itemBuilder: (context, index) {
+                    final searchedUser = users[index];
+                    return _buildUserItem(context, searchedUser, state.mode);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserItem(BuildContext context, SearchedUser searchedUser, PlayerFinderMode mode) {
+    String? label;
+    Color? color;
+    Color? textColor;
+
+    if (mode == PlayerFinderMode.player) {
+      // PL検索モード: PL希望者を目立たせる
+      if (searchedUser.wantsToPlay) {
+        label = 'PL希望';
+        color = Colors.pink.shade50;
+        textColor = Colors.pink;
+      }
+    } else {
+      // GM検索モード: ステータスを表示 (優先度順: 所持 > 通過済 > 購入検討)
+      if (searchedUser.isPossessed) {
+        label = '所持';
+        color = Colors.blue.shade50;
+        textColor = Colors.blue;
+      } else if (searchedUser.isPlayed) {
+        label = '通過済';
+        color = Colors.green.shade50;
+        textColor = Colors.green;
+      } else if (searchedUser.wantsToGm) {
+        label = '購入検討'; // wantsToGmの表示名を変更
+        color = Colors.orange.shade50;
+        textColor = Colors.orange;
+      }
+    }
+
+    return UserListItem(
+      user: searchedUser.user,
+      actionButtonLabel: label,
+      actionButtonColor: color,
+      actionButtonTextColor: textColor,
+      onTap: null, // 必要であればプロフィールへ遷移など
+    );
+  }
+}
+
+class _ModeTabButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color activeColor;
+
+  const _ModeTabButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.activeColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: isSelected ? activeColor : Colors.transparent,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? activeColor : Colors.grey,
+          ),
+        ),
       ),
     );
   }

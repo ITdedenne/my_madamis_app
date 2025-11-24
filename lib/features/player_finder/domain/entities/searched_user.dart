@@ -4,10 +4,18 @@ import 'package:my_madamis_app/models/ModelProvider.dart';
 /// Userモデルに加え、検索条件（PL希望など）の状態を保持する
 class SearchedUser {
   final User user;
+  // PLモード用
   final bool wantsToPlay;
+  // GMモード用
+  final bool isPlayed;
+  final bool isPossessed;
+  final bool wantsToGm; // シナリオ購入検討
 
   const SearchedUser({
     required this.user,
     this.wantsToPlay = false,
+    this.isPlayed = false,
+    this.isPossessed = false,
+    this.wantsToGm = false,
   });
 }

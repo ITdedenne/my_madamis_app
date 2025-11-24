@@ -65,7 +65,8 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                       Tab(text: 'すべて'),
                       Tab(text: '通過済'),
                       Tab(text: '所持'),
-                      Tab(text: 'GM検討'),
+                      // ★ 修正: タブ名を「購入検討」に変更
+                      Tab(text: '購入検討'),
                     ],
                   ),
                 ),
@@ -192,7 +193,8 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
       MyListFilter.all => '記録されたシナリオはありません。\n「探す」画面から追加しましょう！',
       MyListFilter.played => '「通過済」のシナリオはありません。',
       MyListFilter.possessed => '「所持」しているシナリオはありません。',
-      MyListFilter.wantsToGm => '「GM検討中」のシナリオはありません。',
+      // ★ 修正: メッセージを更新
+      MyListFilter.wantsToGm => '「購入検討中」のシナリオはありません。',
     };
 
     return Center(

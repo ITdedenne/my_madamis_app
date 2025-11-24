@@ -1,5 +1,6 @@
 // ファイルパス: lib/features/home/presentation/pages/home_page.dart
 
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
@@ -8,7 +9,7 @@ import 'package:my_madamis_app/features/settings/presentation/pages/settings_pag
 import 'package:my_madamis_app/features/scenario_logbook/presentation/pages/scenario_logbook_page.dart';
 import 'package:my_madamis_app/features/friends/presentation/pages/friends_page.dart';
 import 'package:my_madamis_app/features/player_finder/presentation/pages/player_finder_scenario_select_page.dart';
-import 'package:my_madamis_app/features/group_search/presentation/pages/group_search_settings_page.dart'; 
+import 'package:my_madamis_app/features/group_search/presentation/pages/group_search_settings_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -16,6 +17,7 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateNotifierProvider);
+    final theme = Theme.of(context);
 
     ref.listen<AuthState>(authStateNotifierProvider, (previous, next) {
       if (next.flashMessage != null && next.status == AuthStatus.authenticated) {
@@ -29,181 +31,432 @@ class HomePage extends ConsumerWidget {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ホーム'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person_outline),
-            tooltip: 'プロフィール',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
-              );
-            },
+      body: Stack(
+        children: [
+          // --- 1. 背景レイヤー (変更なし) ---
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  theme.colorScheme.surface,
+                  theme.colorScheme.secondaryContainer.withOpacity(0.2),
+                ],
+                stops: const [0.0, 0.5, 1.0],
+              ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            tooltip: '設定',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsPage()),
-              );
-            },
+          // 背景装飾
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.colorScheme.primary.withOpacity(0.05),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 100,
+                    color: theme.colorScheme.primary.withOpacity(0.1),
+                  )
+                ]
+              ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'サインアウト',
-            onPressed: () {
-              ref.read(authStateNotifierProvider.notifier).signOut();
-            },
+
+          // --- 2. コンテンツレイヤー ---
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- ヘッダーエリア (Top Bar) ---
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // タイトル (アプリ名など)
+                      Text(
+                        'Home',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface.withOpacity(0.8),
+                        ),
+                      ),
+                      // 右上のアクションボタン群 (設定 & ログアウト)
+                      Row(
+                        children: [
+                          _GlassActionButton(
+                            icon: Icons.settings_outlined,
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const SettingsPage()),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _GlassActionButton(
+                            icon: Icons.logout_rounded,
+                            onTap: () => ref.read(authStateNotifierProvider.notifier).signOut(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 24),
+
+                  // --- ウェルカムヘッダー (タップでプロフィールへ) ---
+                  // プロフィールアイコンを廃止し、ここを入り口にする
+                  _buildGlassWelcomeHeader(context, authState.username),
+                  
+                  const SizedBox(height: 32),
+
+                  // --- メニューセクション ---
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Text(
+                      'メニュー',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface.withOpacity(0.8),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWideScreen = constraints.maxWidth >= 600;
+                      final crossAxisCount = isWideScreen ? (constraints.maxWidth / 380).floor() : 1;
+
+                      return GridView.count(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisCount: crossAxisCount,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: isWideScreen ? 1.5 : 1.8,
+                        children: [
+                          _MenuCard(
+                            title: 'シナリオ手帳',
+                            description: '通過・所持シナリオを記録',
+                            icon: Icons.menu_book,
+                            gradientColors: [Colors.blue.shade400, Colors.blue.shade700],
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScenarioLogbookPage())),
+                          ),
+                          _MenuCard(
+                            title: 'フレンズ',
+                            description: 'フォローリストとユーザー検索',
+                            icon: Icons.people_alt_rounded,
+                            gradientColors: [Colors.orange.shade400, Colors.deepOrange.shade600],
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsPage())),
+                          ),
+                          _MenuCard(
+                            title: 'プレイヤーを探す',
+                            description: 'シナリオを指定して未通過者を検索',
+                            icon: Icons.person_search_rounded,
+                            gradientColors: [Colors.purple.shade400, Colors.deepPurple.shade600],
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlayerFinderScenarioSelectPage())),
+                          ),
+                          _MenuCard(
+                            title: 'グループ検索',
+                            description: 'メンバー全員が遊べるシナリオを一括検索',
+                            icon: Icons.groups_rounded,
+                            gradientColors: [Colors.teal.shade400, Colors.teal.shade700],
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupSearchSettingsPage())),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'ようこそ、${authState.username ?? ''}さん！',
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
+    );
+  }
+
+  // タップ可能なウェルカムヘッダー
+  Widget _buildGlassWelcomeHeader(BuildContext context, String? username) {
+    final theme = Theme.of(context);
+    
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            // ★ ここでプロフィール画面へ遷移させる
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
             ),
-            const SizedBox(height: 30),
-            
-            // --- シナリオ手帳カード ---
-            Card(
-              elevation: 2,
-              color: Colors.blue.shade50,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const ScenarioLogbookPage()),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
+            highlightColor: theme.colorScheme.primary.withOpacity(0.1),
+            splashColor: theme.colorScheme.primary.withOpacity(0.2),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24.0),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: theme.colorScheme.onSurface.withOpacity(0.1),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      // アバター部分
+                      Hero( // 遷移先のアバターとアニメーションで繋ぐとさらにリッチ
+                        tag: 'profile-avatar',
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: theme.colorScheme.primary, width: 2),
+                          ),
+                          child: CircleAvatar(
+                            radius: 26,
+                            backgroundColor: theme.colorScheme.primaryContainer,
+                            child: Text(
+                              username != null && username.isNotEmpty ? username[0].toUpperCase() : '?',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome back',
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: theme.colorScheme.primary,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${username ?? 'Guest'} さん',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      // タップできることを示唆する小さなアイコン
+                      Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.auto_awesome, size: 16, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'プロフィールを確認・編集する',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- 新規追加: 設定/ログアウト用の小さなグラスボタン ---
+class _GlassActionButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _GlassActionButton({
+    required this.icon,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: theme.colorScheme.onSurface.withOpacity(0.1),
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+                size: 22,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- _MenuCard (先ほどと同じ) ---
+class _MenuCard extends StatelessWidget {
+  final String title;
+  final String description;
+  final IconData icon;
+  final List<Color> gradientColors;
+  final VoidCallback onTap;
+
+  const _MenuCard({
+    required this.title,
+    required this.description,
+    required this.icon,
+    required this.gradientColors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: gradientColors.last.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  right: -24,
+                  bottom: -24,
+                  child: Transform.rotate(
+                    angle: -0.2,
+                    child: Icon(
+                      icon,
+                      size: 140,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: -20,
+                  left: -20,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                ),
+                Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.menu_book, size: 40, color: Colors.blue),
-                      const SizedBox(height: 8),
-                      Text('シナリオ手帳', style: Theme.of(context).textTheme.titleLarge),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                        ),
+                        child: Icon(icon, color: Colors.white, size: 26),
+                      ),
+                      const Spacer(),
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
                       const SizedBox(height: 4),
-                      const Text(
-                        '通過したシナリオや所持しているシナリオを記録・管理できます。',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
+                      Text(
+                        description,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 12,
+                          height: 1.2,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-              ),
+              ],
             ),
-            
-            const SizedBox(height: 16),
-
-            // --- フレンズ機能カード ---
-            Card(
-              elevation: 2,
-              color: Colors.orange.shade50,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const FriendsPage()),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.people, size: 40, color: Colors.orange),
-                      const SizedBox(height: 8),
-                      Text('フレンズ', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'ユーザー検索やフォローリストの管理、マイリストの共有ができます。',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // --- プレイヤーファインダーカード ---
-            Card(
-              elevation: 2,
-              color: Colors.purple.shade50,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const PlayerFinderScenarioSelectPage()),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.person_search, size: 40, color: Colors.purple),
-                      const SizedBox(height: 8),
-                      Text('プレイヤーを探す', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 4),
-                      const Text(
-                        '遊びたいシナリオを指定して、未通過のフレンズを検索できます。',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // --- ★ 追加: シナリオグループ検索カード ---
-            Card(
-              elevation: 2,
-              color: Colors.teal.shade50,
-              child: InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const GroupSearchSettingsPage()),
-                  );
-                },
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.groups, size: 40, color: Colors.teal),
-                      const SizedBox(height: 8),
-                      Text('グループ検索', style: Theme.of(context).textTheme.titleLarge),
-                      const SizedBox(height: 4),
-                      const Text(
-                        '集まったメンバー全員が遊べる（未通過の）シナリオを一括検索します。',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -38,7 +38,7 @@ class ScenarioListItem extends StatelessWidget {
   Color? _getStatusColor(BuildContext context) {
     if (status.isPlayed) return Colors.green.shade400;
     if (status.wantsToGm) return Colors.orange.shade400;
-    if (status.wantsToPlay) return Colors.pink.shade400; // ★ 追加
+    if (status.wantsToPlay) return Colors.pink.shade400;
     if (status.isPossessed) return Colors.blue.shade400;
     return null; 
   }
@@ -143,10 +143,11 @@ class ScenarioListItem extends StatelessWidget {
           const _StatusChip(icon: Icons.book, label: '所持', color: Colors.blue),
         if (status.wantsToGm)
           const _StatusChip(
-              icon: Icons.manage_accounts, label: 'GM検討', color: Colors.orange),
+              // ★ 修正: アイコンとラベルを変更
+              icon: Icons.add_shopping_cart, label: '購入検討', color: Colors.orange),
         if (status.wantsToPlay)
           const _StatusChip(
-              icon: Icons.favorite, label: 'PL希望', color: Colors.pink), // ★ 追加
+              icon: Icons.favorite, label: 'PL希望', color: Colors.pink),
       ],
     );
   }
@@ -227,7 +228,7 @@ class _StatusSelectionSheetState extends State<_StatusSelectionSheet> {
   late bool _isPlayed;
   late bool _isPossessed;
   late bool _wantsToGm;
-  late bool _wantsToPlay; // ★ 追加
+  late bool _wantsToPlay;
 
   @override
   void initState() {
@@ -235,7 +236,7 @@ class _StatusSelectionSheetState extends State<_StatusSelectionSheet> {
     _isPlayed = widget.initialStatus.isPlayed;
     _isPossessed = widget.initialStatus.isPossessed;
     _wantsToGm = widget.initialStatus.wantsToGm;
-    _wantsToPlay = widget.initialStatus.wantsToPlay; // ★ 追加
+    _wantsToPlay = widget.initialStatus.wantsToPlay;
   }
 
   @override
@@ -272,13 +273,13 @@ class _StatusSelectionSheetState extends State<_StatusSelectionSheet> {
             activeColor: Colors.blue,
           ),
           CheckboxListTile(
-            title: const Text('👑 GM検討中'),
-            subtitle: const Text('GMをやりたい/検討しています'),
+            // ★ 修正: ラベルと説明文を変更
+            title: const Text('🛒 シナリオ購入検討'),
+            subtitle: const Text('購入を迷っています / GM可能です'),
             value: _wantsToGm,
             onChanged: (value) => setState(() => _wantsToGm = value!),
             activeColor: Colors.orange,
           ),
-          // ★ 追加: PL希望チェックボックス
           CheckboxListTile(
             title: const Text('❤️ PL希望'),
             subtitle: const Text('このシナリオで遊びたいです'),
@@ -303,7 +304,7 @@ class _StatusSelectionSheetState extends State<_StatusSelectionSheet> {
                   isPlayed: _isPlayed,
                   isPossessed: _isPossessed,
                   wantsToGm: _wantsToGm,
-                  wantsToPlay: _wantsToPlay, // ★ 追加
+                  wantsToPlay: _wantsToPlay,
                 ));
                 Navigator.pop(context);
               },

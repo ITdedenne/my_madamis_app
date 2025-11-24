@@ -30,6 +30,8 @@ def handler(event, context):
         
         requesting_user_id = identity.get('sub')
         scenario_id = arguments.get('scenarioId')
+        # ★ 追加: mode引数の取得 (デフォルトは 'player')
+        mode = arguments.get('mode', 'player')
 
         if not requesting_user_id or not scenario_id:
             raise ValueError("Invalid arguments or identity")
@@ -64,36 +66,69 @@ def handler(event, context):
         
         found_scenarios = batch_response.get('Responses', {}).get(SCENARIO_TABLE, [])
         
-        # 4. メモリ上で突合・フィルタリング (未通過判定)
-        played_or_registered_map = {}
-        wants_to_play_map = {} # PL希望フラグ用
-
-        for item in found_scenarios:
-            uid = item['userId']
-            is_played = item.get('isPlayed', False)
-            is_possessed = item.get('isPossessed', False)
-            wants_to_gm = item.get('wantsToGm', False)
-            wants_to_play = item.get('wantsToPlay', False)
-            
-            # 何らかのステータスがあれば「登録済み」とみなす（未通過判定用）
-            # wantsToPlay は未通過扱いなので、除外条件には含めない
-            if is_played or is_possessed or wants_to_gm:
-                played_or_registered_map[uid] = True
-            
-            if wants_to_play:
-                wants_to_play_map[uid] = True
-
-        # 未通過フレンズのIDリストを抽出
-        unplayed_friend_ids = [
-            fid for fid in friend_ids 
-            if not played_or_registered_map.get(fid, False)
-        ]
+        # --- 4. メモリ上で突合・フィルタリング・ソート (モード分岐) ---
         
-        if not unplayed_friend_ids:
+        # found_scenarios を userId キーの辞書に変換して高速アクセス
+        scenario_status_map = {item['userId']: item for item in found_scenarios}
+        
+        filtered_users = []
+
+        for fid in friend_ids:
+            status = scenario_status_map.get(fid, {})
+            
+            is_played = status.get('isPlayed', False)
+            is_possessed = status.get('isPossessed', False)
+            wants_to_gm = status.get('wantsToGm', False)
+            wants_to_play = status.get('wantsToPlay', False)
+
+            user_data = {
+                'id': fid,
+                'isPlayed': is_played,
+                'isPossessed': is_possessed,
+                'wantsToGm': wants_to_gm,
+                'wantsToPlay': wants_to_play,
+                # ソート用スコア
+                'sortScore': 0 
+            }
+
+            if mode == 'gm':
+                # 【GM検索モード】
+                # 対象: 所持 OR 通過済 OR 購入検討(wantsToGm)
+                if is_possessed or is_played or wants_to_gm:
+                    # 優先順位付け (高いほどリストの上)
+                    if is_possessed:
+                        user_data['sortScore'] = 30 # 最優先
+                    elif is_played:
+                        user_data['sortScore'] = 20 # 次点
+                    elif wants_to_gm:
+                        user_data['sortScore'] = 10 # 購入検討
+                    
+                    filtered_users.append(user_data)
+
+            else:
+                # 【PL検索モード】 (デフォルト)
+                # 対象: 未通過 (レコードなし OR 全フラグfalse)
+                # wantsToPlayは未通過に含まれるため除外しない
+                is_registered_ng = is_played or is_possessed or wants_to_gm
+                
+                if not is_registered_ng:
+                    # PL希望者を優先表示
+                    if wants_to_play:
+                        user_data['sortScore'] = 10
+                    filtered_users.append(user_data)
+
+        # ソート実行 (sortScoreの降順)
+        filtered_users.sort(key=lambda x: x['sortScore'], reverse=True)
+        
+        target_user_ids = [u['id'] for u in filtered_users]
+        
+        if not target_user_ids:
             return json.dumps([])
 
-        # 5. BatchGetItemで未通過フレンズのユーザー情報を取得
-        user_keys = [{'id': uid} for uid in unplayed_friend_ids]
+        # 5. BatchGetItemで対象ユーザーのプロフィール情報を取得
+        # (BatchGetItemは順序を保証しないため、後で並べ直す必要がある)
+        # 一度に取得できるのは100件までだが、フレンズ上限100人なので分割不要
+        user_keys = [{'id': uid} for uid in target_user_ids]
         
         user_batch_response = dynamodb.batch_get_item(
             RequestItems={
@@ -104,19 +139,26 @@ def handler(event, context):
             }
         )
         
-        users = user_batch_response.get('Responses', {}).get(USER_TABLE, [])
+        users_info = user_batch_response.get('Responses', {}).get(USER_TABLE, [])
+        users_map = {u['id']: u for u in users_info}
         
-        # クライアントへのレスポンス用に整形
+        # 6. 結合とレスポンス生成 (ソート順を維持)
         results = []
-        for u in users:
-            uid = u['id']
-            results.append({
-                'id': uid,
-                'username': u.get('username', ''),
-                'publicUserId': u.get('publicUserId', ''),
-                'bio': u.get('bio', ''),
-                'wantsToPlay': wants_to_play_map.get(uid, False) # PL希望フラグを追加
-            })
+        for f_user in filtered_users:
+            uid = f_user['id']
+            u_info = users_map.get(uid)
+            if u_info:
+                results.append({
+                    'id': uid,
+                    'username': u_info.get('username', ''),
+                    'publicUserId': u_info.get('publicUserId', ''),
+                    'bio': u_info.get('bio', ''),
+                    # ステータス情報も返す（UI表示用）
+                    'wantsToPlay': f_user['wantsToPlay'],
+                    'isPlayed': f_user['isPlayed'],
+                    'isPossessed': f_user['isPossessed'],
+                    'wantsToGm': f_user['wantsToGm']
+                })
 
         return json.dumps(results)
 
