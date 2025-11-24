@@ -1,6 +1,54 @@
 [
   {
-    "Action": [],
-    "Resource": []
+    "Action": [
+      "dynamodb:Query"
+    ],
+    "Resource": [
+      {
+        "Fn::Sub": [
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/UserScenario-${ApiId}-${Env}",
+          {
+            "ApiId": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "Env": {
+              "Ref": "env"
+            }
+          }
+        ]
+      },
+      {
+        "Fn::Sub": [
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/UserScenario-${ApiId}-${Env}/index/*",
+          {
+            "ApiId": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "Env": {
+              "Ref": "env"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "Action": [
+      "s3:GetObject"
+    ],
+    "Resource": [
+      {
+        "Fn::Join": [
+          "",
+          [
+            "arn:aws:s3:::",
+            {
+              "Ref": "storagemadamisappS3BucketName"
+            },
+            "/*"
+          ]
+        ]
+      }
+    ]
   }
 ]

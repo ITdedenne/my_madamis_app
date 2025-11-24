@@ -3,6 +3,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart';
+import 'package:my_madamis_app/features/group_search/domain/repositories/group_search_repository.dart';
+import 'package:my_madamis_app/features/group_search/domain/repositories/group_search_repository_impl.dart';
 import 'package:my_madamis_app/features/player_finder/domain/repositories/player_finder_repository_impl.dart';
 import 'package:my_madamis_app/features/profile/data/repositories/profile_repository_impl.dart';
 import 'package:my_madamis_app/features/profile/domain/repositories/profile_repository.dart';
@@ -34,7 +36,11 @@ final friendsRepositoryProvider = Provider<FriendsRepository>((ref) {
   return FriendsRepositoryImpl();
 });
 
-// ★ 追加: プレイヤーファインダーリポジトリ
 final playerFinderRepositoryProvider = Provider<PlayerFinderRepository>((ref) {
   return PlayerFinderRepositoryImpl();
+});
+
+// ★ 追加
+final groupSearchRepositoryProvider = Provider<GroupSearchRepository>((ref) {
+  return GroupSearchRepositoryImpl();
 });

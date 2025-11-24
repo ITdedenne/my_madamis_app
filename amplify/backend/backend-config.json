@@ -72,6 +72,23 @@
     },
     "findGroupScenarios": {
       "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        },
+        {
+          "attributes": [
+            "BucketName"
+          ],
+          "category": "storage",
+          "resourceName": "madamisappS3"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
