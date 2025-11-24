@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:my_madamis_app/common/widgets/user_list_item.dart';
 import 'package:my_madamis_app/features/group_search/presentation/pages/group_search_results_page.dart';
 import 'package:my_madamis_app/features/group_search/presentation/viewmodels/group_search_settings_viewmodel.dart';
 

@@ -11,7 +11,7 @@ class GroupSearchRepositoryImpl implements GroupSearchRepository {
   Future<List<String>> findGroupScenarios(List<String> friendIds) async {
     // GraphQLクエリの構築
     // 引数は [ID!]! なので、ダブルクォーテーションで囲んだ文字列の配列として渡す必要がある
-    final friendIdsString = jsonEncode(friendIds); // ex: ["user1", "user2"]
+    // final friendIdsString = jsonEncode(friendIds); // ex: ["user1", "user2"]
     
     // リテラル埋め込みではなく、GraphQL変数を使用するのがベストだが、
     // List<ID>の変数を渡すのがAmplify Flutterで少し複雑な場合があるため、
