@@ -33,7 +33,7 @@ def fetch_user_status(user_id):
         return user_id, []
 
 def handler(event, context):
-    print("=== findGroupScenarios START (V4 Split & Fix) ===")
+    print("=== findGroupScenarios START (V5 Split Status) ===")
     
     try:
         arguments = event.get('arguments', {})
@@ -45,13 +45,13 @@ def handler(event, context):
         if not requesting_user_id:
             raise ValueError("Unauthorized")
 
-        # 1. 全フレンドを取得 (外部GM候補用)
+        # 1. 全フレンドを取得
         rel_response = user_relationship_table.query(
             KeyConditionExpression=Key('followingId').eq(requesting_user_id)
         )
         all_friend_ids = {item['followedId'] for item in rel_response.get('Items', [])}
         
-        # 検索対象: A(選択メンバー), B(外部フレンド)
+        # 検索対象: A(選択メンバー), B(選択外フレンド)
         target_members = selected_friend_ids | {requesting_user_id}
         other_friends = all_friend_ids - selected_friend_ids
         all_targets = target_members | other_friends
@@ -65,12 +65,12 @@ def handler(event, context):
                 user_status_map[uid] = items
 
         # 3. 集計用データ構造
-        # metadata = { scenarioId: { 'ng': [], 'wants': [], 'ext': [] } }
+        # metadata = { scenarioId: { 'ng': [], 'wants': [], 'possessed': [], 'wantsGm': [] } }
         metadata = {}
 
         def get_meta(sid):
             if sid not in metadata:
-                metadata[sid] = {'ng': [], 'wants': [], 'ext': []}
+                metadata[sid] = {'ng': [], 'wants': [], 'possessed': [], 'wantsGm': []}
             return metadata[sid]
 
         # A. 選択メンバー (NG判定 & PL希望)
@@ -87,25 +87,32 @@ def handler(event, context):
                 if item.get('wantsToPlay'):
                     get_meta(sid)['wants'].append(uid)
 
-        # B. 選択外フレンド (外部GM候補)
+        # B. 選択外フレンド (外部GM候補 - 所持と検討を分ける)
         for uid in other_friends:
             items = user_status_map.get(uid, [])
             for item in items:
                 sid = item['scenarioId']
-                if item.get('isPossessed') or item.get('wantsToGm'):
-                    get_meta(sid)['ext'].append(uid)
+                
+                if item.get('isPossessed'):
+                    get_meta(sid)['possessed'].append(uid)
+                
+                # 所持していなくても購入検討している場合 (重複は許容、または所持優先も可だが、ここでは単純に追加)
+                if item.get('wantsToGm') and not item.get('isPossessed'): 
+                    get_meta(sid)['wantsGm'].append(uid)
 
         # 4. レスポンス整形
         response_list = []
         for sid, data in metadata.items():
-            response_list.append({
-                'scenarioId': sid,
-                'ngUserIds': data['ng'],
-                'wantsToPlayUserIds': data['wants'],
-                'externalHolderUserIds': data['ext']
-            })
+            # 意味のあるデータのみ返す
+            if data['ng'] or data['wants'] or data['possessed'] or data['wantsGm']:
+                response_list.append({
+                    'scenarioId': sid,
+                    'ngUserIds': data['ng'],
+                    'wantsToPlayUserIds': data['wants'],
+                    'possessedUserIds': data['possessed'],   # ★ 分離
+                    'wantsToGmUserIds': data['wantsGm']      # ★ 分離
+                })
 
-        # V4では単純なリスト形式で返す（クライアント側で結合するため）
         print(f"Result Count: {len(response_list)}")
         return json.dumps(response_list)
 

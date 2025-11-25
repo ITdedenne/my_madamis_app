@@ -1,6 +1,8 @@
 // ファイルパス: lib/features/group_search/presentation/viewmodels/group_search_viewmodel.dart
 
+import 'package:amplify_flutter/amplify_flutter.dart'; // ★ 追加: 自分のID取得用
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart'; // ★ 追加: 自分の名前取得用
 import 'package:my_madamis_app/features/friends/domain/repositories/friends_repository.dart';
 import 'package:my_madamis_app/features/group_search/domain/usecases/find_group_scenarios_usecase.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
@@ -8,29 +10,34 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
 
+// ソート順定義
 enum GroupSearchSortOrder {
   wantsToPlayDesc, // PL希望順
-  externalGmDesc,  // 外部GM順
+  possessedDesc,   // 所持順
+  wantsToGmDesc,   // 購入検討順
+  externalGmDesc,  // GM候補順 (所持+検討)
   titleAsc,        // 名前順
 }
 
-// UI表示用データクラス
+// 表示用アイテム
 class GroupSearchDisplayItem {
   final Scenario scenario;
-  final List<String> ngUserNames;         // NG（通過済）メンバーの名前
-  final List<String> wantsToPlayNames;    // PL希望メンバーの名前
-  final List<String> externalHolderNames; // 外部GM候補の名前
+  final List<String> ngUserNames;
+  final List<String> wantsToPlayNames;
+  final List<String> possessedNames;
+  final List<String> wantsToGmNames;
 
   GroupSearchDisplayItem({
     required this.scenario,
     this.ngUserNames = const [],
     this.wantsToPlayNames = const [],
-    this.externalHolderNames = const [],
+    this.possessedNames = const [],
+    this.wantsToGmNames = const [],
   });
 
-  // ★ 修正: ここでゲッターを定義
   bool get isPlayable => ngUserNames.isEmpty;
   bool get hasWantsToPlay => wantsToPlayNames.isNotEmpty;
+  int get totalGmCandidates => possessedNames.length + wantsToGmNames.length;
 }
 
 class GroupSearchState {
@@ -140,18 +147,33 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
   void _applySort() {
     final sorted = List<GroupSearchDisplayItem>.from(_rawResults);
     sorted.sort((a, b) {
-      // 1. まず「遊べるかどうか」で分ける（必須要件ではないがUXとして推奨）
+      // 1. 遊べるかどうか
       if (a.isPlayable != b.isPlayable) return a.isPlayable ? -1 : 1;
 
+      // 2. ソート順
       switch (state.sortOrder) {
         case GroupSearchSortOrder.wantsToPlayDesc:
           int diff = b.wantsToPlayNames.length.compareTo(a.wantsToPlayNames.length);
           if (diff != 0) return diff;
+          int gmDiff = b.totalGmCandidates.compareTo(a.totalGmCandidates);
+          if (gmDiff != 0) return gmDiff;
           break;
-        case GroupSearchSortOrder.externalGmDesc:
-          int diff = b.externalHolderNames.length.compareTo(a.externalHolderNames.length);
+
+        case GroupSearchSortOrder.possessedDesc:
+          int diff = b.possessedNames.length.compareTo(a.possessedNames.length);
           if (diff != 0) return diff;
           break;
+
+        case GroupSearchSortOrder.wantsToGmDesc:
+          int diff = b.wantsToGmNames.length.compareTo(a.wantsToGmNames.length);
+          if (diff != 0) return diff;
+          break;
+
+        case GroupSearchSortOrder.externalGmDesc:
+          int diff = b.totalGmCandidates.compareTo(a.totalGmCandidates);
+          if (diff != 0) return diff;
+          break;
+
         case GroupSearchSortOrder.titleAsc:
           return a.scenario.title.compareTo(b.scenario.title);
       }
@@ -167,17 +189,40 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
 
     try {
       final friendIds = state.selectedFriendIds.toList();
+      
+      // 1. Lambda呼び出し
       final results = await _findGroupScenariosUseCase(friendIds);
+      
+      // 2. 全シナリオマスタ
       final allScenarios = await _ref.read(allScenariosProvider.future);
       
+      // 3. マッピング準備
       final friendMap = {for (var f in state.friends) f.id: f};
-      // 自分の名前も解決できるようにする（必要なら）
       
+      // ★ 改善: 自分のIDと名前を取得して、「不明」になるのを防ぐ
+      String myId = '';
+      String myName = '自分';
+      try {
+        final user = await Amplify.Auth.getCurrentUser();
+        myId = user.userId;
+        // AuthStateから現在のユーザー名を取得
+        final authState = _ref.read(authStateNotifierProvider);
+        if (authState.username != null) {
+           myName = authState.username!;
+        }
+      } catch (_) {
+        // 取得できない場合はデフォルトの'自分'を使用
+      }
+
       final metaMap = {for (var r in results) r.scenarioId: r};
       final totalPlayers = friendIds.length + 1;
 
+      // ヘルパー: ID -> 名前
       List<String> toNames(List<String> ids) {
-        return ids.map((uid) => friendMap[uid]?.username ?? '不明').toList();
+        return ids.map((uid) {
+          if (uid == myId) return myName; // ★ 自分自身の場合は名前を返す
+          return friendMap[uid]?.username ?? '不明'; // 見つからない場合は不明
+        }).toList();
       }
 
       final List<GroupSearchDisplayItem> displayItems = [];
@@ -185,14 +230,14 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
       for (var scenario in allScenarios) {
         final meta = metaMap[scenario.id];
         
-        // 人数チェック
         if (scenario.maxPlayerCount < totalPlayers) continue;
 
         displayItems.add(GroupSearchDisplayItem(
           scenario: scenario,
           ngUserNames: meta != null ? toNames(meta.ngUserIds) : [],
           wantsToPlayNames: meta != null ? toNames(meta.wantsToPlayUserIds) : [],
-          externalHolderNames: meta != null ? toNames(meta.externalHolderUserIds) : [],
+          possessedNames: meta != null ? toNames(meta.possessedUserIds) : [],
+          wantsToGmNames: meta != null ? toNames(meta.wantsToGmUserIds) : [],
         ));
       }
 

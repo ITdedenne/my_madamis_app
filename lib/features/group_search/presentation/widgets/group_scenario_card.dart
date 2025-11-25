@@ -23,18 +23,17 @@ class GroupScenarioCard extends ConsumerWidget {
       opacity: opacity,
       child: Stack(
         children: [
-          // 既存のコンパクトな ScenarioListItem を流用
+          // ベースのカード
           ScenarioListItem(
             scenario: item.scenario,
             status: status,
-            // タップで詳細ダイアログ
             onTap: () => _showDetailDialog(context),
             onStatusChanged: (newStatus) {
               ref.read(userScenarioStatusProvider.notifier).updateStatus(item.scenario.id, newStatus);
             },
           ),
           
-          // バッジ (Stackで右上に重ねる)
+          // ★ アイコンバッジ (分離して表示)
           Positioned(
             top: 4,
             right: 4,
@@ -44,9 +43,16 @@ class GroupScenarioCard extends ConsumerWidget {
                 if (item.hasWantsToPlay)
                   _CompactBadge(icon: Icons.favorite, count: item.wantsToPlayNames.length, color: Colors.pink),
                 
-                if (item.externalHolderNames.isNotEmpty) ...[
+                // ★ 所持 (Book)
+                if (item.possessedNames.isNotEmpty) ...[
                   const SizedBox(width: 4),
-                  _CompactBadge(icon: Icons.person_add, count: item.externalHolderNames.length, color: Colors.orange),
+                  _CompactBadge(icon: Icons.book, count: item.possessedNames.length, color: Colors.blue),
+                ],
+
+                // ★ 購入検討 (Cart)
+                if (item.wantsToGmNames.isNotEmpty) ...[
+                  const SizedBox(width: 4),
+                  _CompactBadge(icon: Icons.shopping_cart, count: item.wantsToGmNames.length, color: Colors.orange),
                 ],
                 
                 if (isNearMiss) ...[
@@ -78,15 +84,28 @@ class GroupScenarioCard extends ConsumerWidget {
                   color: Colors.pink,
                   icon: Icons.favorite,
                 ),
-              if (item.externalHolderNames.isNotEmpty) ...[
+              
+              // ★ 詳細ダイアログも分離表示
+              if (item.possessedNames.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _DetailSection(
-                  title: '外部GM候補 (選択外フレンド)',
-                  names: item.externalHolderNames,
-                  color: Colors.orange,
-                  icon: Icons.person_add,
+                  title: '所持しているメンバー',
+                  names: item.possessedNames,
+                  color: Colors.blue,
+                  icon: Icons.book,
                 ),
               ],
+
+              if (item.wantsToGmNames.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _DetailSection(
+                  title: '購入を検討しているメンバー',
+                  names: item.wantsToGmNames,
+                  color: Colors.orange,
+                  icon: Icons.shopping_cart,
+                ),
+              ],
+
               if (isNearMiss) ...[
                 const SizedBox(height: 16),
                 _DetailSection(
@@ -164,6 +183,7 @@ class _DetailSection extends StatelessWidget {
           children: names.map((n) => Chip(
             label: Text(n, style: const TextStyle(fontSize: 12)),
             visualDensity: VisualDensity.compact,
+            // ignore: deprecated_member_use
             backgroundColor: color.withOpacity(0.05),
             side: BorderSide.none,
             padding: EdgeInsets.zero,

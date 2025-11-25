@@ -1,3 +1,5 @@
+// ファイルパス: lib/features/group_search/domain/repositories/group_search_repository_impl.dart
+
 import 'dart:convert';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/group_search/domain/entities/group_search_result.dart';

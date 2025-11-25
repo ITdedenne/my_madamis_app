@@ -1,3 +1,5 @@
+// ファイルパス: lib/features/group_search/presentation/widgets/group_search_results_area.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/group_search/presentation/viewmodels/group_search_viewmodel.dart';
@@ -41,16 +43,19 @@ class GroupSearchResultsArea extends ConsumerWidget {
               children: [
                 Text('${state.searchResults!.length} 件ヒット', style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
                 const Spacer(),
+                // ★ ソート項目の拡充
                 DropdownButton<GroupSearchSortOrder>(
                   value: state.sortOrder,
                   isDense: true,
                   underline: Container(),
-                  style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
                   onChanged: (v) { if (v != null) notifier.changeSortOrder(v); },
                   items: const [
-                    DropdownMenuItem(value: GroupSearchSortOrder.wantsToPlayDesc, child: Text('PL希望順')),
-                    DropdownMenuItem(value: GroupSearchSortOrder.externalGmDesc, child: Text('外部GM候補順')),
-                    DropdownMenuItem(value: GroupSearchSortOrder.titleAsc, child: Text('名前順')),
+                    DropdownMenuItem(value: GroupSearchSortOrder.wantsToPlayDesc, child: Text('❤️ PL希望順')),
+                    DropdownMenuItem(value: GroupSearchSortOrder.possessedDesc, child: Text('📚 所持順')),
+                    DropdownMenuItem(value: GroupSearchSortOrder.wantsToGmDesc, child: Text('🛒 購入検討順')),
+                    DropdownMenuItem(value: GroupSearchSortOrder.externalGmDesc, child: Text('👤 GM候補順(合算)')),
+                    DropdownMenuItem(value: GroupSearchSortOrder.titleAsc, child: Text('📝 名前順')),
                   ],
                 ),
               ],
@@ -58,7 +63,7 @@ class GroupSearchResultsArea extends ConsumerWidget {
           ),
           const Divider(height: 1),
           
-          // 結果リスト (レスポンシブ)
+          // 結果リスト
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -66,7 +71,6 @@ class GroupSearchResultsArea extends ConsumerWidget {
                 final crossAxisCount = isPC ? (constraints.maxWidth / _kMinCardWidth).floor() : 1;
                 
                 if (isPC) {
-                  // ★ 修正: CustomScrollViewのpaddingを削除し、Paddingウィジェットでラップ
                   return Padding(
                     padding: const EdgeInsets.all(_kGridSpacing),
                     child: CustomScrollView(
@@ -106,7 +110,6 @@ class GroupSearchResultsArea extends ConsumerWidget {
                     ),
                   );
                 } else {
-                  // スマホ: ListView
                   return ListView(
                     padding: const EdgeInsets.all(_kListSpacing),
                     children: [
