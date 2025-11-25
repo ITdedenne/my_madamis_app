@@ -74,7 +74,16 @@ class SettingsPage extends ConsumerWidget {
                 leading: const Icon(Icons.delete_forever, color: Colors.red),
                 title: const Text('退会する', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
                 subtitle: const Text('アカウントとすべてのデータを削除します'),
-                onTap: () => _showDeleteConfirmationDialog(context, deleteNotifier),
+                onTap: () => showDialog(
+                  context: context,
+                  // ダイアログ専用のContextを使用
+                  builder: (dialogContext) => _DeleteConfirmationDialog(
+                    onConfirm: () {
+                       Navigator.pop(dialogContext); // ダイアログを閉じる
+                       deleteNotifier.deleteAccount(); // 処理実行
+                    },
+                  ),
+                ),
               ),
             ],
           ),
@@ -91,30 +100,89 @@ class SettingsPage extends ConsumerWidget {
       ),
     );
   }
+}
 
-  void _showDeleteConfirmationDialog(BuildContext context, DeleteAccountViewModel notifier) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('本当に退会しますか？'),
-        content: const Text(
-          '退会すると、シナリオの通過記録やフレンズ情報など、すべてのアカウントデータが完全に削除されます。\nこの操作は取り消せません。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+// 安全装置付きの削除確認ダイアログ
+class _DeleteConfirmationDialog extends StatefulWidget {
+  final VoidCallback onConfirm;
+
+  const _DeleteConfirmationDialog({required this.onConfirm});
+
+  @override
+  State<_DeleteConfirmationDialog> createState() => _DeleteConfirmationDialogState();
+}
+
+class _DeleteConfirmationDialogState extends State<_DeleteConfirmationDialog> {
+  bool _isConfirmed = false; // トグルスイッチの状態
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('本当に退会しますか？', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '退会すると、以下のデータがすべて完全に削除されます。\nこの操作は取り消せません。',
+            style: TextStyle(fontSize: 14),
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // ダイアログを閉じる
-              notifier.deleteAccount(); // 処理実行
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('退会してデータを削除'),
+          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.only(left: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('・シナリオの通過記録'),
+                Text('・所持/購入検討リスト'),
+                Text('・フォロー/フォロワー情報'),
+                Text('・プロフィール情報'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          // 同意トグルスイッチ（安全装置）
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withOpacity(0.3)),
+            ),
+            child: SwitchListTile(
+              title: const Text(
+                '上記を理解し、退会します',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.red),
+              ),
+              value: _isConfirmed,
+              onChanged: (value) {
+                setState(() {
+                  _isConfirmed = value;
+                });
+              },
+              activeColor: Colors.red,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
           ),
         ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('キャンセル'),
+        ),
+        // トーンアップするボタン
+        FilledButton(
+          onPressed: _isConfirmed
+              ? widget.onConfirm
+              : null, // スイッチがOFFなら押せない（無効化）
+          style: FilledButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: Colors.red.withOpacity(0.2), // 無効時は薄い赤
+          ),
+          child: const Text('退会実行'),
+        ),
+      ],
     );
   }
 }
