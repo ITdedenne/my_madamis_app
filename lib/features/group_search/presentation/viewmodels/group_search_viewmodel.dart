@@ -2,33 +2,34 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/friends/domain/repositories/friends_repository.dart';
-import 'package:my_madamis_app/features/group_search/domain/entities/group_search_result.dart'; // 前回の修正で作成したEntity
 import 'package:my_madamis_app/features/group_search/domain/usecases/find_group_scenarios_usecase.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
 
-// ソート順定義
 enum GroupSearchSortOrder {
-  wantsToPlayDesc, // PL希望が多い順 (デフォルト)
-  externalGmDesc,  // 外部GM候補がいる順
+  wantsToPlayDesc, // PL希望順
+  externalGmDesc,  // 外部GM順
   titleAsc,        // 名前順
 }
 
-// 表示用アイテム
+// UI表示用データクラス
 class GroupSearchDisplayItem {
   final Scenario scenario;
-  final List<String> wantsToPlayNames;    // 選択メンバー内のPL希望者
-  final List<String> externalHolderNames; // 選択外の所持・GM検討者
+  final List<String> ngUserNames;         // NG（通過済）メンバーの名前
+  final List<String> wantsToPlayNames;    // PL希望メンバーの名前
+  final List<String> externalHolderNames; // 外部GM候補の名前
 
   GroupSearchDisplayItem({
     required this.scenario,
+    this.ngUserNames = const [],
     this.wantsToPlayNames = const [],
     this.externalHolderNames = const [],
   });
 
-  // ★ 追加: エラーの原因となっていたゲッター
+  // ★ 修正: ここでゲッターを定義
+  bool get isPlayable => ngUserNames.isEmpty;
   bool get hasWantsToPlay => wantsToPlayNames.isNotEmpty;
 }
 
@@ -38,8 +39,6 @@ class GroupSearchState {
   final List<User> friends;
   final Set<String> selectedFriendIds;
   final String friendNameFilter;
-  
-  // 検索結果
   final List<GroupSearchDisplayItem>? searchResults;
   final GroupSearchSortOrder sortOrder;
   final String? errorMessage;
@@ -100,8 +99,6 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
   final FriendsRepository _friendsRepository;
   final FindGroupScenariosUseCase _findGroupScenariosUseCase;
   final Ref _ref;
-
-  // 生データを保持しておき、ソート時に再利用する
   List<GroupSearchDisplayItem> _rawResults = [];
 
   GroupSearchViewModel(this._friendsRepository, this._findGroupScenariosUseCase, this._ref) : super(GroupSearchState()) {
@@ -114,36 +111,28 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
       final friends = await _friendsRepository.fetchFollowingUsers();
       state = state.copyWith(isLoadingFriends: false, friends: friends);
     } catch (e) {
-      state = state.copyWith(isLoadingFriends: false, errorMessage: 'フレンズ読込エラー: $e');
+      state = state.copyWith(isLoadingFriends: false, errorMessage: '$e');
     }
   }
 
-  void updateFriendFilter(String query) {
-    state = state.copyWith(friendNameFilter: query);
-  }
+  void updateFriendFilter(String query) => state = state.copyWith(friendNameFilter: query);
 
   void toggleSelection(String userId) {
-    final currentSelection = Set<String>.from(state.selectedFriendIds);
-    if (currentSelection.contains(userId)) {
-      currentSelection.remove(userId);
-    } else {
-      if (state.isSelectionLimitReached) return;
-      currentSelection.add(userId);
+    final current = Set<String>.from(state.selectedFriendIds);
+    if (current.contains(userId)) {
+      current.remove(userId);
+    } else if (!state.isSelectionLimitReached) {
+      current.add(userId);
     }
-    state = state.copyWith(selectedFriendIds: currentSelection);
+    state = state.copyWith(selectedFriendIds: current);
   }
 
   void clearResults() {
-    state = GroupSearchState(
-      friends: state.friends,
-      selectedFriendIds: state.selectedFriendIds,
-      // 検索前の状態に戻す
-    );
     _rawResults = [];
+    state = state.copyWith(searchResults: null);
   }
 
   void changeSortOrder(GroupSearchSortOrder order) {
-    if (state.searchResults == null) return;
     state = state.copyWith(sortOrder: order);
     _applySort();
   }
@@ -151,82 +140,68 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
   void _applySort() {
     final sorted = List<GroupSearchDisplayItem>.from(_rawResults);
     sorted.sort((a, b) {
+      // 1. まず「遊べるかどうか」で分ける（必須要件ではないがUXとして推奨）
+      if (a.isPlayable != b.isPlayable) return a.isPlayable ? -1 : 1;
+
       switch (state.sortOrder) {
         case GroupSearchSortOrder.wantsToPlayDesc:
-          // PL希望数 > 外部GM > 名前
           int diff = b.wantsToPlayNames.length.compareTo(a.wantsToPlayNames.length);
           if (diff != 0) return diff;
-          int gmDiff = b.externalHolderNames.length.compareTo(a.externalHolderNames.length);
-          if (gmDiff != 0) return gmDiff;
-          return a.scenario.title.compareTo(b.scenario.title);
-
+          break;
         case GroupSearchSortOrder.externalGmDesc:
-          // 外部GM > PL希望 > 名前
           int diff = b.externalHolderNames.length.compareTo(a.externalHolderNames.length);
           if (diff != 0) return diff;
-          int plDiff = b.wantsToPlayNames.length.compareTo(a.wantsToPlayNames.length);
-          if (plDiff != 0) return plDiff;
-          return a.scenario.title.compareTo(b.scenario.title);
-
+          break;
         case GroupSearchSortOrder.titleAsc:
           return a.scenario.title.compareTo(b.scenario.title);
       }
+      // サブソート: 名前
+      return a.scenario.title.compareTo(b.scenario.title);
     });
     state = state.copyWith(searchResults: sorted);
   }
 
   Future<void> search() async {
     if (state.selectedFriendIds.isEmpty) return;
-
     state = state.copyWith(isSearching: true, errorMessage: null);
+
     try {
       final friendIds = state.selectedFriendIds.toList();
-      
-      // 1. Lambda呼び出し (NGリストとメタデータを取得)
-      final response = await _findGroupScenariosUseCase(friendIds);
-      
-      // 2. ローカルの全シナリオマスタ取得
+      final results = await _findGroupScenariosUseCase(friendIds);
       final allScenarios = await _ref.read(allScenariosProvider.future);
       
-      // 3. マッピング準備
       final friendMap = {for (var f in state.friends) f.id: f};
-      final ngSet = response.ngScenarioIds.toSet();
-      final metadataMap = {for (var m in response.metadata) m.scenarioId: m};
+      // 自分の名前も解決できるようにする（必要なら）
       
-      final totalPlayers = friendIds.length + 1; // 自分 + フレンズ
+      final metaMap = {for (var r in results) r.scenarioId: r};
+      final totalPlayers = friendIds.length + 1;
 
-      List<String> idsToNames(List<String> ids) {
+      List<String> toNames(List<String> ids) {
         return ids.map((uid) => friendMap[uid]?.username ?? '不明').toList();
       }
 
       final List<GroupSearchDisplayItem> displayItems = [];
 
-      // 4. フィルタリング & データ結合
       for (var scenario in allScenarios) {
-        // NGリストに含まれていれば除外
-        if (ngSet.contains(scenario.id)) continue;
-
+        final meta = metaMap[scenario.id];
+        
         // 人数チェック
         if (scenario.maxPlayerCount < totalPlayers) continue;
 
-        // メタデータがあれば結合、なければ空で作成
-        final meta = metadataMap[scenario.id];
-        
         displayItems.add(GroupSearchDisplayItem(
           scenario: scenario,
-          wantsToPlayNames: meta != null ? idsToNames(meta.wantsToPlayUserIds) : [],
-          externalHolderNames: meta != null ? idsToNames(meta.externalHolderUserIds) : [],
+          ngUserNames: meta != null ? toNames(meta.ngUserIds) : [],
+          wantsToPlayNames: meta != null ? toNames(meta.wantsToPlayUserIds) : [],
+          externalHolderNames: meta != null ? toNames(meta.externalHolderUserIds) : [],
         ));
       }
 
       _rawResults = displayItems;
-      _applySort(); // ソートしてState更新
-
-      // ローディング解除は _applySort 内の copyWith で行われないためここで
+      _applySort();
       state = state.copyWith(isSearching: false);
 
     } catch (e) {
-      state = state.copyWith(isSearching: false, errorMessage: '検索中にエラーが発生しました: $e');
+      state = state.copyWith(isSearching: false, errorMessage: '$e');
     }
   }
 }

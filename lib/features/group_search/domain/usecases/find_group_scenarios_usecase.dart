@@ -5,8 +5,7 @@ class FindGroupScenariosUseCase {
   final GroupSearchRepository _repository;
   FindGroupScenariosUseCase(this._repository);
 
-  Future<GroupSearchResponse> call(List<String> friendIds) async {
-    // 最大8人チェックはViewModelで行うか、ここで行う
+  Future<List<GroupSearchResult>> call(List<String> friendIds) async {
     if (friendIds.length > 8) throw Exception('最大8人までです');
     return await _repository.findGroupScenarios(friendIds);
   }

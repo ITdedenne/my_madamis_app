@@ -9,7 +9,7 @@ ENV = os.environ['ENV']
 REGION = os.environ['REGION']
 API_ID = os.environ['API_MYMADAMISAPP_GRAPHQLAPIIDOUTPUT']
 
-# --- 定数 ---
+# --- テーブル名 ---
 USER_SCENARIO_TABLE_NAME = f'UserScenario-{API_ID}-{ENV}'
 USER_RELATIONSHIP_TABLE_NAME = f'UserRelationship-{API_ID}-{ENV}'
 
@@ -19,9 +19,7 @@ user_scenario_table = dynamodb.Table(USER_SCENARIO_TABLE_NAME)
 user_relationship_table = dynamodb.Table(USER_RELATIONSHIP_TABLE_NAME)
 
 def fetch_user_status(user_id):
-    """
-    指定ユーザーのステータスを取得
-    """
+    """指定ユーザーのステータスを取得"""
     try:
         response = user_scenario_table.query(
             IndexName='byUser',
@@ -35,36 +33,30 @@ def fetch_user_status(user_id):
         return user_id, []
 
 def handler(event, context):
-    print("=== findGroupScenarios START (V3 Full Search) ===")
+    print("=== findGroupScenarios START (V4 Split & Fix) ===")
     
     try:
         arguments = event.get('arguments', {})
         identity = event.get('identity', {})
         
         requesting_user_id = identity.get('sub')
-        # 選択されたメンバー（自分以外）
         selected_friend_ids = set(arguments.get('friendIds', []))
         
         if not requesting_user_id:
             raise ValueError("Unauthorized")
 
-        # 1. 全フレンドを取得 (外部GM候補を探すため)
-        # ページネーション対応が必要だが、一旦簡易実装とする
+        # 1. 全フレンドを取得 (外部GM候補用)
         rel_response = user_relationship_table.query(
             KeyConditionExpression=Key('followingId').eq(requesting_user_id)
         )
         all_friend_ids = {item['followedId'] for item in rel_response.get('Items', [])}
         
-        # 検索対象ユーザー群
-        # A: 選択メンバー (自分 + 選択したフレンド) -> NG判定対象
+        # 検索対象: A(選択メンバー), B(外部フレンド)
         target_members = selected_friend_ids | {requesting_user_id}
-        # B: 選択外フレンド -> 外部GM候補対象
         other_friends = all_friend_ids - selected_friend_ids
-
-        # 2. 並列で全対象のステータス取得
-        # コスト注意: フレンド100人いると100並列になるため、適度にワーカー数を制限
         all_targets = target_members | other_friends
         
+        # 2. 並列データ取得
         user_status_map = {}
         with ThreadPoolExecutor(max_workers=20) as executor:
             futures = [executor.submit(fetch_user_status, uid) for uid in all_targets]
@@ -72,65 +64,51 @@ def handler(event, context):
                 uid, items = future.result()
                 user_status_map[uid] = items
 
-        # 3. 集計
-        ng_scenario_ids = set()
-        metadata = {} 
-        # metadata structure: 
-        # { 
-        #   scenarioId: { 
-        #     wantsToPlay: [uid...], 
-        #     externalHolders: [uid...] 
-        #   } 
-        # }
+        # 3. 集計用データ構造
+        # metadata = { scenarioId: { 'ng': [], 'wants': [], 'ext': [] } }
+        metadata = {}
 
-        # A. 選択メンバーの判定 (NG or PL希望)
+        def get_meta(sid):
+            if sid not in metadata:
+                metadata[sid] = {'ng': [], 'wants': [], 'ext': []}
+            return metadata[sid]
+
+        # A. 選択メンバー (NG判定 & PL希望)
         for uid in target_members:
             items = user_status_map.get(uid, [])
             for item in items:
                 sid = item['scenarioId']
                 
-                # NG判定: 通過済 or 所持 or GM検討
-                # ※「所持・GM検討」もネタバレありとみなしてNGにするのが一般的
+                # NG判定 (通過済/所持/GM検討)
                 if item.get('isPlayed') or item.get('isPossessed') or item.get('wantsToGm'):
-                    ng_scenario_ids.add(sid)
+                    get_meta(sid)['ng'].append(uid)
                 
-                # PL希望判定 (NGリストに入っていても、希望情報は記録しておく)
+                # PL希望
                 if item.get('wantsToPlay'):
-                    if sid not in metadata: metadata[sid] = {'wantsToPlay': [], 'externalHolders': []}
-                    metadata[sid]['wantsToPlay'].append(uid)
+                    get_meta(sid)['wants'].append(uid)
 
-        # B. 選択外フレンドの判定 (外部GM候補)
+        # B. 選択外フレンド (外部GM候補)
         for uid in other_friends:
             items = user_status_map.get(uid, [])
             for item in items:
                 sid = item['scenarioId']
-                # 所持 or GM検討 なら候補
                 if item.get('isPossessed') or item.get('wantsToGm'):
-                    if sid not in metadata: metadata[sid] = {'wantsToPlay': [], 'externalHolders': []}
-                    metadata[sid]['externalHolders'].append(uid)
+                    get_meta(sid)['ext'].append(uid)
 
         # 4. レスポンス整形
-        # クライアント側で「全シナリオ - NG」をするため、
-        # ここでは「NGリスト」と「ポジティブ情報(PL希望/外部GM)」のみを返す。
-        
-        response_metadata = []
+        response_list = []
         for sid, data in metadata.items():
-            # データがあるものだけ返す
-            if data['wantsToPlay'] or data['externalHolders']:
-                response_metadata.append({
-                    'scenarioId': sid,
-                    'wantsToPlayUserIds': data['wantsToPlay'],
-                    'externalHolderUserIds': data['externalHolders']
-                })
+            response_list.append({
+                'scenarioId': sid,
+                'ngUserIds': data['ng'],
+                'wantsToPlayUserIds': data['wants'],
+                'externalHolderUserIds': data['ext']
+            })
 
-        result = {
-            'ngScenarioIds': list(ng_scenario_ids),
-            'metadata': response_metadata
-        }
-        
-        print(f"NG Count: {len(ng_scenario_ids)}, Metadata Count: {len(response_metadata)}")
-        return json.dumps(result)
+        # V4では単純なリスト形式で返す（クライアント側で結合するため）
+        print(f"Result Count: {len(response_list)}")
+        return json.dumps(response_list)
 
     except Exception as e:
         print(f"[ERROR] {e}")
-        return json.dumps({'ngScenarioIds': [], 'metadata': []})
+        return json.dumps([])

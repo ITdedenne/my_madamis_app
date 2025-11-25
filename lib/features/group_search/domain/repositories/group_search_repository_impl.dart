@@ -5,7 +5,7 @@ import 'package:my_madamis_app/features/group_search/domain/repositories/group_s
 
 class GroupSearchRepositoryImpl implements GroupSearchRepository {
   @override
-  Future<GroupSearchResponse> findGroupScenarios(List<String> friendIds) async {
+  Future<List<GroupSearchResult>> findGroupScenarios(List<String> friendIds) async {
     const doc = r'''
       query FindGroupScenarios($friendIds: [ID!]!) {
         findGroupScenarios(friendIds: $friendIds)
@@ -19,22 +19,20 @@ class GroupSearchRepositoryImpl implements GroupSearchRepository {
 
     try {
       final response = await Amplify.API.query(request: request).response;
-      if (response.hasErrors) {
-        throw Exception('GraphQL Errors: ${response.errors.map((e) => e.message).join(', ')}');
-      }
+      if (response.hasErrors) throw Exception('GraphQL Errors: ${response.errors}');
+      
       final data = response.data;
       if (data == null) throw Exception('Response data is null');
 
       final Map<String, dynamic> jsonMap = jsonDecode(data);
       final String? resultJsonString = jsonMap['findGroupScenarios'];
 
-      if (resultJsonString == null) {
-        return const GroupSearchResponse(ngScenarioIds: [], metadata: []);
-      }
+      if (resultJsonString == null) return [];
 
-      return GroupSearchResponse.fromJson(jsonDecode(resultJsonString));
+      final List<dynamic> list = jsonDecode(resultJsonString);
+      return list.map((e) => GroupSearchResult.fromJson(e)).toList();
     } catch (e) {
-      safePrint('Error in findGroupScenarios: $e');
+      safePrint('Error: $e');
       rethrow;
     }
   }
