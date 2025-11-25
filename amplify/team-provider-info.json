@@ -31,7 +31,7 @@
         },
         "deleteUserAccount": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-8d52f-deployment",
-          "s3Key": "amplify-builds/deleteUserAccount-7131592f494f6a774b4d-build.zip"
+          "s3Key": "amplify-builds/deleteUserAccount-6a2f784448674b523830-build.zip"
         },
         "mymadamisappb2bf781dPostConfirmation": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-8d52f-deployment",

@@ -1,6 +1,67 @@
 [
   {
-    "Action": [],
-    "Resource": []
+    "Action": [
+      "cognito-idp:AdminDeleteUser"
+    ],
+    "Resource": [
+      {
+        "Fn::Sub": [
+          "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/${UserPoolId}",
+          {
+            "UserPoolId": {
+              "Ref": "authmymadamisappb2bf781dUserPoolId"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "Action": [
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:BatchWriteItem"
+    ],
+    "Resource": [
+      {
+        "Fn::Sub": [
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-${ApiId}-${Env}",
+          {
+            "ApiId": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "Env": {
+              "Ref": "env"
+            }
+          }
+        ]
+      },
+      {
+        "Fn::Sub": [
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/UserScenario-${ApiId}-${Env}",
+          {
+            "ApiId": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "Env": {
+              "Ref": "env"
+            }
+          }
+        ]
+      },
+      {
+        "Fn::Sub": [
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/UserRelationship-${ApiId}-${Env}",
+          {
+            "ApiId": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "Env": {
+              "Ref": "env"
+            }
+          }
+        ]
+      }
+    ]
   }
 ]
