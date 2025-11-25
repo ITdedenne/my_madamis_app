@@ -97,5 +97,5 @@ type Mutation {
 
   deleteUserAccount: String
     @function(name: "deleteUserAccount-${env}")
-    @auth(rules: [{ allow: owner }])
+    @auth(rules: [{ allow: private }])
 }
