@@ -43,6 +43,14 @@
     },
     "s3Key": {
       "Type": "String"
+    },
+    "apimymadamisappGraphQLAPIIdOutput": {
+      "Type": "String",
+      "Default": "apimymadamisappGraphQLAPIIdOutput"
+    },
+    "apimymadamisappGraphQLAPIEndpointOutput": {
+      "Type": "String",
+      "Default": "apimymadamisappGraphQLAPIEndpointOutput"
     }
   },
   "Conditions": {
@@ -95,6 +103,12 @@
             },
             "GROUP": {
               "Ref": "GROUP"
+            },
+            "API_MYMADAMISAPP_GRAPHQLAPIIDOUTPUT": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "API_MYMADAMISAPP_GRAPHQLAPIENDPOINTOUTPUT": {
+              "Ref": "apimymadamisappGraphQLAPIEndpointOutput"
             }
           }
         },
@@ -213,14 +227,28 @@
               "Resource": [
                 {
                   "Fn::Sub": [
-                    "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-eju77evq3javlfhhc6o5pecapy-dev",
-                    {}
+                    "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-${ApiId}-${Env}",
+                    {
+                      "ApiId": {
+                        "Ref": "apimymadamisappGraphQLAPIIdOutput"
+                      },
+                      "Env": {
+                        "Ref": "env"
+                      }
+                    }
                   ]
                 },
                 {
                   "Fn::Sub": [
-                    "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-eju77evq3javlfhhc6o5pecapy-dev/index/*",
-                    {}
+                    "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-${ApiId}-${Env}/index/*",
+                    {
+                      "ApiId": {
+                        "Ref": "apimymadamisappGraphQLAPIIdOutput"
+                      },
+                      "Env": {
+                        "Ref": "env"
+                      }
+                    }
                   ]
                 }
               ],
@@ -235,6 +263,93 @@
         ]
       },
       "DependsOn": "LambdaExecutionRole"
+    },
+    "AmplifyResourcesPolicy": {
+      "DependsOn": [
+        "LambdaExecutionRole"
+      ],
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+        "PolicyName": "amplify-lambda-execution-policy",
+        "Roles": [
+          {
+            "Ref": "LambdaExecutionRole"
+          }
+        ],
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "appsync:GraphQL"
+              ],
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:appsync:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":apis/",
+                      {
+                        "Ref": "apimymadamisappGraphQLAPIIdOutput"
+                      },
+                      "/types/Query/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:appsync:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":apis/",
+                      {
+                        "Ref": "apimymadamisappGraphQLAPIIdOutput"
+                      },
+                      "/types/Mutation/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:aws:appsync:",
+                      {
+                        "Ref": "AWS::Region"
+                      },
+                      ":",
+                      {
+                        "Ref": "AWS::AccountId"
+                      },
+                      ":apis/",
+                      {
+                        "Ref": "apimymadamisappGraphQLAPIIdOutput"
+                      },
+                      "/types/Subscription/*"
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   },
   "Outputs": {

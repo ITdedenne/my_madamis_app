@@ -14,5 +14,14 @@
   "roleName": "mymadamisappb2bf781dPostConfirmation",
   "skipEdit": true,
   "lambdaLayers": [],
-  "environmentVariableList": []
+  "environmentVariableList": [],
+  "permissions": {
+    "api": {
+      "mymadamisapp": [
+        "Query",
+        "Mutation",
+        "Subscription"
+      ]
+    }
+  }
 }
