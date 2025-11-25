@@ -1,5 +1,6 @@
 // ファイルパス: lib/features/group_search/domain/usecases/find_group_scenarios_usecase.dart
 
+import 'package:my_madamis_app/features/group_search/domain/entities/group_search_result.dart';
 import 'package:my_madamis_app/features/group_search/domain/repositories/group_search_repository.dart';
 
 class FindGroupScenariosUseCase {
@@ -7,7 +8,7 @@ class FindGroupScenariosUseCase {
   
   FindGroupScenariosUseCase(this._repository);
 
-  Future<List<String>> call(List<String> friendIds) async {
+  Future<List<GroupSearchResult>> call(List<String> friendIds) async {
     if (friendIds.isEmpty) {
       throw Exception('フレンズを選択してください。');
     }

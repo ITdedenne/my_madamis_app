@@ -8,9 +8,9 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/sc
 // --- デザイン定数 ---
 const double _kMobileBreakpoint = 600.0;
 const double _kMinCardWidth = 300.0;
-const double _kGridAspectRatio = 2.0;    // PC: かなり横長 (テキスト専用に最適化)
+const double _kGridAspectRatio = 2.0;
 const double _kGridSpacing = 16.0;
-const double _kListSpacing = 12.0; // リスト表示時の間隔
+const double _kListSpacing = 12.0;
 const double _kSummaryPadding = 16.0;
 const double _kSummaryFontSize = 14.0;
 
@@ -27,7 +27,8 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 4, vsync: this);
+    // ★ 修正: タブ数を 4 -> 5 に変更
+    _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
       ref.read(myListPageStateProvider.notifier).update((state) => 
@@ -46,9 +47,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
     final pageNotifier = ref.read(myListPageStateProvider.notifier);
 
     return Scaffold(
-      // ScaffoldのbodyにColumnを置く形でも良いですが、
-      // NestedScrollViewを使うとタブバーもスクロールに連動させられます。
-      // ここではシンプルにColumn構成にします。
       body: Column(
         children: [
           // 上部コントロールエリア
@@ -60,13 +58,14 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                   child: TabBar(
                     controller: _tabController,
                     isScrollable: true,
-                    tabAlignment: TabAlignment.start, // 左寄せ
+                    tabAlignment: TabAlignment.start,
                     tabs: const [
                       Tab(text: 'すべて'),
                       Tab(text: '通過済'),
                       Tab(text: '所持'),
-                      // ★ 修正: タブ名を「購入検討」に変更
                       Tab(text: '購入検討'),
+                      // ★ 追加: PL希望タブ
+                      Tab(text: 'PL希望'),
                     ],
                   ),
                 ),
@@ -119,7 +118,7 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
         
         return CustomScrollView(
           slivers: [
-            // 1. サマリー表示 (Dashboard)
+            // 1. サマリー表示
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(_kSummaryPadding),
@@ -144,7 +143,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: _kGridSpacing),
               sliver: isPC
-                  // PC: グリッド表示
                   ? SliverGrid(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: crossAxisCount > 0 ? crossAxisCount : 1,
@@ -157,7 +155,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                         childCount: myList.length,
                       ),
                     )
-                  // スマホ: リスト表示 (SliverList)
                   : SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) => Padding(
@@ -169,7 +166,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                     ),
             ),
             
-            // 下部の余白
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
           ],
         );
@@ -193,8 +189,9 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
       MyListFilter.all => '記録されたシナリオはありません。\n「探す」画面から追加しましょう！',
       MyListFilter.played => '「通過済」のシナリオはありません。',
       MyListFilter.possessed => '「所持」しているシナリオはありません。',
-      // ★ 修正: メッセージを更新
       MyListFilter.wantsToGm => '「購入検討中」のシナリオはありません。',
+      // ★ 追加: ヌケモレ修正
+      MyListFilter.wantsToPlay => '「PL希望」のシナリオはありません。\n遊びたいシナリオを登録しましょう！',
     };
 
     return Center(

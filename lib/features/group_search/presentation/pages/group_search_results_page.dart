@@ -26,8 +26,8 @@ class GroupSearchResultsPage extends ConsumerWidget {
             child: Text('検索エラー: $e', style: const TextStyle(color: Colors.red)),
           ),
         ),
-        data: (scenarios) {
-          if (scenarios.isEmpty) {
+        data: (items) {
+          if (items.isEmpty) {
             return const Center(
               child: Padding(
                 padding: EdgeInsets.all(16.0),
@@ -40,26 +40,60 @@ class GroupSearchResultsPage extends ConsumerWidget {
             );
           }
 
-          // 要件 6.1.5: 表示パフォーマンス対策 (無限スクロール)
-          // 簡易実装としてListView.builderを使用 (FlutterのListViewはデフォルトで遅延構築されるため要件を満たす)
           return ListView.builder(
             padding: const EdgeInsets.all(8.0),
-            itemCount: scenarios.length,
+            itemCount: items.length,
             itemBuilder: (context, index) {
-              final scenario = scenarios[index];
-              // 検索結果画面でも自分のステータスは更新可能 (要件 4.5.2)
+              final item = items[index];
+              final scenario = item.scenario;
               final status = userStatuses[scenario.id]!;
               
+              // 通常のリストアイテムを表示するが、PL希望フラグがある場合は装飾する
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
-                child: ScenarioListItem(
-                  scenario: scenario,
-                  status: status,
-                  isReadOnly: false,
-                  onStatusChanged: (newStatus) {
-                    ref.read(userScenarioStatusProvider.notifier)
-                       .updateStatus(scenario.id, newStatus);
-                  },
+                child: Stack(
+                  children: [
+                    ScenarioListItem(
+                      scenario: scenario,
+                      status: status,
+                      isReadOnly: false,
+                      onStatusChanged: (newStatus) {
+                        ref.read(userScenarioStatusProvider.notifier)
+                           .updateStatus(scenario.id, newStatus);
+                      },
+                    ),
+                    // ★ 強調表示 (バッジ)
+                    if (item.isFriendWantsToPlay)
+                      Positioned(
+                        top: 0,
+                        right: 0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: const BoxDecoration(
+                            color: Colors.pinkAccent,
+                            borderRadius: BorderRadius.only(
+                              topRight: Radius.circular(12),
+                              bottomLeft: Radius.circular(12),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.favorite, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text(
+                                'フレンズ希望!',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               );
             },

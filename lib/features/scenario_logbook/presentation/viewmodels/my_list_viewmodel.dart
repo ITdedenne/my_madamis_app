@@ -5,7 +5,8 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_sc
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/providers.dart';
 
-enum MyListFilter { all, played, possessed, wantsToGm }
+// ★ 修正: wantsToPlay (PL希望) を追加
+enum MyListFilter { all, played, possessed, wantsToGm, wantsToPlay }
 enum SortOrder { byTitle, byAuthor }
 
 // UI状態
@@ -61,7 +62,10 @@ final filteredAndSortedMyListProvider = Provider<AsyncValue<List<UserScenario>>>
       case MyListFilter.wantsToGm:
         filtered = myList.where((s) => s.status.wantsToGm).toList();
         break;
-      // ★ 修正: default 節を削除し、MyListFilter.all でカバー
+      // ★ 追加: PL希望でのフィルタリング
+      case MyListFilter.wantsToPlay:
+        filtered = myList.where((s) => s.status.wantsToPlay).toList();
+        break;
       case MyListFilter.all:
         filtered = myList;
         break;

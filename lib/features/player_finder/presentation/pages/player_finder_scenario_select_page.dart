@@ -1,5 +1,3 @@
-// ファイルパス: lib/features/player_finder/presentation/pages/player_finder_scenario_select_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/player_finder/presentation/pages/player_finder_page.dart';
@@ -57,7 +55,6 @@ class _PlayerFinderScenarioSelectPageState extends ConsumerState<PlayerFinderSce
       ),
       body: Column(
         children: [
-          // --- 共通: 検索バー & フィルター ---
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -133,7 +130,6 @@ class _PlayerFinderScenarioSelectPageState extends ConsumerState<PlayerFinderSce
               ),
             ),
 
-          // --- コンテンツ ---
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -149,7 +145,6 @@ class _PlayerFinderScenarioSelectPageState extends ConsumerState<PlayerFinderSce
   }
 }
 
-// --- タブ1: マイリスト ---
 class _MyListTab extends ConsumerStatefulWidget {
   const _MyListTab();
 
@@ -158,9 +153,10 @@ class _MyListTab extends ConsumerStatefulWidget {
 }
 
 class _MyListTabState extends ConsumerState<_MyListTab> {
-  bool? _showPossessed = true; // デフォルトは所持
+  bool? _showPossessed = true; 
   bool? _showWantsToGm;
   bool? _showPlayed;
+  bool? _showWantsToPlay; // ★ 追加
 
   @override
   Widget build(BuildContext context) {
@@ -170,13 +166,11 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
 
     return Column(
       children: [
-        // マイリスト専用の絞り込みチップ
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
             children: [
-              // ★ チップのデザインと呼び出しを刷新
               _buildFilterChip(
                 label: 'すべて', 
                 isSelected: _isAllSelected(), 
@@ -187,7 +181,6 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
                   label: '所持', 
                   isSelected: _showPossessed == true, 
                   onTap: () => _toggleFilter('possessed'),
-                  // 選択時の色を指定 (濃いめの青)
                   selectedColor: Colors.blue.shade700
               ),
               const SizedBox(width: 8),
@@ -195,15 +188,21 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
                   label: 'GM検討', 
                   isSelected: _showWantsToGm == true, 
                   onTap: () => _toggleFilter('wantsToGm'),
-                  // 選択時の色を指定 (濃いめのオレンジ)
                   selectedColor: Colors.orange.shade700
+              ),
+              const SizedBox(width: 8),
+              // ★ 追加: PL希望チップ
+              _buildFilterChip(
+                  label: 'PL希望', 
+                  isSelected: _showWantsToPlay == true, 
+                  onTap: () => _toggleFilter('wantsToPlay'),
+                  selectedColor: Colors.pink.shade700
               ),
               const SizedBox(width: 8),
               _buildFilterChip(
                   label: '通過済', 
                   isSelected: _showPlayed == true, 
                   onTap: () => _toggleFilter('played'),
-                  // 選択時の色を指定 (濃いめの緑)
                   selectedColor: Colors.green.shade700
               ),
             ],
@@ -232,6 +231,8 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
                   if (_showPossessed == true && status.isPossessed) return true;
                   if (_showWantsToGm == true && status.wantsToGm) return true;
                   if (_showPlayed == true && status.isPlayed) return true;
+                  // ★ 追加: フィルタロジック
+                  if (_showWantsToPlay == true && status.wantsToPlay) return true;
 
                   return false;
                 }).toList();
@@ -268,7 +269,8 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
   }
 
   bool _isAllSelected() {
-    return _showPossessed == null && _showWantsToGm == null && _showPlayed == null;
+    // ★ 追加: PL希望も含めて判定
+    return _showPossessed == null && _showWantsToGm == null && _showPlayed == null && _showWantsToPlay == null;
   }
 
   void _selectAll() {
@@ -276,6 +278,7 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
       _showPossessed = null;
       _showWantsToGm = null;
       _showPlayed = null;
+      _showWantsToPlay = null; // ★ 追加
     });
   }
 
@@ -284,33 +287,28 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
       _showPossessed = type == 'possessed';
       _showWantsToGm = type == 'wantsToGm';
       _showPlayed = type == 'played';
+      _showWantsToPlay = type == 'wantsToPlay'; // ★ 追加
     });
   }
 
-  // ★ 修正: 視認性を高めたチップウィジェット
   Widget _buildFilterChip({
     required String label, 
     required bool isSelected, 
     required VoidCallback onTap,
     Color? selectedColor,
   }) {
-    // デフォルトの選択色（「すべて」など）
     final activeColor = selectedColor ?? Theme.of(context).colorScheme.primary;
 
     return FilterChip(
       label: Text(label),
       selected: isSelected,
       onSelected: (_) => onTap(),
-      
-      // 選択時のスタイル: 濃い背景色 + 白文字 + チェックマーク
       selectedColor: activeColor,
       checkmarkColor: Colors.white,
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : Colors.black87,
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
       ),
-      
-      // 非選択時のスタイル: 透明/白背景 + 枠線
       backgroundColor: Colors.white,
       shape: StadiumBorder(
         side: BorderSide(
@@ -323,14 +321,12 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
   }
 }
 
-// --- タブ2: すべてのシナリオ (検索機能付き) ---
 class _AllScenariosTab extends ConsumerWidget {
   const _AllScenariosTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(playerFinderSearchViewModelProvider.notifier);
-    // ★ ViewModel側でソート済みのリストが返ってくる
     final scenariosAsync = ref.watch(playerFinderDisplayedScenariosProvider);
     final userStatuses = ref.watch(userScenarioStatusProvider);
 
@@ -367,7 +363,6 @@ class _AllScenariosTab extends ConsumerWidget {
   }
 }
 
-// --- 共通部品: タップ可能なシナリオアイテム ---
 class _ClickableScenarioItem extends StatelessWidget {
   final Scenario scenario;
   final UserScenarioStatus status;

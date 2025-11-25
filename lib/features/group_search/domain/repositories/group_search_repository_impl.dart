@@ -2,21 +2,14 @@
 
 import 'dart:convert';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:my_madamis_app/features/group_search/domain/entities/group_search_result.dart';
 import 'package:my_madamis_app/features/group_search/domain/repositories/group_search_repository.dart';
 
 class GroupSearchRepositoryImpl implements GroupSearchRepository {
   static const String _kQueryName = 'findGroupScenarios';
 
   @override
-  Future<List<String>> findGroupScenarios(List<String> friendIds) async {
-    // GraphQLクエリの構築
-    // 引数は [ID!]! なので、ダブルクォーテーションで囲んだ文字列の配列として渡す必要がある
-    // final friendIdsString = jsonEncode(friendIds); // ex: ["user1", "user2"]
-    
-    // リテラル埋め込みではなく、GraphQL変数を使用するのがベストだが、
-    // List<ID>の変数を渡すのがAmplify Flutterで少し複雑な場合があるため、
-    // ここでは単純なString引数として渡す形ではなく、リストとして正しく渡す。
-    
+  Future<List<GroupSearchResult>> findGroupScenarios(List<String> friendIds) async {
     const doc = r'''
       query FindGroupScenarios($friendIds: [ID!]!) {
         findGroupScenarios(friendIds: $friendIds)
@@ -49,9 +42,16 @@ class GroupSearchRepositoryImpl implements GroupSearchRepository {
         return [];
       }
 
-      // LambdaはJSON文字列のリストを返しているのでデコード
+      // LambdaはJSON文字列のリストを返している: [{"scenarioId": "...", "isFriendWantsToPlay": true}, ...]
       final List<dynamic> resultList = jsonDecode(resultJsonString);
-      return resultList.map((e) => e.toString()).toList();
+      
+      return resultList.map((json) {
+        if (json is Map<String, dynamic>) {
+          return GroupSearchResult.fromJson(json);
+        }
+        // 旧形式やエラー時のフォールバック（念のため）
+        return GroupSearchResult(scenarioId: json.toString());
+      }).toList();
 
     } catch (e) {
       safePrint('Error in findGroupScenarios: $e');
