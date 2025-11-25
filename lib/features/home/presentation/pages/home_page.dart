@@ -5,11 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/profile/presentation/pages/profile_page.dart';
+import 'package:my_madamis_app/features/profile/presentation/viewmodels/profile_viewmodel.dart'; // ★ 追加
 import 'package:my_madamis_app/features/settings/presentation/pages/settings_page.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/pages/scenario_logbook_page.dart';
 import 'package:my_madamis_app/features/friends/presentation/pages/friends_page.dart';
 import 'package:my_madamis_app/features/player_finder/presentation/pages/player_finder_scenario_select_page.dart';
-import 'package:my_madamis_app/features/group_search/presentation/pages/group_search_settings_page.dart';
+import 'package:my_madamis_app/features/group_search/presentation/pages/group_search_page.dart'; // ★ 修正: 新しいページへ
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -17,7 +18,13 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateNotifierProvider);
+    // ★ 追加: ProfileViewModelからも情報を取得（フォールバック用）
+    final profileState = ref.watch(profileViewModelProvider);
+    
     final theme = Theme.of(context);
+
+    // ★ 修正: 表示名の解決ロジック (AuthState > ProfileState > Guest)
+    final displayUsername = authState.username ?? profileState.profile?.username ?? 'Guest';
 
     ref.listen<AuthState>(authStateNotifierProvider, (previous, next) {
       if (next.flashMessage != null && next.status == AuthStatus.authenticated) {
@@ -33,7 +40,7 @@ class HomePage extends ConsumerWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // --- 1. 背景レイヤー (変更なし) ---
+          // 背景 (変更なし)
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -48,7 +55,6 @@ class HomePage extends ConsumerWidget {
               ),
             ),
           ),
-          // 背景装飾
           Positioned(
             top: -100,
             right: -100,
@@ -68,18 +74,16 @@ class HomePage extends ConsumerWidget {
             ),
           ),
 
-          // --- 2. コンテンツレイヤー ---
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- ヘッダーエリア (Top Bar) ---
+                  // ヘッダー
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // タイトル (アプリ名など)
                       Text(
                         'Home',
                         style: theme.textTheme.headlineSmall?.copyWith(
@@ -87,7 +91,6 @@ class HomePage extends ConsumerWidget {
                           color: theme.colorScheme.onSurface.withOpacity(0.8),
                         ),
                       ),
-                      // 右上のアクションボタン群 (設定 & ログアウト)
                       Row(
                         children: [
                           _GlassActionButton(
@@ -106,16 +109,13 @@ class HomePage extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  
                   const SizedBox(height: 24),
 
-                  // --- ウェルカムヘッダー (タップでプロフィールへ) ---
-                  // プロフィールアイコンを廃止し、ここを入り口にする
-                  _buildGlassWelcomeHeader(context, authState.username),
+                  // ウェルカムヘッダー
+                  _buildGlassWelcomeHeader(context, displayUsername), // ★ 修正後の名前を渡す
                   
                   const SizedBox(height: 32),
 
-                  // --- メニューセクション ---
                   Padding(
                     padding: const EdgeInsets.only(left: 8.0),
                     child: Text(
@@ -167,7 +167,7 @@ class HomePage extends ConsumerWidget {
                             description: 'メンバー全員が遊べるシナリオを一括検索',
                             icon: Icons.groups_rounded,
                             gradientColors: [Colors.teal.shade400, Colors.teal.shade700],
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupSearchSettingsPage())),
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupSearchPage())), // ★ 修正: 統合ページへ
                           ),
                         ],
                       );
@@ -182,8 +182,7 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  // タップ可能なウェルカムヘッダー
-  Widget _buildGlassWelcomeHeader(BuildContext context, String? username) {
+  Widget _buildGlassWelcomeHeader(BuildContext context, String username) {
     final theme = Theme.of(context);
     
     return ClipRRect(
@@ -193,7 +192,6 @@ class HomePage extends ConsumerWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            // ★ ここでプロフィール画面へ遷移させる
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const ProfilePage()),
@@ -216,8 +214,7 @@ class HomePage extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      // アバター部分
-                      Hero( // 遷移先のアバターとアニメーションで繋ぐとさらにリッチ
+                      Hero(
                         tag: 'profile-avatar',
                         child: Container(
                           padding: const EdgeInsets.all(2),
@@ -229,7 +226,7 @@ class HomePage extends ConsumerWidget {
                             radius: 26,
                             backgroundColor: theme.colorScheme.primaryContainer,
                             child: Text(
-                              username != null && username.isNotEmpty ? username[0].toUpperCase() : '?',
+                              username.isNotEmpty ? username[0].toUpperCase() : '?',
                               style: TextStyle(
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
@@ -253,7 +250,7 @@ class HomePage extends ConsumerWidget {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${username ?? 'Guest'} さん',
+                              '$username さん',
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w800,
                               ),
@@ -263,7 +260,6 @@ class HomePage extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      // タップできることを示唆する小さなアイコン
                       Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.3)),
                     ],
                   ),
@@ -301,15 +297,11 @@ class HomePage extends ConsumerWidget {
   }
 }
 
-// --- 新規追加: 設定/ログアウト用の小さなグラスボタン ---
 class _GlassActionButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _GlassActionButton({
-    required this.icon,
-    required this.onTap,
-  });
+  const _GlassActionButton({required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -329,15 +321,9 @@ class _GlassActionButton extends StatelessWidget {
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: theme.colorScheme.onSurface.withOpacity(0.1),
-                ),
+                border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.1)),
               ),
-              child: Icon(
-                icon,
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
-                size: 22,
-              ),
+              child: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.7), size: 22),
             ),
           ),
         ),
@@ -346,7 +332,6 @@ class _GlassActionButton extends StatelessWidget {
   }
 }
 
-// --- _MenuCard (先ほどと同じ) ---
 class _MenuCard extends StatelessWidget {
   final String title;
   final String description;
@@ -368,11 +353,7 @@ class _MenuCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(
-            color: gradientColors.last.withOpacity(0.3),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
+          BoxShadow(color: gradientColors.last.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6)),
         ],
       ),
       child: Card(
@@ -384,37 +365,17 @@ class _MenuCard extends StatelessWidget {
           onTap: onTap,
           child: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: gradientColors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              gradient: LinearGradient(colors: gradientColors, begin: Alignment.topLeft, end: Alignment.bottomRight),
             ),
             child: Stack(
               children: [
                 Positioned(
-                  right: -24,
-                  bottom: -24,
-                  child: Transform.rotate(
-                    angle: -0.2,
-                    child: Icon(
-                      icon,
-                      size: 140,
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
+                  right: -24, bottom: -24,
+                  child: Transform.rotate(angle: -0.2, child: Icon(icon, size: 140, color: Colors.white.withOpacity(0.1))),
                 ),
                 Positioned(
-                  top: -20,
-                  left: -20,
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                  ),
+                  top: -20, left: -20,
+                  child: Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1))),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -431,26 +392,9 @@ class _MenuCard extends StatelessWidget {
                         child: Icon(icon, color: Colors.white, size: 26),
                       ),
                       const Spacer(),
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
+                      Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       const SizedBox(height: 4),
-                      Text(
-                        description,
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 12,
-                          height: 1.2,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      Text(description, style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),

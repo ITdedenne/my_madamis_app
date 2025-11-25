@@ -40,7 +40,6 @@ final playerFinderRepositoryProvider = Provider<PlayerFinderRepository>((ref) {
   return PlayerFinderRepositoryImpl();
 });
 
-// ★ 追加
 final groupSearchRepositoryProvider = Provider<GroupSearchRepository>((ref) {
   return GroupSearchRepositoryImpl();
 });

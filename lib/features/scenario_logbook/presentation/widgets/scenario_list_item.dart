@@ -1,8 +1,10 @@
+// ファイルパス: lib/features/scenario_logbook/presentation/widgets/scenario_list_item.dart
+
 import 'package:flutter/material.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 
-// --- デザイン定数 (Magic Numbersの排除) ---
+// --- デザイン定数 ---
 const double _kCardElevation = 2.0;
 const double _kCardBorderRadius = 12.0;
 const double _kCardPadding = 10.0;
@@ -33,13 +35,13 @@ class ScenarioListItem extends StatelessWidget {
     this.onTap,
   });
 
-  /// ステータスに基づいて「優先表示カラー」を決定する
-  /// 優先順位: 通過済(緑) > GM検討(橙) > PL希望(桃) > 所持(青)
+  /// ステータスに基づいて「優先表示カラー」を決定する (v2.15)
+  /// 優先順位: 通過済(緑) > 所持(青) > 購入検討(橙) > PL希望(桃)
   Color? _getStatusColor(BuildContext context) {
     if (status.isPlayed) return Colors.green.shade400;
+    if (status.isPossessed) return Colors.blue.shade400;
     if (status.wantsToGm) return Colors.orange.shade400;
     if (status.wantsToPlay) return Colors.pink.shade400;
-    if (status.isPossessed) return Colors.blue.shade400;
     return null; 
   }
 
@@ -134,20 +136,17 @@ class ScenarioListItem extends StatelessWidget {
       );
     }
 
+    // 複数ステータスがある場合、すべて表示する
     return Row(
       children: [
         if (status.isPlayed)
-          const _StatusChip(
-              icon: Icons.check_circle, label: '通過済', color: Colors.green),
+          const _StatusChip(icon: Icons.check_circle, label: '通過済', color: Colors.green),
         if (status.isPossessed)
           const _StatusChip(icon: Icons.book, label: '所持', color: Colors.blue),
         if (status.wantsToGm)
-          const _StatusChip(
-              // ★ 修正: アイコンとラベルを変更
-              icon: Icons.add_shopping_cart, label: '購入検討', color: Colors.orange),
+          const _StatusChip(icon: Icons.add_shopping_cart, label: '購入検討', color: Colors.orange),
         if (status.wantsToPlay)
-          const _StatusChip(
-              icon: Icons.favorite, label: 'PL希望', color: Colors.pink),
+          const _StatusChip(icon: Icons.favorite, label: 'PL希望', color: Colors.pink),
       ],
     );
   }
@@ -170,8 +169,7 @@ class _StatusChip extends StatelessWidget {
   final String label;
   final Color color;
 
-  const _StatusChip(
-      {required this.icon, required this.label, required this.color});
+  const _StatusChip({required this.icon, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -273,7 +271,6 @@ class _StatusSelectionSheetState extends State<_StatusSelectionSheet> {
             activeColor: Colors.blue,
           ),
           CheckboxListTile(
-            // ★ 修正: ラベルと説明文を変更
             title: const Text('🛒 シナリオ購入検討'),
             subtitle: const Text('購入を迷っています / GM可能です'),
             value: _wantsToGm,

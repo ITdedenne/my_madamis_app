@@ -20,7 +20,7 @@ user_scenario_table = dynamodb.Table(SCENARIO_TABLE)
 user_table = dynamodb.Table(USER_TABLE)
 
 def handler(event, context):
-    print("=== findUnplayedFriends START ===")
+    print("=== findUnplayedFriends START (v2.15) ===")
     print(f"Event: {json.dumps(event)}")
 
     try:
@@ -30,7 +30,6 @@ def handler(event, context):
         
         requesting_user_id = identity.get('sub')
         scenario_id = arguments.get('scenarioId')
-        # ★ 追加: mode引数の取得 (デフォルトは 'player')
         mode = arguments.get('mode', 'player')
 
         if not requesting_user_id or not scenario_id:
@@ -45,7 +44,6 @@ def handler(event, context):
         friend_ids = [item['followedId'] for item in items]
         
         if not friend_ids:
-            print("No friends found. Returning empty list.")
             return json.dumps([])
 
         # 3. BatchGetItemで各フレンズの UserScenario 状態を取得
@@ -54,7 +52,6 @@ def handler(event, context):
             for friend_id in friend_ids
         ]
         
-        # ProjectionExpression に wantsToPlay を追加
         batch_response = dynamodb.batch_get_item(
             RequestItems={
                 SCENARIO_TABLE: {
@@ -65,10 +62,6 @@ def handler(event, context):
         )
         
         found_scenarios = batch_response.get('Responses', {}).get(SCENARIO_TABLE, [])
-        
-        # --- 4. メモリ上で突合・フィルタリング・ソート (モード分岐) ---
-        
-        # found_scenarios を userId キーの辞書に変換して高速アクセス
         scenario_status_map = {item['userId']: item for item in found_scenarios}
         
         filtered_users = []
@@ -87,28 +80,25 @@ def handler(event, context):
                 'isPossessed': is_possessed,
                 'wantsToGm': wants_to_gm,
                 'wantsToPlay': wants_to_play,
-                # ソート用スコア
                 'sortScore': 0 
             }
 
             if mode == 'gm':
-                # 【GM検索モード】
-                # 対象: 所持 OR 通過済 OR 購入検討(wantsToGm)
-                if is_possessed or is_played or wants_to_gm:
-                    # 優先順位付け (高いほどリストの上)
+                # 【v2.15 GM検索モード】
+                # 対象: 所持 (isPossessed) OR 購入検討 (wantsToGm)
+                # 変更点: 「通過済 (isPlayed)」のみのユーザーは除外する
+                if is_possessed or wants_to_gm:
+                    # 優先順位付け
                     if is_possessed:
-                        user_data['sortScore'] = 30 # 最優先
-                    elif is_played:
-                        user_data['sortScore'] = 20 # 次点
+                        user_data['sortScore'] = 30 # 最優先: 所持
                     elif wants_to_gm:
-                        user_data['sortScore'] = 10 # 購入検討
+                        user_data['sortScore'] = 10 # 次点: 購入検討
                     
                     filtered_users.append(user_data)
 
             else:
                 # 【PL検索モード】 (デフォルト)
                 # 対象: 未通過 (レコードなし OR 全フラグfalse)
-                # wantsToPlayは未通過に含まれるため除外しない
                 is_registered_ng = is_played or is_possessed or wants_to_gm
                 
                 if not is_registered_ng:
@@ -125,9 +115,7 @@ def handler(event, context):
         if not target_user_ids:
             return json.dumps([])
 
-        # 5. BatchGetItemで対象ユーザーのプロフィール情報を取得
-        # (BatchGetItemは順序を保証しないため、後で並べ直す必要がある)
-        # 一度に取得できるのは100件までだが、フレンズ上限100人なので分割不要
+        # 5. プロフィール情報の取得
         user_keys = [{'id': uid} for uid in target_user_ids]
         
         user_batch_response = dynamodb.batch_get_item(
@@ -142,7 +130,6 @@ def handler(event, context):
         users_info = user_batch_response.get('Responses', {}).get(USER_TABLE, [])
         users_map = {u['id']: u for u in users_info}
         
-        # 6. 結合とレスポンス生成 (ソート順を維持)
         results = []
         for f_user in filtered_users:
             uid = f_user['id']
@@ -153,7 +140,6 @@ def handler(event, context):
                     'username': u_info.get('username', ''),
                     'publicUserId': u_info.get('publicUserId', ''),
                     'bio': u_info.get('bio', ''),
-                    # ステータス情報も返す（UI表示用）
                     'wantsToPlay': f_user['wantsToPlay'],
                     'isPlayed': f_user['isPlayed'],
                     'isPossessed': f_user['isPossessed'],
@@ -163,6 +149,6 @@ def handler(event, context):
         return json.dumps(results)
 
     except Exception as e:
-        print(f"[ERROR] An exception occurred: {str(e)}")
+        print(f"[ERROR] {e}")
         traceback.print_exc()
         return json.dumps([])

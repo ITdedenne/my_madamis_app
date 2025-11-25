@@ -1,3 +1,5 @@
+// ファイルパス: lib/features/player_finder/presentation/pages/player_finder_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/player_finder/domain/entities/searched_user.dart';
@@ -31,7 +33,6 @@ class PlayerFinderPage extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // --- ★ モード切替タブ ---
           Container(
             color: Theme.of(context).scaffoldBackgroundColor,
             child: Row(
@@ -57,7 +58,6 @@ class PlayerFinderPage extends ConsumerWidget {
           ),
           const Divider(height: 1),
 
-          // --- リスト表示 ---
           Expanded(
             child: state.users.when(
               loading: () => const Center(child: CircularProgressIndicator()),
@@ -80,7 +80,7 @@ class PlayerFinderPage extends ConsumerWidget {
                 if (users.isEmpty) {
                   final emptyMessage = state.mode == PlayerFinderMode.player
                       ? '未通過のフレンズは見つかりませんでした。'
-                      : 'GM可能なフレンズは見つかりませんでした。\n(所持・通過済・購入検討)';
+                      : 'GM可能なフレンズは見つかりませんでした。\n(所持・購入検討)'; // 通過済を除外したので文言も修正
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -117,22 +117,18 @@ class PlayerFinderPage extends ConsumerWidget {
     if (mode == PlayerFinderMode.player) {
       // PL検索モード: PL希望者を目立たせる
       if (searchedUser.wantsToPlay) {
-        label = 'PL希望';
+        label = '❤️ PL希望！'; // ★ 強調
         color = Colors.pink.shade50;
         textColor = Colors.pink;
       }
     } else {
-      // GM検索モード: ステータスを表示 (優先度順: 所持 > 通過済 > 購入検討)
+      // GM検索モード: 所持 or 購入検討 (通過済は除外されている)
       if (searchedUser.isPossessed) {
         label = '所持';
         color = Colors.blue.shade50;
         textColor = Colors.blue;
-      } else if (searchedUser.isPlayed) {
-        label = '通過済';
-        color = Colors.green.shade50;
-        textColor = Colors.green;
       } else if (searchedUser.wantsToGm) {
-        label = '購入検討'; // wantsToGmの表示名を変更
+        label = '購入検討';
         color = Colors.orange.shade50;
         textColor = Colors.orange;
       }
@@ -143,7 +139,7 @@ class PlayerFinderPage extends ConsumerWidget {
       actionButtonLabel: label,
       actionButtonColor: color,
       actionButtonTextColor: textColor,
-      onTap: null, // 必要であればプロフィールへ遷移など
+      onTap: null, 
     );
   }
 }

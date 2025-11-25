@@ -19,7 +19,7 @@
       "function": {
         "findUnplayedFriends": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-8d52f-deployment",
-          "s3Key": "amplify-builds/findUnplayedFriends-44324433445431486d2f-build.zip"
+          "s3Key": "amplify-builds/findUnplayedFriends-616e59617155312b4a4d-build.zip"
         },
         "findGroupScenarios": {
           "deploymentBucketName": "amplify-mymadamisapp-dev-8d52f-deployment",
