@@ -4,21 +4,39 @@ import 'package:equatable/equatable.dart';
 
 class GroupSearchResult extends Equatable {
   final String scenarioId;
-  final bool isFriendWantsToPlay; // 参加メンバーの誰かが「PL希望」しているか
+  final List<String> ngUserIds;         // 通過済などでNGなユーザーID
+  final List<String> wantsToPlayUserIds; // PL希望のユーザーID
+  final List<String> possessedUserIds;   // 所持しているユーザーID
+  final List<String> wantsToGmUserIds;   // GM検討中のユーザーID
 
   const GroupSearchResult({
     required this.scenarioId,
-    this.isFriendWantsToPlay = false,
+    this.ngUserIds = const [],
+    this.wantsToPlayUserIds = const [],
+    this.possessedUserIds = const [],
+    this.wantsToGmUserIds = const [],
   });
 
   @override
-  List<Object?> get props => [scenarioId, isFriendWantsToPlay];
-  
-  // JSONデコード用ファクトリ (Lambdaからのレスポンス用)
+  List<Object?> get props => [
+        scenarioId,
+        ngUserIds,
+        wantsToPlayUserIds,
+        possessedUserIds,
+        wantsToGmUserIds
+      ];
+
   factory GroupSearchResult.fromJson(Map<String, dynamic> json) {
+    List<String> parseList(String key) {
+      return (json[key] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    }
+
     return GroupSearchResult(
       scenarioId: json['scenarioId'] as String,
-      isFriendWantsToPlay: json['isFriendWantsToPlay'] as bool? ?? false,
+      ngUserIds: parseList('ngUserIds'),
+      wantsToPlayUserIds: parseList('wantsToPlayUserIds'),
+      possessedUserIds: parseList('possessedUserIds'),
+      wantsToGmUserIds: parseList('wantsToGmUserIds'),
     );
   }
 }

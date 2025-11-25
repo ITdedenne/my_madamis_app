@@ -1,7 +1,6 @@
 import json
 import os
 import boto3
-import time
 from concurrent.futures import ThreadPoolExecutor
 from boto3.dynamodb.conditions import Key, Attr
 
@@ -9,83 +8,78 @@ from boto3.dynamodb.conditions import Key, Attr
 ENV = os.environ['ENV']
 REGION = os.environ['REGION']
 API_ID = os.environ['API_MYMADAMISAPP_GRAPHQLAPIIDOUTPUT']
-BUCKET_NAME = os.environ.get('STORAGE_MADAMISAPPS3_BUCKETNAME') 
 
 # --- 定数 ---
-SCENARIOS_JSON_KEY = 'Scenarios.json'
-VERSION_JSON_KEY = 'version.json'
 USER_SCENARIO_TABLE_NAME = f'UserScenario-{API_ID}-{ENV}'
 
-# --- グローバルキャッシュ (コンテナ再利用時用) ---
-_cached_scenarios = None
-_cached_version = None
-
 # --- AWS リソース ---
-s3_client = boto3.client('s3', region_name=REGION)
 dynamodb_resource = boto3.resource('dynamodb', region_name=REGION)
 user_scenario_table = dynamodb_resource.Table(USER_SCENARIO_TABLE_NAME)
 
-def get_master_data():
-    """S3からマスターデータを取得"""
-    global _cached_scenarios, _cached_version
-    try:
-        version_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key=VERSION_JSON_KEY)
-        current_version = json.loads(version_obj['Body'].read().decode('utf-8'))
-
-        if _cached_scenarios and _cached_version == current_version:
-            print("Using cached scenarios.json")
-            return _cached_scenarios
-
-        print("Downloading scenarios.json from S3...")
-        scenarios_obj = s3_client.get_object(Bucket=BUCKET_NAME, Key=SCENARIOS_JSON_KEY)
-        _cached_scenarios = json.loads(scenarios_obj['Body'].read().decode('utf-8'))
-        _cached_version = current_version
-        return _cached_scenarios
-    except Exception as e:
-        print(f"Error fetching master data: {e}")
-        return _cached_scenarios if _cached_scenarios else []
-
 def fetch_friend_status(user_id):
     """
-    指定ユーザーのステータスを取得し、NGセットとWantsセットを返す
-    Returns: (ng_set, wants_set)
+    指定ユーザーのステータスを取得し、各状態ごとのシナリオIDセットを返す
+    Returns: 
+        user_id (str)
+        ng_set (set): 通過済などでNGなシナリオID
+        wants_play_set (set): PL希望のシナリオID
+        possessed_set (set): 所持しているシナリオID
+        wants_gm_set (set): 購入検討のシナリオID
     """
     ng_set = set()
-    wants_set = set()
+    wants_play_set = set()
+    possessed_set = set()
+    wants_gm_set = set()
     
     try:
-        # 検索対象: NG条件(既知/所持/GM検討) または PL希望(wantsToPlay)
-        # コスト最適化: 1回のクエリで両方の情報を取得する
         response = user_scenario_table.query(
             IndexName='byUser',
             KeyConditionExpression=Key('userId').eq(user_id),
+            # 必要な属性のみ取得
             FilterExpression=Attr('isPlayed').eq(True) | Attr('isPossessed').eq(True) | Attr('wantsToGm').eq(True) | Attr('wantsToPlay').eq(True),
             ProjectionExpression='scenarioId, isPlayed, isPossessed, wantsToGm, wantsToPlay'
         )
         
         for item in response.get('Items', []):
             sid = item['scenarioId']
-            # NG判定 (通過済・所持・GM検討 はNG)
-            if item.get('isPlayed') or item.get('isPossessed') or item.get('wantsToGm'):
+            
+            # NG判定 (通過済はNG確定)
+            # ※ 所持・購入検討も基本はPL不可だが、要件によっては「未通過ならPL可」とする場合もある。
+            # ここでは要件定義に基づき、通過済(isPlayed)のみを完全NG、他は状況によると判断できるよう分離して返す設計にするが、
+            # 一般的なマダミスアプリとして「通過済」をNGの主軸とする。
+            if item.get('isPlayed'):
                 ng_set.add(sid)
-            # PL希望判定 (NG条件に引っかかっていない場合のみ有効とする運用も考えられるが、
-            # データ構造的には独立しているので個別にチェックして追加)
-            elif item.get('wantsToPlay'):
-                wants_set.add(sid)
+            
+            # 所持・購入検討 (GM候補情報として収集)
+            if item.get('isPossessed'):
+                possessed_set.add(sid)
+                # 通常、所持している＝内容は知っている＝PL不可 なのでNGにも追加
+                ng_set.add(sid)
+            
+            if item.get('wantsToGm'):
+                wants_gm_set.add(sid)
+                # GM検討中＝ネタバレを見ている可能性があるためNGに追加
+                ng_set.add(sid)
                 
-        return ng_set, wants_set
+            # PL希望
+            if item.get('wantsToPlay'):
+                wants_play_set.add(sid)
+                
+        return user_id, ng_set, wants_play_set, possessed_set, wants_gm_set
         
     except Exception as e:
         print(f"Error fetching status for friend {user_id}: {e}")
-        return set(), set()
+        return user_id, set(), set(), set(), set()
 
 def fetch_my_target_list(user_id):
     """自分の対象リスト（所持 OR GM検討 OR PL希望）を取得"""
+    # 自分が全く関心のないシナリオまで計算すると膨大になるため、自分のリストをベースにする
     try:
         response = user_scenario_table.query(
             IndexName='byUser',
             KeyConditionExpression=Key('userId').eq(user_id),
-            FilterExpression=Attr('isPossessed').eq(True) | Attr('wantsToGm').eq(True) | Attr('wantsToPlay').eq(True),
+            # 自分がステータスをつけているものすべてを候補とする
+            FilterExpression=Attr('isPossessed').eq(True) | Attr('wantsToGm').eq(True) | Attr('wantsToPlay').eq(True) | Attr('isPlayed').eq(True),
             ProjectionExpression='scenarioId'
         )
         return {item['scenarioId'] for item in response.get('Items', [])}
@@ -94,7 +88,7 @@ def fetch_my_target_list(user_id):
         return set()
 
 def handler(event, context):
-    print("=== findGroupScenarios START (v2.14 Enhanced) ===")
+    print("=== findGroupScenarios START (v2.16 Detail Info) ===")
 
     try:
         arguments = event.get('arguments', {})
@@ -108,40 +102,56 @@ def handler(event, context):
         if len(friend_ids) > 8:
              raise ValueError("Too many friends selected (Max 8).")
 
-        # 並列処理でデータ取得
         with ThreadPoolExecutor(max_workers=10) as executor:
-            # 自分のリスト取得
+            # A. 自分の候補リスト取得
             my_list_future = executor.submit(fetch_my_target_list, requesting_user_id)
             
-            # フレンズのステータス取得 (NGリストとPL希望リスト)
-            friend_futures = {fid: executor.submit(fetch_friend_status, fid) for fid in friend_ids}
+            # B. フレンズのステータス取得
+            friend_futures = [executor.submit(fetch_friend_status, fid) for fid in friend_ids]
 
             my_target_scenarios = my_list_future.result()
             
-            friends_ng_scenarios = set()
-            friends_wants_scenarios = set() # 誰か一人でもPL希望しているシナリオID
+            # 集計用マップ { scenarioId: [userIds...] }
+            map_ng = {}
+            map_wants_play = {}
+            map_possessed = {}
+            map_wants_gm = {}
             
-            for fid, future in friend_futures.items():
-                ng_set, wants_set = future.result()
-                friends_ng_scenarios.update(ng_set)
-                friends_wants_scenarios.update(wants_set)
+            # 全フレンズの情報をマップに集約
+            for future in friend_futures:
+                uid, ngs, plays, poss, gms = future.result()
+                
+                for sid in ngs: map_ng.setdefault(sid, []).append(uid)
+                for sid in plays: map_wants_play.setdefault(sid, []).append(uid)
+                for sid in poss: map_possessed.setdefault(sid, []).append(uid)
+                for sid in gms: map_wants_gm.setdefault(sid, []).append(uid)
+            
+            # フレンズが「PL希望」を出しているシナリオも、自分が未登録でも候補に加えるべき
+            # (自分がGMをする可能性があるため)。
+            # そのため、friends_wants_scenarios に含まれるIDも候補に追加する
+            for sid in map_wants_play.keys():
+                my_target_scenarios.add(sid)
 
-        # 候補選定: (自分が持ってる等) - (誰かが通過済等)
-        final_candidates_ids = my_target_scenarios - friends_ng_scenarios
-        
-        # レスポンス構築: オブジェクトのリストを返す
+        # レスポンス構築
         result_list = []
-        for sid in final_candidates_ids:
+        for sid in my_target_scenarios:
+            # 各リストを取得 (なければ空リスト)
+            ng_users = map_ng.get(sid, [])
+            play_users = map_wants_play.get(sid, [])
+            poss_users = map_possessed.get(sid, [])
+            gm_users = map_wants_gm.get(sid, [])
+            
             result_list.append({
                 'scenarioId': sid,
-                'isFriendWantsToPlay': sid in friends_wants_scenarios
+                'ngUserIds': ng_users,
+                'wantsToPlayUserIds': play_users,
+                'possessedUserIds': poss_users,
+                'wantsToGmUserIds': gm_users
             })
         
-        print(f"Matched Scenarios Count: {len(result_list)}")
-
+        print(f"Returned Scenarios Count: {len(result_list)}")
         return json.dumps(result_list)
 
     except Exception as e:
         print(f"[ERROR] {e}")
-        # エラー時は空リストを返す
         return json.dumps([])

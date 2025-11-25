@@ -4,19 +4,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/friends/domain/repositories/friends_repository.dart';
 import 'package:my_madamis_app/features/group_search/domain/usecases/find_group_scenarios_usecase.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
-import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart'; // allScenariosProvider
+import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
 
-// --- UI表示用のラッパークラス (定義を追加) ---
+// --- UI表示用のラッパークラス ---
 class GroupSearchDisplayItem {
   final Scenario scenario;
-  final bool isFriendWantsToPlay;
+  // IDではなく「表示名」のリストを保持する
+  final List<String> ngUserNames;
+  final List<String> wantsToPlayNames;
+  final List<String> possessedNames;
+  final List<String> wantsToGmNames;
 
   GroupSearchDisplayItem({
     required this.scenario,
-    required this.isFriendWantsToPlay,
+    this.ngUserNames = const [],
+    this.wantsToPlayNames = const [],
+    this.possessedNames = const [],
+    this.wantsToGmNames = const [],
   });
+  
+  // NGユーザーがいない＝全員遊べる
+  bool get isPlayable => ngUserNames.isEmpty;
+  // PL希望者がいるか
+  bool get hasWantsToPlay => wantsToPlayNames.isNotEmpty;
 }
 
 // --- State ---
@@ -25,7 +37,7 @@ class GroupSearchState {
   final bool isSearching;
   final List<User> friends;
   final Set<String> selectedFriendIds;
-  final String friendNameFilter; // ローカル検索用
+  final String friendNameFilter;
   final List<GroupSearchDisplayItem>? searchResults;
   final String? errorMessage;
 
@@ -59,7 +71,6 @@ class GroupSearchState {
     );
   }
 
-  // フレンズフィルタリング (3.4.7 / 4.5.1)
   List<User> get filteredFriends {
     if (friendNameFilter.isEmpty) return friends;
     return friends.where((f) => 
@@ -67,11 +78,9 @@ class GroupSearchState {
     ).toList();
   }
 
-  // 選択上限 (最大8人)
   bool get isSelectionLimitReached => selectedFriendIds.length >= 8;
 }
 
-// --- Provider ---
 final groupSearchViewModelProvider = StateNotifierProvider.autoDispose<GroupSearchViewModel, GroupSearchState>((ref) {
   return GroupSearchViewModel(
     ref.watch(friendsRepositoryProvider),
@@ -80,7 +89,6 @@ final groupSearchViewModelProvider = StateNotifierProvider.autoDispose<GroupSear
   );
 });
 
-// --- ViewModel ---
 class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
   final FriendsRepository _friendsRepository;
   final FindGroupScenariosUseCase _findGroupScenariosUseCase;
@@ -121,37 +129,55 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
     state = state.copyWith(isSearching: true, errorMessage: null);
     try {
       final friendIds = state.selectedFriendIds.toList();
-      
-      // 1. Lambda呼び出し
       final matchedResults = await _findGroupScenariosUseCase(friendIds);
-      
-      // 2. クライアントキャッシュ取得
       final allScenarios = await _ref.read(allScenariosProvider.future);
       
-      final matchMap = { for (var r in matchedResults) r.scenarioId: r.isFriendWantsToPlay };
-      final totalPlayers = friendIds.length + 1; // 自分 + フレンズ
+      // マッピング用: ID -> User
+      final friendMap = {for (var f in state.friends) f.id: f};
+      final resultMap = { for (var r in matchedResults) r.scenarioId: r };
+      
+      final totalPlayers = friendIds.length + 1; 
+
+      // ヘルパー関数: IDリストを名前リストに変換
+      List<String> idsToNames(List<String> ids) {
+        return ids.map((uid) => friendMap[uid]?.username ?? '不明').toList();
+      }
 
       final List<GroupSearchDisplayItem> displayItems = [];
 
       for (var scenario in allScenarios) {
-        if (matchMap.containsKey(scenario.id)) {
-          // ★ v2.15 新規: 人数チェック (3.5.1)
-          // シナリオの最大プレイ人数が参加人数以上でなければならない
+        if (resultMap.containsKey(scenario.id)) {
+          final result = resultMap[scenario.id]!;
+          
+          // 人数チェック
+          // ※「惜しい」シナリオであっても、人数が足りていれば表示対象とする
           if (scenario.maxPlayerCount >= totalPlayers) {
              displayItems.add(GroupSearchDisplayItem(
               scenario: scenario,
-              isFriendWantsToPlay: matchMap[scenario.id]!,
+              ngUserNames: idsToNames(result.ngUserIds),
+              wantsToPlayNames: idsToNames(result.wantsToPlayUserIds),
+              possessedNames: idsToNames(result.possessedUserIds),
+              wantsToGmNames: idsToNames(result.wantsToGmUserIds),
             ));
           }
         }
       }
 
-      // ソート: PL希望 > タイトル
+      // ソート: 遊べる > PL希望数 > NG少ない
       displayItems.sort((a, b) {
-        if (a.isFriendWantsToPlay != b.isFriendWantsToPlay) {
-          return a.isFriendWantsToPlay ? -1 : 1;
+        if (a.isPlayable != b.isPlayable) return a.isPlayable ? -1 : 1;
+        
+        if (a.isPlayable) {
+          // PL希望者が多い順
+          int wantsDiff = b.wantsToPlayNames.length.compareTo(a.wantsToPlayNames.length);
+          if (wantsDiff != 0) return wantsDiff;
+          return a.scenario.title.compareTo(b.scenario.title);
+        } else {
+          // 惜しい順（NGが少ない順）
+          int ngDiff = a.ngUserNames.length.compareTo(b.ngUserNames.length);
+          if (ngDiff != 0) return ngDiff;
+          return a.scenario.title.compareTo(b.scenario.title);
         }
-        return a.scenario.title.compareTo(b.scenario.title);
       });
 
       state = state.copyWith(isSearching: false, searchResults: displayItems);

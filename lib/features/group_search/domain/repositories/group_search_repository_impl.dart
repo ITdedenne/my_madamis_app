@@ -1,4 +1,4 @@
-// ファイルパス: lib/features/group_search/data/repositories/group_search_repository_impl.dart
+// ファイルパス: lib/features/group_search/domain/repositories/group_search_repository_impl.dart
 
 import 'dart:convert';
 import 'package:amplify_flutter/amplify_flutter.dart';
@@ -42,14 +42,13 @@ class GroupSearchRepositoryImpl implements GroupSearchRepository {
         return [];
       }
 
-      // LambdaはJSON文字列のリストを返している: [{"scenarioId": "...", "isFriendWantsToPlay": true}, ...]
+      // LambdaはJSON文字列のリストを返している
       final List<dynamic> resultList = jsonDecode(resultJsonString);
       
       return resultList.map((json) {
         if (json is Map<String, dynamic>) {
           return GroupSearchResult.fromJson(json);
         }
-        // 旧形式やエラー時のフォールバック（念のため）
         return GroupSearchResult(scenarioId: json.toString());
       }).toList();
 
