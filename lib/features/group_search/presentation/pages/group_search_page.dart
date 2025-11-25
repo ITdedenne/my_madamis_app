@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/group_search/presentation/viewmodels/group_search_viewmodel.dart';
+import 'package:my_madamis_app/features/group_search/presentation/widgets/friend_selection_card.dart'; // 新規作成したWidget
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
@@ -16,131 +17,190 @@ class GroupSearchPage extends ConsumerWidget {
     final notifier = ref.read(groupSearchViewModelProvider.notifier);
     final userStatuses = ref.watch(userScenarioStatusProvider);
 
-    // 結果を「遊べる」と「惜しい」に分割
+    // 検索結果があるかどうかでモードを判定
+    final hasResults = state.searchResults != null;
+    // 画面サイズ取得
+    final size = MediaQuery.of(context).size;
+    
+    // フレンズエリアの高さ計算 (検索時は小さく、選択時は大きく)
+    // ヘッダーや検索バーの分を引いて、適切な割合を設定
+    final double friendAreaHeight = hasResults 
+        ? 180.0  // 検索後: 小さく（1行程度見える高さ）
+        : size.height * 0.65; // 検索前: 大きく（画面の65%）
+
     final playableItems = state.searchResults?.where((i) => i.isPlayable).toList() ?? [];
     final nearMissItems = state.searchResults?.where((i) => !i.isPlayable).toList() ?? [];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('グループ検索')),
+      // キーボードが出たときにレイアウトが崩れないように調整
+      resizeToAvoidBottomInset: false,
+      appBar: AppBar(
+        title: const Text('グループ検索'),
+        actions: [
+          if (hasResults)
+            TextButton.icon(
+              onPressed: () => notifier.clearResults(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('条件変更'),
+            ),
+        ],
+      ),
       body: Column(
         children: [
-          // --- 上部: フレンズ選択エリア (改善: 高さ制限を柔軟に) ---
-          ExpansionTile(
-            title: Text('フレンズを選択 (${state.selectedFriendIds.length}人)'),
-            initiallyExpanded: state.searchResults == null, 
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: TextField(
-                  decoration: const InputDecoration(
-                    hintText: '名前で絞り込み',
-                    prefixIcon: Icon(Icons.search),
-                    border: OutlineInputBorder(),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          // --- 上部エリア: フレンズ選択 & 検索 ---
+          // AnimatedContainerで高さの変化をスムーズにする
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            height: friendAreaHeight,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [
+                if (hasResults) // 検索結果が出ている時は影をつけて分離感を出す
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
-                  onChanged: notifier.updateFriendFilter,
-                ),
-              ),
-              // ★ 改善: 固定高さではなく、画面割合に対する制約を使用
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.4, // 画面の40%まで
-                  minHeight: 100,
-                ),
-                child: state.isLoadingFriends
-                    ? const Center(child: CircularProgressIndicator())
-                    : ListView.builder(
-                        shrinkWrap: true, // 中身に応じて縮む
-                        itemCount: state.filteredFriends.length,
-                        itemBuilder: (context, index) {
-                          final friend = state.filteredFriends[index];
-                          final isSelected = state.selectedFriendIds.contains(friend.id);
-                          final isDisabled = !isSelected && state.isSelectionLimitReached;
-
-                          return CheckboxListTile(
-                            value: isSelected,
-                            enabled: !isDisabled,
-                            title: Text(friend.username),
-                            subtitle: Text('ID: ${friend.publicUserId}'),
-                            secondary: CircleAvatar(
-                              child: Text(friend.username.isNotEmpty ? friend.username[0] : '?'),
-                            ),
-                            onChanged: (value) {
-                              if (isDisabled && value == true) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('最大8人までです')),
-                                );
-                              } else {
-                                notifier.toggleSelection(friend.id);
-                              }
-                            },
-                          );
-                        },
+              ],
+            ),
+            child: Column(
+              children: [
+                // フレンズ検索バー (名前フィルタ)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: '名前でフレンズを絞り込み',
+                      prefixIcon: const Icon(Icons.person_search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: state.selectedFriendIds.isEmpty
-                        ? null
-                        : () => notifier.search(),
-                    icon: const Icon(Icons.search),
-                    label: Text('このメンバー(${state.selectedFriendIds.length + 1}人)で検索'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(12),
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      filled: true,
+                      fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                    ),
+                    onChanged: notifier.updateFriendFilter,
+                  ),
+                ),
+                
+                // 選択人数インジケーター
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '参加メンバー: 自分 + ${state.selectedFriendIds.length}人',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                      if (state.isSelectionLimitReached)
+                        const Text(
+                          '最大8人まで',
+                          style: TextStyle(color: Colors.red, fontSize: 12),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // フレンズグリッド
+                Expanded(
+                  child: state.isLoadingFriends
+                      ? const Center(child: CircularProgressIndicator())
+                      : GridView.builder(
+                          padding: const EdgeInsets.all(12),
+                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 160, // カードの最大幅
+                            childAspectRatio: 0.85,  // 縦横比 (少し縦長)
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
+                          itemCount: state.filteredFriends.length,
+                          itemBuilder: (context, index) {
+                            final friend = state.filteredFriends[index];
+                            final isSelected = state.selectedFriendIds.contains(friend.id);
+                            final isLimitReached = !isSelected && state.isSelectionLimitReached;
+
+                            return Opacity(
+                              opacity: isLimitReached ? 0.5 : 1.0, // 選択不可なら薄くする
+                              child: FriendSelectionCard(
+                                user: friend,
+                                isSelected: isSelected,
+                                onTap: () {
+                                  if (isLimitReached) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('これ以上選択できません')),
+                                    );
+                                  } else {
+                                    notifier.toggleSelection(friend.id);
+                                  }
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                ),
+                
+                // 検索実行ボタン (検索結果がない時のみ大きく表示)
+                if (!hasResults)
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: FilledButton.icon(
+                        onPressed: state.selectedFriendIds.isEmpty
+                            ? null
+                            : () {
+                                // キーボードを閉じる
+                                FocusScope.of(context).unfocus();
+                                notifier.search();
+                              },
+                        icon: const Icon(Icons.search_rounded),
+                        label: Text(
+                          'このメンバーで検索',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.white, 
+                            fontWeight: FontWeight.bold
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+              ],
+            ),
+          ),
+
+          // --- 下部エリア: 検索結果リスト ---
+          // 検索実行時のみ表示される
+          if (hasResults)
+            Expanded(
+              child: Container(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                child: state.isSearching
+                    ? const Center(child: CircularProgressIndicator())
+                    : state.searchResults!.isEmpty
+                        ? const Center(child: Text('条件に合うシナリオはありませんでした'))
+                        : ListView(
+                            padding: const EdgeInsets.all(12.0),
+                            children: [
+                              if (playableItems.isNotEmpty) ...[
+                                _buildSectionHeader(context, '遊べるシナリオ (${playableItems.length}件)', Colors.green),
+                                ...playableItems.map((item) => _buildResultItem(context, ref, item, userStatuses)),
+                              ],
+                              
+                              if (nearMissItems.isNotEmpty) ...[
+                                const SizedBox(height: 32),
+                                _buildSectionHeader(context, '惜しい！ (通過済あり)', Colors.grey),
+                                ...nearMissItems.map((item) => _buildResultItem(context, ref, item, userStatuses, isNearMiss: true)),
+                              ],
+                            ],
+                          ),
               ),
-            ],
-          ),
-          const Divider(height: 1),
-
-          // --- 下部: 検索結果リスト ---
-          Expanded(
-            child: state.isSearching
-                ? const Center(child: CircularProgressIndicator())
-                : state.searchResults == null
-                    ? const Center(child: Text('メンバーを選んで検索してください'))
-                    : ListView(
-                        padding: const EdgeInsets.all(8.0),
-                        children: [
-                          // 1. 遊べるシナリオ
-                          if (playableItems.isNotEmpty) ...[
-                            _buildSectionHeader(context, '遊べるシナリオ (${playableItems.length}件)', Colors.green),
-                            ...playableItems.map((item) => _buildResultItem(context, ref, item, userStatuses)),
-                          ] else if (state.searchResults!.isNotEmpty) ...[
-                             const Padding(
-                               padding: EdgeInsets.all(16.0),
-                               child: Text(
-                                 '全員が未通過のシナリオはありませんでした。\n以下は、一部メンバーを除けば遊べる候補です。',
-                                 textAlign: TextAlign.center,
-                                 style: TextStyle(color: Colors.grey),
-                               ),
-                             ),
-                          ],
-
-                          // 2. 惜しいシナリオ (ゼロ件対策)
-                          if (nearMissItems.isNotEmpty) ...[
-                            const SizedBox(height: 24),
-                            _buildSectionHeader(context, '惜しい！ (通過済あり)', Colors.grey),
-                            ...nearMissItems.map((item) => _buildResultItem(context, ref, item, userStatuses, isNearMiss: true)),
-                          ],
-                          
-                          if (state.searchResults!.isEmpty)
-                             const Center(
-                               child: Padding(
-                                 padding: EdgeInsets.all(32.0),
-                                 child: Text('条件に合うシナリオは見つかりませんでした。'),
-                               ),
-                             ),
-                        ],
-                      ),
-          ),
+            ),
         ],
       ),
     );
@@ -148,12 +208,16 @@ class GroupSearchPage extends ConsumerWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title, Color color) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 12),
       child: Row(
         children: [
-          Icon(Icons.label, size: 18, color: color),
+          Container(
+            width: 4, 
+            height: 20, 
+            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+          ),
           const SizedBox(width: 8),
-          Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 16)),
+          Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 18)),
         ],
       ),
     );
@@ -168,99 +232,92 @@ class GroupSearchPage extends ConsumerWidget {
   ) {
     final scenario = item.scenario;
     final status = userStatuses[scenario.id] ?? const UserScenarioStatus();
-    final opacity = isNearMiss ? 0.6 : 1.0;
-
-    return Opacity(
-      opacity: opacity,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 8.0),
-        child: Stack(
-          children: [
-            // 既存のCard内に詳細情報を追加する形でUIを構築
-            Card(
-              elevation: 0,
-              // ignore: deprecated_member_use
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
-              ),
-              child: Column(
-                children: [
-                  // 基本情報 (ScenarioListItemを再利用)
-                  ScenarioListItem(
-                    scenario: scenario,
-                    status: status,
-                    // 惜しいシナリオは詳細タップで理由を表示する
-                    onTap: isNearMiss 
-                        ? () => _showDetailDialog(context, '通過済みのメンバー', item.ngUserNames)
-                        : null,
-                    onStatusChanged: (newStatus) {
-                      ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
-                    },
-                  ),
-                  
-                  // ★ 詳細情報エリア (誰が希望しているか等)
-                  if (item.hasWantsToPlay || item.possessedNames.isNotEmpty || item.wantsToGmNames.isNotEmpty || isNearMiss) ...[
-                    const Divider(height: 1, indent: 16, endIndent: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (item.hasWantsToPlay)
-                            _buildInfoRow(context, Icons.favorite, Colors.pink, 'PL希望', item.wantsToPlayNames),
+    
+    // 惜しいシナリオは少し背景をグレーにするなどの調整
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Stack(
+        children: [
+          Card(
+            elevation: 0,
+            color: isNearMiss 
+                ? Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4) 
+                : Theme.of(context).colorScheme.surfaceContainerLow,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
+            ),
+            child: Column(
+              children: [
+                // 基本情報 (ScenarioListItemを再利用)
+                ScenarioListItem(
+                  scenario: scenario,
+                  status: status,
+                  onTap: isNearMiss 
+                      ? () => _showDetailDialog(context, '通過済みのメンバー', item.ngUserNames)
+                      : null,
+                  onStatusChanged: (newStatus) {
+                    ref.read(userScenarioStatusProvider.notifier).updateStatus(scenario.id, newStatus);
+                  },
+                ),
+                
+                // 詳細情報エリア
+                if (item.hasWantsToPlay || item.possessedNames.isNotEmpty || item.wantsToGmNames.isNotEmpty || isNearMiss) ...[
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (item.hasWantsToPlay)
+                          _buildInfoRow(context, Icons.favorite, Colors.pink, 'PL希望', item.wantsToPlayNames),
+                        
+                        if (item.possessedNames.isNotEmpty)
+                          _buildInfoRow(context, Icons.book, Colors.blue, '所持', item.possessedNames),
                           
-                          if (item.possessedNames.isNotEmpty)
-                            _buildInfoRow(context, Icons.book, Colors.blue, '所持', item.possessedNames),
-                            
-                          if (item.wantsToGmNames.isNotEmpty)
-                            _buildInfoRow(context, Icons.shopping_cart, Colors.orange, '検討', item.wantsToGmNames),
+                        if (item.wantsToGmNames.isNotEmpty)
+                          _buildInfoRow(context, Icons.shopping_cart, Colors.orange, '検討', item.wantsToGmNames),
 
-                          if (isNearMiss && item.ngUserNames.isNotEmpty)
-                            _buildInfoRow(context, Icons.block, Colors.grey, '通過済', item.ngUserNames),
-                        ],
-                      ),
+                        if (isNearMiss && item.ngUserNames.isNotEmpty)
+                          _buildInfoRow(context, Icons.block, Colors.grey, '通過済', item.ngUserNames),
+                      ],
                     ),
-                  ],
+                  ),
                 ],
+              ],
+            ),
+          ),
+          
+          if (!isNearMiss && item.hasWantsToPlay)
+            Positioned(
+              top: 0,
+              right: 0,
+              child: _buildBadge(
+                context: context,
+                color: Colors.pinkAccent,
+                text: 'みんなで遊ぼう!',
+                onTap: () => _showDetailDialog(context, 'PL希望のメンバー', item.wantsToPlayNames),
               ),
             ),
             
-            // 右上の強調バッジ (PlayableかつPL希望者がいる場合)
-            if (!isNearMiss && item.hasWantsToPlay)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: _buildBadge(
-                  context: context,
-                  color: Colors.pinkAccent,
-                  text: 'みんなで遊ぼう!',
-                  onTap: () => _showDetailDialog(context, 'PL希望のメンバー', item.wantsToPlayNames),
-                ),
+          if (isNearMiss)
+            Positioned(
+              top: 0,
+              right: item.hasWantsToPlay ? 110 : 0,
+              child: _buildBadge(
+                context: context,
+                color: Colors.grey.shade600, 
+                text: '${item.ngUserNames.length}名が通過済',
+                onTap: () => _showDetailDialog(context, '通過済みのメンバー', item.ngUserNames),
               ),
-              
-            // 惜しい場合のバッジ
-            if (isNearMiss)
-              Positioned(
-                top: 0,
-                right: item.hasWantsToPlay ? 90 : 0,
-                child: _buildBadge(
-                  context: context,
-                  color: Colors.grey, 
-                  text: '${item.ngUserNames.length}名が通過済',
-                  onTap: () => _showDetailDialog(context, '通過済みのメンバー', item.ngUserNames),
-                ),
-              ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
 
-  // ★ タップして詳細を見る機能を追加した行ウィジェット
+  // タップ可能な情報行
   Widget _buildInfoRow(BuildContext context, IconData icon, Color color, String label, List<String> names) {
-    // 省略表示ロジック
     String namesText;
     bool isTruncated = false;
     
@@ -276,7 +333,6 @@ class GroupSearchPage extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(icon, size: 14, color: color),
             const SizedBox(width: 6),
@@ -290,7 +346,7 @@ class GroupSearchPage extends ConsumerWidget {
                   Flexible(
                     child: Text(
                       namesText,
-                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurface),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -309,7 +365,6 @@ class GroupSearchPage extends ConsumerWidget {
     );
   }
 
-  // ★ タップ可能なバッジ
   Widget _buildBadge({
     required BuildContext context,
     required Color color,
@@ -319,24 +374,27 @@ class GroupSearchPage extends ConsumerWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
           color: color,
           borderRadius: const BorderRadius.only(
             topRight: Radius.circular(12),
             bottomLeft: Radius.circular(12),
           ),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
+          ]
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               text,
-              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
             ),
             if (onTap != null) ...[
-              const SizedBox(width: 2),
-              const Icon(Icons.info_outline, color: Colors.white, size: 10),
+              const SizedBox(width: 4),
+              const Icon(Icons.info_outline, color: Colors.white, size: 12),
             ]
           ],
         ),
@@ -344,7 +402,6 @@ class GroupSearchPage extends ConsumerWidget {
     );
   }
 
-  // ★ 共通詳細ダイアログ
   void _showDetailDialog(BuildContext context, String title, List<String> names) {
     showDialog(
       context: context,
@@ -356,7 +413,13 @@ class GroupSearchPage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: names.map((n) => Padding(
               padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: Text('・ $n', style: const TextStyle(fontSize: 16)),
+              child: Row(
+                children: [
+                  const Icon(Icons.person, size: 16, color: Colors.grey),
+                  const SizedBox(width: 8),
+                  Text(n, style: const TextStyle(fontSize: 16)),
+                ],
+              ),
             )).toList(),
           ),
         ),

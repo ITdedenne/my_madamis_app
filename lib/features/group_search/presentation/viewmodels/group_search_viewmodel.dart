@@ -11,7 +11,6 @@ import 'package:my_madamis_app/providers.dart';
 // --- UI表示用のラッパークラス ---
 class GroupSearchDisplayItem {
   final Scenario scenario;
-  // IDではなく「表示名」のリストを保持する
   final List<String> ngUserNames;
   final List<String> wantsToPlayNames;
   final List<String> possessedNames;
@@ -25,9 +24,7 @@ class GroupSearchDisplayItem {
     this.wantsToGmNames = const [],
   });
   
-  // NGユーザーがいない＝全員遊べる
   bool get isPlayable => ngUserNames.isEmpty;
-  // PL希望者がいるか
   bool get hasWantsToPlay => wantsToPlayNames.isNotEmpty;
 }
 
@@ -57,7 +54,7 @@ class GroupSearchState {
     List<User>? friends,
     Set<String>? selectedFriendIds,
     String? friendNameFilter,
-    List<GroupSearchDisplayItem>? searchResults,
+    List<GroupSearchDisplayItem>? searchResults, // Nullable: nullなら検索前
     String? errorMessage,
   }) {
     return GroupSearchState(
@@ -73,8 +70,9 @@ class GroupSearchState {
 
   List<User> get filteredFriends {
     if (friendNameFilter.isEmpty) return friends;
+    final term = friendNameFilter.toLowerCase();
     return friends.where((f) => 
-      f.username.contains(friendNameFilter) || f.publicUserId.contains(friendNameFilter)
+      f.username.toLowerCase().contains(term) || f.publicUserId.contains(term)
     ).toList();
   }
 
@@ -123,6 +121,19 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
     state = state.copyWith(selectedFriendIds: currentSelection);
   }
 
+  // ★ 追加: 検索結果をクリアして選択モードに戻る
+  void clearResults() {
+    state = GroupSearchState(
+      isLoadingFriends: state.isLoadingFriends,
+      isSearching: false,
+      friends: state.friends,
+      selectedFriendIds: state.selectedFriendIds,
+      friendNameFilter: state.friendNameFilter,
+      searchResults: null, // 結果をリセット
+      errorMessage: null,
+    );
+  }
+
   Future<void> search() async {
     if (state.selectedFriendIds.isEmpty) return;
 
@@ -132,13 +143,10 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
       final matchedResults = await _findGroupScenariosUseCase(friendIds);
       final allScenarios = await _ref.read(allScenariosProvider.future);
       
-      // マッピング用: ID -> User
       final friendMap = {for (var f in state.friends) f.id: f};
       final resultMap = { for (var r in matchedResults) r.scenarioId: r };
-      
       final totalPlayers = friendIds.length + 1; 
 
-      // ヘルパー関数: IDリストを名前リストに変換
       List<String> idsToNames(List<String> ids) {
         return ids.map((uid) => friendMap[uid]?.username ?? '不明').toList();
       }
@@ -148,9 +156,6 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
       for (var scenario in allScenarios) {
         if (resultMap.containsKey(scenario.id)) {
           final result = resultMap[scenario.id]!;
-          
-          // 人数チェック
-          // ※「惜しい」シナリオであっても、人数が足りていれば表示対象とする
           if (scenario.maxPlayerCount >= totalPlayers) {
              displayItems.add(GroupSearchDisplayItem(
               scenario: scenario,
@@ -163,17 +168,13 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
         }
       }
 
-      // ソート: 遊べる > PL希望数 > NG少ない
       displayItems.sort((a, b) {
         if (a.isPlayable != b.isPlayable) return a.isPlayable ? -1 : 1;
-        
         if (a.isPlayable) {
-          // PL希望者が多い順
           int wantsDiff = b.wantsToPlayNames.length.compareTo(a.wantsToPlayNames.length);
           if (wantsDiff != 0) return wantsDiff;
           return a.scenario.title.compareTo(b.scenario.title);
         } else {
-          // 惜しい順（NGが少ない順）
           int ngDiff = a.ngUserNames.length.compareTo(b.ngUserNames.length);
           if (ngDiff != 0) return ngDiff;
           return a.scenario.title.compareTo(b.scenario.title);
@@ -183,7 +184,7 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
       state = state.copyWith(isSearching: false, searchResults: displayItems);
 
     } catch (e) {
-      state = state.copyWith(isSearching: false, errorMessage: '検索中にエラーが発生しました: $e');
+      state = state.copyWith(isSearching: false, errorMessage: '検索エラー: $e');
     }
   }
 }
