@@ -38,6 +38,8 @@ class GroupSearchDisplayItem {
   bool get isPlayable => ngUserNames.isEmpty;
   bool get hasWantsToPlay => wantsToPlayNames.isNotEmpty;
   int get totalGmCandidates => possessedNames.length + wantsToGmNames.length;
+
+  List<String> get externalHolderNames => [...possessedNames, ...wantsToGmNames];
 }
 
 class GroupSearchState {
