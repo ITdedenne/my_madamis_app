@@ -120,9 +120,12 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
       final List<UserScenario> userScenarios = [];
 
+// fetchUserScenarios メソッド内の userScenarios.add の直前
       for (final m in items.whereType<models.UserScenario>()) {
+        // ★ m.scenarioId が null の場合はスキップする防御策を追加
+        if (m.scenarioId == null) continue; 
+        
         final scenario = scenarioMap[m.scenarioId];
-        // S3側にシナリオが存在する場合のみ結合する
         if (scenario != null) {
           final status = UserScenarioStatus(
             isPlayed: m.isPlayed,

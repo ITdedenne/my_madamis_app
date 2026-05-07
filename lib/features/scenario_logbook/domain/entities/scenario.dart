@@ -47,9 +47,8 @@ class Scenario extends Equatable {
         authorNameLower,
       ];
 
-factory Scenario.fromJson(Map<String, dynamic> json, String authorName) {
+   factory Scenario.fromJson(Map<String, dynamic> json, String authorName) {
     GmRequirement gmReq;
-    // DBの値が大文字小文字混在していても対応できるようにtoLowerCase()してから判定
     switch (json['gmRequirement']?.toString().toLowerCase()) {
       case 'required':
         gmReq = GmRequirement.required;
@@ -62,8 +61,8 @@ factory Scenario.fromJson(Map<String, dynamic> json, String authorName) {
         break;
     }
 
-    // ★ 修正ポイント: 期待するキーが無い(null)場合に備えて、空文字('')をフォールバックとして設定
-    // JSONの構造によっては 'scenarioId' ではなく 'id' かもしれないため、両方チェックします。
+    // ★ ここがエラーの原因を防ぐ最重要ポイントです
+    // json['キー'] が null だった場合に備えて、?? '' で「空文字」を代入するようにします。
     final id = (json['scenarioId'] ?? json['id'] ?? '') as String;
     final title = (json['title'] ?? '') as String;
     final authorId = (json['authorId'] ?? '') as String;
