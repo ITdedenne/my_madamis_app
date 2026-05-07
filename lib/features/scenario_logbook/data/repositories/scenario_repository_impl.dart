@@ -10,7 +10,7 @@ import '../../domain/entities/scenario.dart';
 import '../../domain/entities/user_scenario.dart';
 import '../../domain/repositories/scenario_repository.dart';
 
-// 2. Amplify生成モデルを「models」としてインポート（名前の衝突を避ける）
+// 2. Amplify生成モデルを「models」としてインポート
 import '../../../../models/ModelProvider.dart' as models;
 
 class ScenarioRepositoryImpl implements ScenarioRepository {
@@ -19,32 +19,34 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   // 内部ユーティリティ: S3から全シナリオをフェッチする
   // ---------------------------------------------------------------------------
   Future<List<Scenario>> _fetchAllScenariosFromS3() async {
-    // S3はv1でも .result で取得します
-    final scenariosResult = await Amplify.Storage.downloadData(key: 'Scenarios.json').result;
-    final authorsResult = await Amplify.Storage.downloadData(key: 'Authors.json').result;
+    try {
+      final scenariosResult = await Amplify.Storage.downloadData(key: 'Scenarios.json').result;
+      final authorsResult = await Amplify.Storage.downloadData(key: 'Authors.json').result;
 
-    final List<dynamic> rawScenarios = jsonDecode(utf8.decode(scenariosResult.bytes));
-    final List<dynamic> rawAuthors = jsonDecode(utf8.decode(authorsResult.bytes));
+      final List<dynamic> rawScenarios = jsonDecode(utf8.decode(scenariosResult.bytes));
+      final List<dynamic> rawAuthors = jsonDecode(utf8.decode(authorsResult.bytes));
 
-    final Map<String, String> authorMap = {
-      for (var a in rawAuthors) a['authorId'] as String: a['name'] as String
-    };
+      // 【修正ポイント】 Authors.json のキーは 'authorName' です
+      final Map<String, String> authorMap = {
+        for (var a in rawAuthors) 
+          (a['authorId']?.toString() ?? ''): (a['authorName']?.toString() ?? '不明')
+      };
 
-    return rawScenarios.map((json) {
-      final aId = json['authorId'] as String;
-      final aName = authorMap[aId] ?? 'Unknown';
-      return Scenario.fromJson(json, aName);
-    }).toList();
+      return rawScenarios.map((json) {
+        final aId = json['authorId']?.toString() ?? '';
+        final aName = authorMap[aId] ?? '不明';
+        return Scenario.fromJson(json, aName);
+      }).toList();
+    } catch (e) {
+      safePrint('S3フェッチエラー: $e');
+      rethrow;
+    }
   }
-
-  // ---------------------------------------------------------------------------
-  // 1. シナリオマスターデータ (S3 / JSON)
-  // ---------------------------------------------------------------------------
 
   @override
   Future<List<Scenario>> fetchScenarios({
     required int page,
-    int limit = 48, // 要件定義 9.2 準拠
+    int limit = 48,
     String? searchTerm,
     RangeValues? playerCountRange,
     GmRequirement? gmRequirement,
@@ -53,7 +55,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     try {
       List<Scenario> allScenarios = await _fetchAllScenariosFromS3();
 
-      // フィルタリング
       if (searchTerm != null && searchTerm.isNotEmpty) {
         final query = searchTerm.toLowerCase();
         allScenarios = allScenarios.where((s) => s.titleLower.contains(query)).toList();
@@ -76,7 +77,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       return allScenarios.sublist(startIndex, endIndex);
     } catch (e) {
       safePrint('fetchScenariosエラー: $e');
-      rethrow;
+      return [];
     }
   }
 
@@ -85,20 +86,21 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     try {
       final result = await Amplify.Storage.downloadData(key: 'Authors.json').result;
       final List<dynamic> rawAuthors = jsonDecode(utf8.decode(result.bytes));
-      return rawAuthors.map((a) => a['name'] as String).toList();
+      // 【修正ポイント】 キー名を 'authorName' に修正
+      return rawAuthors.map((a) => (a['authorName']?.toString() ?? '不明')).toList();
     } catch (e) {
       return [];
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 2. ユーザー個別データ (AppSync / DynamoDB)
-  // ---------------------------------------------------------------------------
-
   @override
   Future<List<UserScenario>> fetchMyList() async {
-    final authUser = await Amplify.Auth.getCurrentUser();
-    return fetchUserScenarios(authUser.userId);
+    try {
+      final authUser = await Amplify.Auth.getCurrentUser();
+      return fetchUserScenarios(authUser.userId);
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
@@ -109,22 +111,17 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         where: models.UserScenario.USERID.eq(userId),
       );
       
-      // 【修正】 Amplify API v1 は .response で取得する
       final operation = Amplify.API.query(request: request);
       final response = await operation.response;
       final items = response.data?.items ?? [];
 
-      // S3からマスターデータを取得してマップ化（シナリオの結合用）
       final allScenarios = await _fetchAllScenariosFromS3();
       final scenarioMap = { for (var s in allScenarios) s.id: s };
 
       final List<UserScenario> userScenarios = [];
 
-// fetchUserScenarios メソッド内の userScenarios.add の直前
       for (final m in items.whereType<models.UserScenario>()) {
-        // ★ m.scenarioId が null の場合はスキップする防御策を追加
-        if (m.scenarioId == null) continue; 
-        
+        if (m.scenarioId == null) continue;
         final scenario = scenarioMap[m.scenarioId];
         if (scenario != null) {
           final status = UserScenarioStatus(
@@ -133,7 +130,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
             wantsToGm: m.wantsToGm,
             wantsToPlay: m.wantsToPlay ?? false,
           );
-          // 【修正】 ドメインモデルのコンストラクタ（scenario, status）に適合させる
           userScenarios.add(UserScenario(scenario: scenario, status: status));
         }
       }
@@ -150,17 +146,18 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     try {
       final authUser = await Amplify.Auth.getCurrentUser();
       
-      final newModel = models.UserScenario(
+      var newModel = models.UserScenario(
         userId: authUser.userId,
         scenarioId: scenarioId,
         isPlayed: status.isPlayed,
         isPossessed: status.isPossessed,
         wantsToGm: status.wantsToGm,
-        wantsToPlay: status.wantsToPlay,
       );
 
+      // copyWith を使用して Nullable フィールドをセット
+      newModel = newModel.copyWith(wantsToPlay: status.wantsToPlay);
+
       final request = ModelMutations.create(newModel);
-      // 【修正】 .result ではなく .response
       await Amplify.API.mutate(request: request).response;
     } catch (e) {
       safePrint('updateUserScenarioStatusエラー: $e');
@@ -172,19 +169,16 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   Future<void> removeUserScenarioStatus(String scenarioId) async {
     try {
       final authUser = await Amplify.Auth.getCurrentUser();
-      
-      // 【修正】 識別子クラス名が UserScenarioModelIdentifier になっている
       final request = ModelQueries.get(
         models.UserScenario.classType,
         models.UserScenarioModelIdentifier(userId: authUser.userId, scenarioId: scenarioId),
       );
-      // 【修正】 .result ではなく .response
       final response = await Amplify.API.query(request: request).response;
       final target = response.data;
 
       if (target != null) {
         final deleteRequest = ModelMutations.delete(target);
-        await Amplify.API.mutate(request: deleteRequest).response; // 【修正】 .response
+        await Amplify.API.mutate(request: deleteRequest).response;
       }
     } catch (e) {
       safePrint('removeUserScenarioStatusエラー: $e');
