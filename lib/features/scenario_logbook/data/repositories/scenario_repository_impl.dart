@@ -1,356 +1,190 @@
-// ファイルパス: lib/features/scenario_logbook/data/repositories/scenario_repository_impl.dart
+// lib/features/scenario_logbook/data/repositories/scenario_repository_impl.dart
 
+import 'dart:convert';
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:flutter/foundation.dart';
-import 'dart:convert';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:my_madamis_app/models/ModelProvider.dart' as amplify_models;
-import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
-import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
+
+// 1. ドメイン層のエンティティをインポート
+import '../../domain/entities/scenario.dart';
+import '../../domain/entities/user_scenario.dart';
 import '../../domain/repositories/scenario_repository.dart';
 
-// --- 定数定義 ---
-const String _kScenariosFileName = 'Scenarios.json';
-const String _kAuthorsFileName = 'Authors.json';
-const String _kVersionFileName = 'version.json';
-const String _kLocalVersionFileName = 'local_version.json';
-
-// --- トップレベル関数 (変更なし) ---
-List<Scenario> _parseScenarios(Map<String, dynamic> data) {
-  final jsonString = data['jsonString'] as String;
-  final authorMap = data['authorMap'] as Map<String, String>;
-
-  final scenarioList = jsonDecode(jsonString) as List;
-  final List<Scenario> allScenarios = [];
-  for (var scenarioJson in scenarioList) {
-    if (scenarioJson['isVisible'] == true && authorMap.containsKey(scenarioJson['authorId'])) {
-      final authorName = authorMap[scenarioJson['authorId']]!;
-      allScenarios.add(Scenario.fromJson(scenarioJson, authorName));
-    }
-  }
-  return allScenarios;
-}
-
-Map<String, String> _parseAuthors(String jsonString) {
-  final authorList = jsonDecode(jsonString) as List;
-  final authorMap = <String, String>{};
-  for (var author in authorList) {
-    if (author['isVisible'] == true) {
-      authorMap[author['authorId']] = author['authorName'];
-    }
-  }
-  return authorMap;
-}
+// 2. Amplify生成モデルを「models」としてインポート（名前の衝突を避ける）
+import '../../../../models/ModelProvider.dart' as models;
 
 class ScenarioRepositoryImpl implements ScenarioRepository {
-  List<Scenario>? _cachedScenarios;
-  Map<String, String>? _cachedAuthorMap;
-  List<String>? _cachedAuthorNames;
+  
+  // ---------------------------------------------------------------------------
+  // 内部ユーティリティ: S3から全シナリオをフェッチする
+  // ---------------------------------------------------------------------------
+  Future<List<Scenario>> _fetchAllScenariosFromS3() async {
+    // S3はv1でも .result で取得します
+    final scenariosResult = await Amplify.Storage.downloadData(key: 'Scenarios.json').result;
+    final authorsResult = await Amplify.Storage.downloadData(key: 'Authors.json').result;
 
-  ScenarioRepositoryImpl();
+    final List<dynamic> rawScenarios = jsonDecode(utf8.decode(scenariosResult.bytes));
+    final List<dynamic> rawAuthors = jsonDecode(utf8.decode(authorsResult.bytes));
 
-  Future<File> _getLocalFile(String filename) async {
-    final directory = await getApplicationDocumentsDirectory();
-    return File('${directory.path}/$filename');
+    final Map<String, String> authorMap = {
+      for (var a in rawAuthors) a['authorId'] as String: a['name'] as String
+    };
+
+    return rawScenarios.map((json) {
+      final aId = json['authorId'] as String;
+      final aName = authorMap[aId] ?? 'Unknown';
+      return Scenario.fromJson(json, aName);
+    }).toList();
   }
 
-  // ★ 修正: ファイルごとにバージョンを比較・更新するロジックに変更
-  Future<void> _checkVersionAndSync() async {
-    try {
-      // 1. S3から最新のバージョン情報を取得
-      final s3Download = await Amplify.Storage.downloadData(
-        key: _kVersionFileName,
-        options: const StorageDownloadDataOptions(
-            accessLevel: StorageAccessLevel.guest),
-      ).result;
-      
-      final s3VersionJson = utf8.decode(s3Download.bytes);
-      final Map<String, dynamic> s3Versions = jsonDecode(s3VersionJson);
-
-      // 2. ローカルのバージョン情報を確認
-      final localVersionFile = await _getLocalFile(_kLocalVersionFileName);
-      Map<String, dynamic> localVersions = {};
-      if (await localVersionFile.exists()) {
-        try {
-          localVersions = jsonDecode(await localVersionFile.readAsString());
-        } catch (_) {
-          // 読み込みエラー時は空にして全更新を促す
-          localVersions = {};
-        }
-      }
-
-      bool hasUpdates = false;
-
-      // 3. Authors.json のチェック
-      final s3AuthorsVer = s3Versions['authors']?.toString() ?? '0';
-      final localAuthorsVer = localVersions['authors']?.toString() ?? '';
-      
-      if (s3AuthorsVer != localAuthorsVer) {
-        safePrint('Authors update detected ($localAuthorsVer -> $s3AuthorsVer). Downloading...');
-        await _fetchDataWithCache(_kAuthorsFileName, forceRefresh: true);
-        hasUpdates = true;
-        // メモリキャッシュもクリア
-        _cachedAuthorMap = null;
-        _cachedAuthorNames = null;
-      }
-
-      // 4. Scenarios.json のチェック
-      final s3ScenariosVer = s3Versions['scenarios']?.toString() ?? '0';
-      final localScenariosVer = localVersions['scenarios']?.toString() ?? '';
-
-      if (s3ScenariosVer != localScenariosVer) {
-        safePrint('Scenarios update detected ($localScenariosVer -> $s3ScenariosVer). Downloading...');
-        await _fetchDataWithCache(_kScenariosFileName, forceRefresh: true);
-        hasUpdates = true;
-        // メモリキャッシュもクリア
-        _cachedScenarios = null;
-      }
-
-      // 5. 更新があった場合のみ、ローカルのバージョンファイルを書き換える
-      if (hasUpdates || !await localVersionFile.exists()) {
-        await localVersionFile.writeAsString(s3VersionJson);
-        safePrint('Local version file updated.');
-      } else {
-        safePrint('Cache is up to date.');
-      }
-
-    } catch (e) {
-      safePrint('Version check failed: $e. Using existing cache if available.');
-    }
-  }
-
-  Future<String> _fetchDataWithCache(String filename, {bool forceRefresh = false}) async {
-    final file = await _getLocalFile(filename);
-
-    if (!forceRefresh && await file.exists()) {
-      try {
-        final content = await file.readAsString();
-        if (content.isNotEmpty) {
-          // safePrint('Loaded $filename from local cache.'); // ログ過多を防ぐためコメントアウト可
-          return content;
-        }
-      } catch (e) {
-        safePrint('Error reading local cache for $filename: $e');
-      }
-    }
-
-    try {
-      safePrint('Downloading $filename from S3...');
-      final downloadResult = await Amplify.Storage.downloadData(
-        key: filename,
-        options: const StorageDownloadDataOptions(
-            accessLevel: StorageAccessLevel.guest),
-      ).result;
-
-      final jsonString = utf8.decode(downloadResult.bytes);
-      await file.writeAsString(jsonString);
-      return jsonString;
-    } catch (e) {
-      if (await file.exists()) {
-        safePrint('Fallback to local cache for $filename due to error: $e');
-        return await file.readAsString();
-      }
-      rethrow;
-    }
-  }
-
-  // ... (以下、前回と同じメソッド群)
-  Future<String> _getCurrentUserId() async {
-    try {
-      final attributes = await Amplify.Auth.fetchUserAttributes();
-      return attributes
-          .firstWhere((a) => a.userAttributeKey == AuthUserAttributeKey.sub)
-          .value;
-    } on Exception catch (e) {
-      safePrint('Failed to get current userId: $e');
-      throw Exception('Authentication required to access user data.');
-    }
-  }
-
-  Future<amplify_models.UserScenario?> _findExistingUserScenario(
-      String userId, String scenarioId) async {
-    try {
-      final request = ModelQueries.get(
-        amplify_models.UserScenario.classType,
-        amplify_models.UserScenarioModelIdentifier(
-          userId: userId,
-          scenarioId: scenarioId,
-        ),
-      );
-      final response = await Amplify.API.query(request: request).response;
-      return response.data;
-    } catch (e) {
-      safePrint('Error finding existing user scenario: $e');
-      return null;
-    }
-  }
-
-  Future<Map<String, String>> _fetchAndCacheAuthorMap() async {
-    if (_cachedAuthorMap != null) return _cachedAuthorMap!;
-
-    try {
-      final jsonString = await _fetchDataWithCache(_kAuthorsFileName);
-      _cachedAuthorMap = await compute(_parseAuthors, jsonString);
-      return _cachedAuthorMap!;
-    } catch (e) {
-      throw Exception('Failed to fetch authors: $e');
-    }
-  }
+  // ---------------------------------------------------------------------------
+  // 1. シナリオマスターデータ (S3 / JSON)
+  // ---------------------------------------------------------------------------
 
   @override
   Future<List<Scenario>> fetchScenarios({
     required int page,
-    int limit = 50,
+    int limit = 48, // 要件定義 9.2 準拠
     String? searchTerm,
     RangeValues? playerCountRange,
     GmRequirement? gmRequirement,
     String? authorName,
   }) async {
-    if (_cachedScenarios != null) return _cachedScenarios!;
-
     try {
-      // 1. バージョンチェックと同期 (差分のみ更新)
-      await _checkVersionAndSync();
+      List<Scenario> allScenarios = await _fetchAllScenariosFromS3();
 
-      // 2. データをロード (更新があれば新しいものが読まれる)
-      final authorMap = await _fetchAndCacheAuthorMap();
-      final jsonString = await _fetchDataWithCache(_kScenariosFileName);
-      
-      _cachedScenarios = await compute(_parseScenarios, {
-        'jsonString': jsonString,
-        'authorMap': authorMap,
-      });
-      return _cachedScenarios!;
+      // フィルタリング
+      if (searchTerm != null && searchTerm.isNotEmpty) {
+        final query = searchTerm.toLowerCase();
+        allScenarios = allScenarios.where((s) => s.titleLower.contains(query)).toList();
+      }
+      if (playerCountRange != null) {
+        allScenarios = allScenarios.where((s) =>
+            s.minPlayerCount >= playerCountRange.start &&
+            s.maxPlayerCount <= playerCountRange.end).toList();
+      }
+      if (gmRequirement != null) {
+        allScenarios = allScenarios.where((s) => s.gmRequirement == gmRequirement).toList();
+      }
+      if (authorName != null && authorName.isNotEmpty) {
+        allScenarios = allScenarios.where((s) => s.authorName == authorName).toList();
+      }
+
+      final startIndex = (page - 1) * limit;
+      if (startIndex >= allScenarios.length) return [];
+      final endIndex = (startIndex + limit) > allScenarios.length ? allScenarios.length : startIndex + limit;
+      return allScenarios.sublist(startIndex, endIndex);
     } catch (e) {
-      throw Exception('Failed to fetch scenarios: $e');
+      safePrint('fetchScenariosエラー: $e');
+      rethrow;
     }
   }
 
   @override
   Future<List<String>> fetchAllAuthorNames() async {
-    if (_cachedAuthorNames != null) return _cachedAuthorNames!;
-    final authorMap = await _fetchAndCacheAuthorMap();
-    _cachedAuthorNames = authorMap.values.toSet().toList()..sort();
-    return _cachedAuthorNames!;
+    try {
+      final result = await Amplify.Storage.downloadData(key: 'Authors.json').result;
+      final List<dynamic> rawAuthors = jsonDecode(utf8.decode(result.bytes));
+      return rawAuthors.map((a) => a['name'] as String).toList();
+    } catch (e) {
+      return [];
+    }
   }
+
+  // ---------------------------------------------------------------------------
+  // 2. ユーザー個別データ (AppSync / DynamoDB)
+  // ---------------------------------------------------------------------------
 
   @override
   Future<List<UserScenario>> fetchMyList() async {
-    final userId = await _getCurrentUserId();
-    return fetchUserScenarios(userId);
+    final authUser = await Amplify.Auth.getCurrentUser();
+    return fetchUserScenarios(authUser.userId);
   }
 
   @override
   Future<List<UserScenario>> fetchUserScenarios(String userId) async {
-    const queryDoc = r'''
-      query ListUserScenarios($userId: ID!) {
-        listUserScenarios(filter: { userId: { eq: $userId } }, limit: 2000) {
-          items {
-            userId
-            scenarioId
-            isPlayed
-            isPossessed
-            wantsToGm
-            wantsToPlay
-          }
+    try {
+      final request = ModelQueries.list(
+        models.UserScenario.classType,
+        where: models.UserScenario.USERID.eq(userId),
+      );
+      
+      // 【修正】 Amplify API v1 は .response で取得する
+      final operation = Amplify.API.query(request: request);
+      final response = await operation.response;
+      final items = response.data?.items ?? [];
+
+      // S3からマスターデータを取得してマップ化（シナリオの結合用）
+      final allScenarios = await _fetchAllScenariosFromS3();
+      final scenarioMap = { for (var s in allScenarios) s.id: s };
+
+      final List<UserScenario> userScenarios = [];
+
+      for (final m in items.whereType<models.UserScenario>()) {
+        final scenario = scenarioMap[m.scenarioId];
+        // S3側にシナリオが存在する場合のみ結合する
+        if (scenario != null) {
+          final status = UserScenarioStatus(
+            isPlayed: m.isPlayed,
+            isPossessed: m.isPossessed,
+            wantsToGm: m.wantsToGm,
+            wantsToPlay: m.wantsToPlay ?? false,
+          );
+          // 【修正】 ドメインモデルのコンストラクタ（scenario, status）に適合させる
+          userScenarios.add(UserScenario(scenario: scenario, status: status));
         }
       }
-    ''';
 
-    final request = GraphQLRequest<PaginatedResult<amplify_models.UserScenario>>(
-      document: queryDoc,
-      modelType: const PaginatedModelType(amplify_models.UserScenario.classType),
-      variables: {'userId': userId},
-      decodePath: 'listUserScenarios',
-      authorizationMode: APIAuthorizationType.userPools,
-    );
-
-    final response = await Amplify.API.query(request: request).response;
-    if (response.data == null || response.hasErrors) {
-      throw Exception('Failed to fetch user scenarios: ${response.errors}');
+      return userScenarios;
+    } catch (e) {
+      safePrint('fetchUserScenariosエラー: $e');
+      return [];
     }
-
-    final userScenarioModels = response.data!.items
-        .whereType<amplify_models.UserScenario>()
-        .toList();
-
-    final allScenarios = await fetchScenarios(page: 1);
-
-    final List<UserScenario> result = [];
-    for (var usModel in userScenarioModels) {
-      final scenario = allScenarios.firstWhereOrNull((s) => s.id == usModel.scenarioId);
-
-      if (scenario != null) {
-        result.add(UserScenario(
-          scenario: scenario,
-          status: UserScenarioStatus(
-            isPlayed: usModel.isPlayed,
-            isPossessed: usModel.isPossessed,
-            wantsToGm: usModel.wantsToGm,
-            wantsToPlay: usModel.wantsToPlay ?? false,
-          ),
-        ));
-      }
-    }
-    return result;
   }
 
   @override
-  Future<void> updateUserScenarioStatus(
-      String scenarioId, UserScenarioStatus status) async {
-    final userId = await _getCurrentUserId();
-
-    if (status.isUnregistered) {
-      await removeUserScenarioStatus(scenarioId);
-      return;
-    }
-
-    final userScenario = amplify_models.UserScenario(
-      userId: userId,
-      scenarioId: scenarioId,
-      isPlayed: status.isPlayed,
-      isPossessed: status.isPossessed,
-      wantsToGm: status.wantsToGm,
-      wantsToPlay: status.wantsToPlay,
-    );
-
+  Future<void> updateUserScenarioStatus(String scenarioId, UserScenarioStatus status) async {
     try {
-      final existing = await _findExistingUserScenario(userId, scenarioId);
+      final authUser = await Amplify.Auth.getCurrentUser();
+      
+      final newModel = models.UserScenario(
+        userId: authUser.userId,
+        scenarioId: scenarioId,
+        isPlayed: status.isPlayed,
+        isPossessed: status.isPossessed,
+        wantsToGm: status.wantsToGm,
+        wantsToPlay: status.wantsToPlay,
+      );
 
-      if (existing != null) {
-        final updatedItem = existing.copyWith(
-          isPlayed: status.isPlayed,
-          isPossessed: status.isPossessed,
-          wantsToGm: status.wantsToGm,
-          wantsToPlay: status.wantsToPlay,
-        );
-        await Amplify.API.mutate(request: ModelMutations.update(updatedItem)).response;
-      } else {
-        await Amplify.API.mutate(request: ModelMutations.create(userScenario)).response;
-      }
+      final request = ModelMutations.create(newModel);
+      // 【修正】 .result ではなく .response
+      await Amplify.API.mutate(request: request).response;
     } catch (e) {
-      safePrint('Error updating scenario status: $e');
-      throw Exception('ステータスの更新に失敗しました');
+      safePrint('updateUserScenarioStatusエラー: $e');
+      rethrow;
     }
   }
 
   @override
   Future<void> removeUserScenarioStatus(String scenarioId) async {
-    final userId = await _getCurrentUserId();
-
     try {
-      final existing = await _findExistingUserScenario(userId, scenarioId);
+      final authUser = await Amplify.Auth.getCurrentUser();
+      
+      // 【修正】 識別子クラス名が UserScenarioModelIdentifier になっている
+      final request = ModelQueries.get(
+        models.UserScenario.classType,
+        models.UserScenarioModelIdentifier(userId: authUser.userId, scenarioId: scenarioId),
+      );
+      // 【修正】 .result ではなく .response
+      final response = await Amplify.API.query(request: request).response;
+      final target = response.data;
 
-      if (existing != null) {
-        final request = ModelMutations.delete(existing);
-        await Amplify.API.mutate(request: request).response;
+      if (target != null) {
+        final deleteRequest = ModelMutations.delete(target);
+        await Amplify.API.mutate(request: deleteRequest).response; // 【修正】 .response
       }
     } catch (e) {
-      safePrint('Error deleting scenario: $e');
+      safePrint('removeUserScenarioStatusエラー: $e');
     }
   }
 }
