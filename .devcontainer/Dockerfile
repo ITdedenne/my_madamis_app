@@ -5,8 +5,11 @@ FROM mcr.microsoft.com/devcontainers/base:ubuntu
 RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends git curl unzip
 
-# 安定版(stable)のFlutter SDKをクローンする
-RUN git clone --depth 1 --branch stable https://github.com/flutter/flutter.git /workspaces/flutter
+# インストール先を /usr/local/flutter に変更
+RUN git clone --depth 1 --branch stable https://github.com/flutter/flutter.git /usr/local/flutter
 
-# Flutterコマンドへのパスを環境変数として設定
-ENV PATH="/workspaces/flutter/bin:${PATH}"
+# 【追加】所有権を vscode ユーザーに変更しておく（ここが重要です）
+RUN chown -R vscode:vscode /usr/local/flutter
+
+# 環境変数のパスを更新
+ENV PATH="/usr/local/flutter/bin:${PATH}"
