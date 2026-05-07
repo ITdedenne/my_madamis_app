@@ -2,8 +2,10 @@
 
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:flutter/foundation.dart'; // compute用
+import 'package:flutter/foundation.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart' as amplify_models;
@@ -14,8 +16,10 @@ import '../../domain/repositories/scenario_repository.dart';
 // --- 定数定義 ---
 const String _kScenariosFileName = 'Scenarios.json';
 const String _kAuthorsFileName = 'Authors.json';
+const String _kVersionFileName = 'version.json';
+const String _kLocalVersionFileName = 'local_version.json';
 
-// --- トップレベル関数 (compute用) ---
+// --- トップレベル関数 (変更なし) ---
 List<Scenario> _parseScenarios(Map<String, dynamic> data) {
   final jsonString = data['jsonString'] as String;
   final authorMap = data['authorMap'] as Map<String, String>;
@@ -49,6 +53,112 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
 
   ScenarioRepositoryImpl();
 
+  Future<File> _getLocalFile(String filename) async {
+    final directory = await getApplicationDocumentsDirectory();
+    return File('${directory.path}/$filename');
+  }
+
+  // ★ 修正: ファイルごとにバージョンを比較・更新するロジックに変更
+  Future<void> _checkVersionAndSync() async {
+    try {
+      // 1. S3から最新のバージョン情報を取得
+      final s3Download = await Amplify.Storage.downloadData(
+        key: _kVersionFileName,
+        options: const StorageDownloadDataOptions(
+            accessLevel: StorageAccessLevel.guest),
+      ).result;
+      
+      final s3VersionJson = utf8.decode(s3Download.bytes);
+      final Map<String, dynamic> s3Versions = jsonDecode(s3VersionJson);
+
+      // 2. ローカルのバージョン情報を確認
+      final localVersionFile = await _getLocalFile(_kLocalVersionFileName);
+      Map<String, dynamic> localVersions = {};
+      if (await localVersionFile.exists()) {
+        try {
+          localVersions = jsonDecode(await localVersionFile.readAsString());
+        } catch (_) {
+          // 読み込みエラー時は空にして全更新を促す
+          localVersions = {};
+        }
+      }
+
+      bool hasUpdates = false;
+
+      // 3. Authors.json のチェック
+      final s3AuthorsVer = s3Versions['authors']?.toString() ?? '0';
+      final localAuthorsVer = localVersions['authors']?.toString() ?? '';
+      
+      if (s3AuthorsVer != localAuthorsVer) {
+        safePrint('Authors update detected ($localAuthorsVer -> $s3AuthorsVer). Downloading...');
+        await _fetchDataWithCache(_kAuthorsFileName, forceRefresh: true);
+        hasUpdates = true;
+        // メモリキャッシュもクリア
+        _cachedAuthorMap = null;
+        _cachedAuthorNames = null;
+      }
+
+      // 4. Scenarios.json のチェック
+      final s3ScenariosVer = s3Versions['scenarios']?.toString() ?? '0';
+      final localScenariosVer = localVersions['scenarios']?.toString() ?? '';
+
+      if (s3ScenariosVer != localScenariosVer) {
+        safePrint('Scenarios update detected ($localScenariosVer -> $s3ScenariosVer). Downloading...');
+        await _fetchDataWithCache(_kScenariosFileName, forceRefresh: true);
+        hasUpdates = true;
+        // メモリキャッシュもクリア
+        _cachedScenarios = null;
+      }
+
+      // 5. 更新があった場合のみ、ローカルのバージョンファイルを書き換える
+      if (hasUpdates || !await localVersionFile.exists()) {
+        await localVersionFile.writeAsString(s3VersionJson);
+        safePrint('Local version file updated.');
+      } else {
+        safePrint('Cache is up to date.');
+      }
+
+    } catch (e) {
+      safePrint('Version check failed: $e. Using existing cache if available.');
+    }
+  }
+
+  Future<String> _fetchDataWithCache(String filename, {bool forceRefresh = false}) async {
+    final file = await _getLocalFile(filename);
+
+    if (!forceRefresh && await file.exists()) {
+      try {
+        final content = await file.readAsString();
+        if (content.isNotEmpty) {
+          // safePrint('Loaded $filename from local cache.'); // ログ過多を防ぐためコメントアウト可
+          return content;
+        }
+      } catch (e) {
+        safePrint('Error reading local cache for $filename: $e');
+      }
+    }
+
+    try {
+      safePrint('Downloading $filename from S3...');
+      final downloadResult = await Amplify.Storage.downloadData(
+        key: filename,
+        options: const StorageDownloadDataOptions(
+            accessLevel: StorageAccessLevel.guest),
+      ).result;
+
+      final jsonString = utf8.decode(downloadResult.bytes);
+      await file.writeAsString(jsonString);
+      return jsonString;
+    } catch (e) {
+      if (await file.exists()) {
+        safePrint('Fallback to local cache for $filename due to error: $e');
+        return await file.readAsString();
+      }
+      rethrow;
+    }
+  }
+
+  // ... (以下、前回と同じメソッド群)
   Future<String> _getCurrentUserId() async {
     try {
       final attributes = await Amplify.Auth.fetchUserAttributes();
@@ -83,13 +193,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     if (_cachedAuthorMap != null) return _cachedAuthorMap!;
 
     try {
-      final authorDownload = await Amplify.Storage.downloadData(
-        key: _kAuthorsFileName,
-        options: const StorageDownloadDataOptions(
-            accessLevel: StorageAccessLevel.guest),
-      ).result;
-
-      final jsonString = utf8.decode(authorDownload.bytes);
+      final jsonString = await _fetchDataWithCache(_kAuthorsFileName);
       _cachedAuthorMap = await compute(_parseAuthors, jsonString);
       return _cachedAuthorMap!;
     } catch (e) {
@@ -109,14 +213,13 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     if (_cachedScenarios != null) return _cachedScenarios!;
 
     try {
-      final authorMap = await _fetchAndCacheAuthorMap();
-      final scenarioDownload = await Amplify.Storage.downloadData(
-        key: _kScenariosFileName,
-        options: const StorageDownloadDataOptions(
-            accessLevel: StorageAccessLevel.guest),
-      ).result;
+      // 1. バージョンチェックと同期 (差分のみ更新)
+      await _checkVersionAndSync();
 
-      final jsonString = utf8.decode(scenarioDownload.bytes);
+      // 2. データをロード (更新があれば新しいものが読まれる)
+      final authorMap = await _fetchAndCacheAuthorMap();
+      final jsonString = await _fetchDataWithCache(_kScenariosFileName);
+      
       _cachedScenarios = await compute(_parseScenarios, {
         'jsonString': jsonString,
         'authorMap': authorMap,
@@ -135,14 +238,12 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     return _cachedAuthorNames!;
   }
 
-  // ★ 修正: 自身のIDを取得して fetchUserScenarios に委譲
   @override
   Future<List<UserScenario>> fetchMyList() async {
     final userId = await _getCurrentUserId();
     return fetchUserScenarios(userId);
   }
 
-  // ★ 追加: 指定ユーザーのシナリオ取得
   @override
   Future<List<UserScenario>> fetchUserScenarios(String userId) async {
     const queryDoc = r'''
@@ -154,6 +255,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
             isPlayed
             isPossessed
             wantsToGm
+            wantsToPlay
           }
         }
       }
@@ -189,6 +291,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
             isPlayed: usModel.isPlayed,
             isPossessed: usModel.isPossessed,
             wantsToGm: usModel.wantsToGm,
+            wantsToPlay: usModel.wantsToPlay ?? false,
           ),
         ));
       }
@@ -212,6 +315,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       isPlayed: status.isPlayed,
       isPossessed: status.isPossessed,
       wantsToGm: status.wantsToGm,
+      wantsToPlay: status.wantsToPlay,
     );
 
     try {
@@ -222,6 +326,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           isPlayed: status.isPlayed,
           isPossessed: status.isPossessed,
           wantsToGm: status.wantsToGm,
+          wantsToPlay: status.wantsToPlay,
         );
         await Amplify.API.mutate(request: ModelMutations.update(updatedItem)).response;
       } else {

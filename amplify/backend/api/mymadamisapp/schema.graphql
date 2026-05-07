@@ -71,6 +71,7 @@ type UserScenario @model
   isPlayed: Boolean!
   isPossessed: Boolean!
   wantsToGm: Boolean!
+  wantsToPlay: Boolean # ★追加: PL希望 (Nullable)
   # ----- リレーション -----
   user: User @belongsTo(fields: ["userId"])
 }
@@ -80,7 +81,7 @@ type UserScenario @model
 # 5.2: カスタムLambda関数 (Query / Mutation)
 # =================================================================
 type Query {
-  findUnplayedFriends(scenarioId: String!): String
+  findUnplayedFriends(scenarioId: String!,mode: String): String
     @function(name: "findUnplayedFriends-${env}")
     @auth(rules: [{ allow: private }])
 
@@ -96,5 +97,5 @@ type Mutation {
 
   deleteUserAccount: String
     @function(name: "deleteUserAccount-${env}")
-    @auth(rules: [{ allow: owner }])
+    @auth(rules: [{ allow: private }])
 }

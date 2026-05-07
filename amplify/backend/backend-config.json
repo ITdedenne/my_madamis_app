@@ -67,6 +67,23 @@
   "function": {
     "deleteUserAccount": {
       "build": true,
+      "dependsOn": [
+        {
+          "attributes": [
+            "UserPoolId"
+          ],
+          "category": "auth",
+          "resourceName": "mymadamisappb2bf781d"
+        },
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },
@@ -116,7 +133,16 @@
     },
     "mymadamisappb2bf781dPostConfirmation": {
       "build": true,
-      "dependsOn": [],
+      "dependsOn": [
+        {
+          "attributes": [
+            "GraphQLAPIIdOutput",
+            "GraphQLAPIEndpointOutput"
+          ],
+          "category": "api",
+          "resourceName": "mymadamisapp"
+        }
+      ],
       "providerPlugin": "awscloudformation",
       "service": "Lambda"
     },

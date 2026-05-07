@@ -6,14 +6,28 @@
     "Resource": [
       {
         "Fn::Sub": [
-          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-eju77evq3javlfhhc6o5pecapy-dev",
-          {}
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-${ApiId}-${Env}",
+          {
+            "ApiId": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "Env": {
+              "Ref": "env"
+            }
+          }
         ]
       },
       {
         "Fn::Sub": [
-          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-eju77evq3javlfhhc6o5pecapy-dev/index/*",
-          {}
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-${ApiId}-${Env}/index/*",
+          {
+            "ApiId": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "Env": {
+              "Ref": "env"
+            }
+          }
         ]
       }
     ]

@@ -1,7 +1,6 @@
 // ファイルパス: lib/features/auth/presentation/viewmodels/confirmation_viewmodel.dart
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:my_madamis_app/features/auth/domain/usecases/sign_in_usecase.dart';
 import 'package:my_madamis_app/providers.dart';
@@ -12,16 +11,23 @@ enum ConfirmationStatus { initial, loading, success, error }
 class ConfirmationState {
   final ConfirmationStatus status;
   final String? errorMessage;
+  final String? authenticatedUsername; // ★ 追加: 認証されたユーザー名
 
   ConfirmationState({
     this.status = ConfirmationStatus.initial,
     this.errorMessage,
+    this.authenticatedUsername,
   });
 
-  ConfirmationState copyWith({ConfirmationStatus? status, String? errorMessage, String? username}) {
+  ConfirmationState copyWith({
+    ConfirmationStatus? status, 
+    String? errorMessage,
+    String? authenticatedUsername,
+  }) {
     return ConfirmationState(
       status: status ?? this.status,
       errorMessage: errorMessage ?? this.errorMessage,
+      authenticatedUsername: authenticatedUsername ?? this.authenticatedUsername,
     );
   }
 }
@@ -46,31 +52,29 @@ class ConfirmationViewModel extends StateNotifier<ConfirmationState> {
     state = state.copyWith(status: ConfirmationStatus.loading, errorMessage: null);
     try {
       try {
-        // 1. まず確認コードの送信を試みる
         await _authRepository.confirmSignUp(username: email, confirmationCode: confirmationCode);
       } catch (e) {
-        // 2. もしエラーが「既に確認済み」であった場合はエラーを無視して続行
         final errorMessage = e.toString().toLowerCase();
         if (errorMessage.contains('user cannot be confirmed') || 
             errorMessage.contains('user is already confirmed') ||
             errorMessage.contains('confirmed')) {
           safePrint('User is already confirmed, proceeding to sign in.');
-          // エラーを無視して続行
         } else {
-          // 3. 「コードが違う」など、その他のエラーの場合は再スロー
-          // ★ 修正: rethrow を使用
           rethrow; 
         }
       }
       
-      // 4. 確認が成功した(or スキップされた)ので、自動ログインを試みる
-      await _signInUseCase(email, password);
+      // 4. 自動ログインを試み、ユーザー名を取得する
+      // ★ 修正: usernameを受け取る
+      final username = await _signInUseCase(email, password);
        
-      // 5. すべて成功
-      state = state.copyWith(status: ConfirmationStatus.success);
+      // 5. 成功状態とユーザー名をセット
+      state = state.copyWith(
+        status: ConfirmationStatus.success,
+        authenticatedUsername: username, // ★ セット
+      );
 
     } catch (e) {
-      // 6. 確認コードエラー or ログインエラー
       state = state.copyWith(status: ConfirmationStatus.error, errorMessage: e.toString());
     }
   }

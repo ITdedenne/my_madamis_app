@@ -1,42 +1,79 @@
-// ファイルパス: lib/features/player_finder/presentation/viewmodels/player_finder_viewmodel.dart
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:my_madamis_app/features/player_finder/domain/entities/searched_user.dart';
 import 'package:my_madamis_app/features/player_finder/domain/usecases/find_unplayed_friends_usecase.dart';
-import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
 
-// UseCaseのプロバイダー
+// ★ 検索モード定義
+enum PlayerFinderMode { player, gm }
+
+// ★ 状態クラスを作成してモードも管理
+class PlayerFinderState {
+  final AsyncValue<List<SearchedUser>> users;
+  final PlayerFinderMode mode;
+
+  PlayerFinderState({
+    required this.users,
+    this.mode = PlayerFinderMode.player,
+  });
+
+  PlayerFinderState copyWith({
+    AsyncValue<List<SearchedUser>>? users,
+    PlayerFinderMode? mode,
+  }) {
+    return PlayerFinderState(
+      users: users ?? this.users,
+      mode: mode ?? this.mode,
+    );
+  }
+}
+
+// Provider
 final findUnplayedFriendsUseCaseProvider = Provider<FindUnplayedFriendsUseCase>((ref) {
   return FindUnplayedFriendsUseCase(ref.watch(playerFinderRepositoryProvider));
 });
 
-// familyを使ってシナリオIDごとに状態を管理する (AutoDisposeで自動破棄)
-// AsyncValue<List<User>> が状態となるため、独自のStateクラスは廃止
+// ★ StateNotifierの型を変更
 final playerFinderProvider = StateNotifierProvider.autoDispose
-    .family<PlayerFinderViewModel, AsyncValue<List<User>>, String>((ref, scenarioId) {
+    .family<PlayerFinderViewModel, PlayerFinderState, String>((ref, scenarioId) {
   return PlayerFinderViewModel(
     ref.watch(findUnplayedFriendsUseCaseProvider),
     scenarioId,
   );
 });
 
-class PlayerFinderViewModel extends StateNotifier<AsyncValue<List<User>>> {
+class PlayerFinderViewModel extends StateNotifier<PlayerFinderState> {
   final FindUnplayedFriendsUseCase _useCase;
   final String _scenarioId;
 
-  // 初期化時に loading 状態にする
-  PlayerFinderViewModel(this._useCase, this._scenarioId) : super(const AsyncValue.loading()) {
-    _init();
+  PlayerFinderViewModel(this._useCase, this._scenarioId) 
+      : super(PlayerFinderState(users: const AsyncValue.loading())) {
+    _search();
   }
 
-  Future<void> _init() async {
-    // AsyncValue.guard が try-catch を代行し、エラー時は AsyncError に変換してくれる
-    state = await AsyncValue.guard(() => _useCase(_scenarioId));
+  Future<void> _search() async {
+    state = state.copyWith(users: const AsyncValue.loading());
+    
+    final modeString = state.mode == PlayerFinderMode.gm ? 'gm' : 'player';
+
+    final result = await AsyncValue.guard(() async {
+      // ソートはLambda側で実行されるため、クライアント側でのソートは不要
+      return await _useCase(_scenarioId, mode: modeString);
+    });
+    
+    if (mounted) {
+      state = state.copyWith(users: result);
+    }
   }
   
-  // リトライなどのために手動で再取得するメソッド
+  // ★ モード切り替えメソッド
+  void setMode(PlayerFinderMode mode) {
+    if (state.mode != mode) {
+      state = state.copyWith(mode: mode);
+      _search(); // モードが変わったら再検索
+    }
+  }
+
   Future<void> refresh() async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() => _useCase(_scenarioId));
+    await _search(); 
   }
 }

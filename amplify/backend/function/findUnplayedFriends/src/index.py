@@ -20,9 +20,8 @@ user_scenario_table = dynamodb.Table(SCENARIO_TABLE)
 user_table = dynamodb.Table(USER_TABLE)
 
 def handler(event, context):
-    print("=== findUnplayedFriends START ===")
+    print("=== findUnplayedFriends START (v2.15) ===")
     print(f"Event: {json.dumps(event)}")
-    print(f"Target Tables: {USER_TABLE}, {RELATIONSHIP_TABLE}, {SCENARIO_TABLE}")
 
     try:
         # 1. リクエストパラメータの取得
@@ -31,88 +30,93 @@ def handler(event, context):
         
         requesting_user_id = identity.get('sub')
         scenario_id = arguments.get('scenarioId')
-
-        print(f"Requesting User ID: {requesting_user_id}")
-        print(f"Scenario ID: {scenario_id}")
+        mode = arguments.get('mode', 'player')
 
         if not requesting_user_id or not scenario_id:
             raise ValueError("Invalid arguments or identity")
 
         # 2. 全フレンズIDの取得 (Query)
-        # followingId (PK) でクエリして followedId (フレンズ) を取得
-        print(f"Querying UserRelationship table for followingId: {requesting_user_id}")
         response = user_relationship_table.query(
             KeyConditionExpression=Key('followingId').eq(requesting_user_id)
         )
         
         items = response.get('Items', [])
         friend_ids = [item['followedId'] for item in items]
-        print(f"Found {len(friend_ids)} friends: {friend_ids}")
         
         if not friend_ids:
-            print("No friends found. Returning empty list.")
             return json.dumps([])
 
         # 3. BatchGetItemで各フレンズの UserScenario 状態を取得
-        
-        # BatchGetItem用のキーリスト作成
         keys_to_get = [
             {'userId': friend_id, 'scenarioId': scenario_id} 
             for friend_id in friend_ids
         ]
         
-        print(f"BatchGetItem Keys ({len(keys_to_get)}): {keys_to_get}")
-
-        # BatchGetItem実行
-        # 注意: SCENARIO_TABLE 変数が実際のDynamoDBテーブル名と完全に一致している必要があります
         batch_response = dynamodb.batch_get_item(
             RequestItems={
                 SCENARIO_TABLE: {
                     'Keys': keys_to_get,
-                    'ProjectionExpression': 'userId, isPlayed, isPossessed, wantsToGm'
+                    'ProjectionExpression': 'userId, isPlayed, isPossessed, wantsToGm, wantsToPlay'
                 }
             }
         )
         
         found_scenarios = batch_response.get('Responses', {}).get(SCENARIO_TABLE, [])
-        print(f"BatchGetItem Response Items ({len(found_scenarios)}): {found_scenarios}")
+        scenario_status_map = {item['userId']: item for item in found_scenarios}
         
-        # UnprocessedKeysのチェック（念のため）
-        unprocessed = batch_response.get('UnprocessedKeys', {})
-        if unprocessed:
-            print(f"WARNING: There were unprocessed keys: {unprocessed}")
+        filtered_users = []
 
-        # 4. メモリ上で突合・フィルタリング (未通過判定)
-        played_or_registered_map = {}
-        for item in found_scenarios:
-            uid = item['userId']
-            is_played = item.get('isPlayed', False)
-            is_possessed = item.get('isPossessed', False)
-            wants_to_gm = item.get('wantsToGm', False)
+        for fid in friend_ids:
+            status = scenario_status_map.get(fid, {})
             
-            # 何らかのステータスがあれば「登録済み」とみなす
-            if is_played or is_possessed or wants_to_gm:
-                played_or_registered_map[uid] = True
+            is_played = status.get('isPlayed', False)
+            is_possessed = status.get('isPossessed', False)
+            wants_to_gm = status.get('wantsToGm', False)
+            wants_to_play = status.get('wantsToPlay', False)
 
-        print(f"Registered Map: {played_or_registered_map}")
+            user_data = {
+                'id': fid,
+                'isPlayed': is_played,
+                'isPossessed': is_possessed,
+                'wantsToGm': wants_to_gm,
+                'wantsToPlay': wants_to_play,
+                'sortScore': 0 
+            }
 
-        # 未通過フレンズのIDリストを抽出
-        # (レコードが存在しない OR レコードはあるが全てFalse)
-        unplayed_friend_ids = [
-            fid for fid in friend_ids 
-            if not played_or_registered_map.get(fid, False)
-        ]
+            if mode == 'gm':
+                # 【v2.15 GM検索モード】
+                # 対象: 所持 (isPossessed) OR 購入検討 (wantsToGm)
+                # 変更点: 「通過済 (isPlayed)」のみのユーザーは除外する
+                if is_possessed or wants_to_gm:
+                    # 優先順位付け
+                    if is_possessed:
+                        user_data['sortScore'] = 30 # 最優先: 所持
+                    elif wants_to_gm:
+                        user_data['sortScore'] = 10 # 次点: 購入検討
+                    
+                    filtered_users.append(user_data)
+
+            else:
+                # 【PL検索モード】 (デフォルト)
+                # 対象: 未通過 (レコードなし OR 全フラグfalse)
+                is_registered_ng = is_played or is_possessed or wants_to_gm
+                
+                if not is_registered_ng:
+                    # PL希望者を優先表示
+                    if wants_to_play:
+                        user_data['sortScore'] = 10
+                    filtered_users.append(user_data)
+
+        # ソート実行 (sortScoreの降順)
+        filtered_users.sort(key=lambda x: x['sortScore'], reverse=True)
         
-        print(f"Unplayed Friend IDs ({len(unplayed_friend_ids)}): {unplayed_friend_ids}")
-
-        if not unplayed_friend_ids:
-            print("All friends have played/registered this scenario. Returning empty list.")
+        target_user_ids = [u['id'] for u in filtered_users]
+        
+        if not target_user_ids:
             return json.dumps([])
 
-        # 5. BatchGetItemで未通過フレンズのユーザー情報を取得
-        user_keys = [{'id': uid} for uid in unplayed_friend_ids]
-        
-        print(f"Fetching User Info for keys: {user_keys}")
+        # 5. プロフィール情報の取得
+        user_keys = [{'id': uid} for uid in target_user_ids]
         
         user_batch_response = dynamodb.batch_get_item(
             RequestItems={
@@ -123,25 +127,28 @@ def handler(event, context):
             }
         )
         
-        users = user_batch_response.get('Responses', {}).get(USER_TABLE, [])
-        print(f"Fetched Users ({len(users)}): {users}")
+        users_info = user_batch_response.get('Responses', {}).get(USER_TABLE, [])
+        users_map = {u['id']: u for u in users_info}
         
-        # クライアントへのレスポンス用に整形
         results = []
-        for u in users:
-            results.append({
-                'id': u['id'],
-                'username': u.get('username', ''),
-                'publicUserId': u.get('publicUserId', ''),
-                'bio': u.get('bio', '')
-            })
+        for f_user in filtered_users:
+            uid = f_user['id']
+            u_info = users_map.get(uid)
+            if u_info:
+                results.append({
+                    'id': uid,
+                    'username': u_info.get('username', ''),
+                    'publicUserId': u_info.get('publicUserId', ''),
+                    'bio': u_info.get('bio', ''),
+                    'wantsToPlay': f_user['wantsToPlay'],
+                    'isPlayed': f_user['isPlayed'],
+                    'isPossessed': f_user['isPossessed'],
+                    'wantsToGm': f_user['wantsToGm']
+                })
 
-        print(f"Returning results: {json.dumps(results)}")
         return json.dumps(results)
 
     except Exception as e:
-        print(f"[ERROR] An exception occurred: {str(e)}")
+        print(f"[ERROR] {e}")
         traceback.print_exc()
-        # エラー時もGraphQLの仕様上Stringを返す必要があるため、空リストを返す
-        # (本番ではエラーハンドリングを検討すべきですが、まずはログを確認します)
         return json.dumps([])

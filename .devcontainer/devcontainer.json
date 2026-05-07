@@ -1,23 +1,20 @@
 {
   "name": "Flutter AWS App",
-  // "image"の代わりに"build"セクションでDockerfileを指定
   "build": {
     "dockerfile": "Dockerfile"
   },
-  // Featureを使わないので、featuresセクションはFlutter以外を指定
   "features": {
     "ghcr.io/devcontainers/features/aws-cli:1": {},
     "ghcr.io/devcontainers/features/python:1": { "version": "3.11" },
     "ghcr.io/devcontainers/features/node:1": { "version": "lts" }
   },
-  // コンテナ起動後に各種セットアップを実行
-  "postCreateCommand": "npm install -g @aws-amplify/cli && sudo chown -R vscode /workspaces/flutter && flutter doctor && flutter config --enable-web && sudo apt-get update && sudo apt-get install -y python3-pip python3-venv && pip3 install --user pipenv",
+  // sudo chown を削除しました
+  "postCreateCommand": "npm install -g @aws-amplify/cli && flutter doctor && flutter config --enable-web && sudo apt-get update && sudo apt-get install -y python3-pip python3-venv && pip3 install --user pipenv",
   
-  // VS Codeの拡張機能と設定
   "customizations": {
     "vscode": {
       "settings": {
-        "dart.flutterSdkPath": "/workspaces/flutter"
+        "dart.flutterSdkPath": "/usr/local/flutter"
       },
       "extensions": [
         "Dart-Code.flutter",

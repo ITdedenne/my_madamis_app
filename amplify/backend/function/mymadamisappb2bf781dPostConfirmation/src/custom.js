@@ -3,15 +3,17 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand } = require('@aws-sdk/lib-dynamodb');
 
-// ... (USER_TABLE_NAME, MAX_RETRIES の定義) ...
-const USER_TABLE_NAME = 'User-eju77evq3javlfhhc6o5pecapy-dev'; // ★ 直値を使用
+// ★ 修正: 環境変数から動的にテーブル名を作成
+const API_ID = process.env.API_MYMADAMISAPP_GRAPHQLAPIIDOUTPUT;
+const ENV = process.env.ENV;
+const USER_TABLE_NAME = `User-${API_ID}-${ENV}`;
+
 const MAX_RETRIES = 5;
 
 // DynamoDBクライアントの初期化
 const client = new DynamoDBClient({ region: process.env.REGION });
 const ddbDocClient = DynamoDBDocumentClient.from(client);
 
-// --- ▼▼▼ ここから修正（追加） ▼▼▼ ---
 /**
  * (5.2.1) 7桁のランダムな数字IDを生成する
  * @returns {string} 7桁のランダムな数字の文字列
@@ -22,20 +24,17 @@ function generatePublicUserId() {
   const max = 9999999;
   return String(Math.floor(Math.random() * (max - min + 1)) + min);
 }
-// --- ▲▲▲ 修正完了 ▲▲▲ ---
 
 /**
  * Cognito Post Confirmation トリガーハンドラ (5.2.1)
  * @type {import('@types/aws-lambda').PostConfirmationTriggerHandler}
  */
 exports.handler = async (event) => {
-  // ★★★ 修正箇所: イベントソースの確認 ★★★
   // 新規ユーザー登録イベント (ConfirmSignUp) 以外では処理をスキップ
   if (event.triggerSource !== 'PostConfirmation_ConfirmSignUp') {
     console.log(`Skipping Post Confirmation for triggerSource: ${event.triggerSource}`);
     return event;
   }
-  // ★★★ 修正箇所 終了 ★★★
 
   if (!event.request.userAttributes.sub) {
     console.error("No Cognito Sub ID found in event.");
@@ -46,7 +45,7 @@ exports.handler = async (event) => {
   const username = event.request.userAttributes['preferred_username'];
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    const publicUserId = generatePublicUserId(); // ★ この関数が定義されました
+    const publicUserId = generatePublicUserId();
     
     const params = {
       TableName: USER_TABLE_NAME, 

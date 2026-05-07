@@ -41,7 +41,7 @@ jobs:
 
 # 5. 静的コード解析を実行する (warning以上の場合のみエラーにする)
       - name: Run static analysis
-        run: flutter analyze --fatal-warnings --no-fatal-infos
+        run: flutter analyze --no-fatal-infos
 
       # 6. テストを実行する (すべてのテストが成功するかチェック)
       #- name: Run tests

@@ -6,7 +6,6 @@ import 'package:my_madamis_app/common/widgets/custom_text_form_field.dart';
 import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/confirmation_viewmodel.dart';
-
 import '../../../home/presentation/pages/home_page.dart';
 
 class ConfirmationPage extends ConsumerWidget {
@@ -14,7 +13,7 @@ class ConfirmationPage extends ConsumerWidget {
   final String password;
   final String username;
 
-  const ConfirmationPage({super.key, required this.email, required this.password,required this.username,});
+  const ConfirmationPage({super.key, required this.email, required this.password, required this.username});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -29,12 +28,15 @@ class ConfirmationPage extends ConsumerWidget {
         );
       }
       if (next.status == ConfirmationStatus.success) {
+        // ★ 修正: ViewModelから返された正式なユーザー名を使用する
+        final authenticatedName = next.authenticatedUsername ?? username;
+        
         ref.read(authStateNotifierProvider.notifier).setAuthenticated(
-            username, 
+            authenticatedName, 
             message: '登録が完了しました。' 
         );
 
-                Navigator.of(context).pushAndRemoveUntil(
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomePage()),
           (Route<dynamic> route) => false,
         );

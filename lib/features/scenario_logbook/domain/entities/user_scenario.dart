@@ -1,5 +1,3 @@
-// ファイルパス: lib/features/scenario_logbook/domain/entities/user_scenario.dart
-
 import 'package:equatable/equatable.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 
@@ -7,31 +5,34 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenari
 class UserScenarioStatus extends Equatable {
   final bool isPlayed;
   final bool isPossessed;
-  final bool wantsToGm; // ★ 追加: GM検討中 (要件 3.3.3)
+  final bool wantsToGm;
+  final bool wantsToPlay; // ★ 追加: PL希望
 
   const UserScenarioStatus({
     this.isPlayed = false,
     this.isPossessed = false,
     this.wantsToGm = false,
+    this.wantsToPlay = false, // ★ 追加
   });
 
   // 全てfalseなら「未登録」とみなす
-  // 要件 4.6.1 補足: 「未通過」の定義は isPlayed: false AND isPossessed: false AND wantsToGm: false
-  bool get isUnregistered => !isPlayed && !isPossessed && !wantsToGm;
+  bool get isUnregistered => !isPlayed && !isPossessed && !wantsToGm && !wantsToPlay;
 
   @override
-  List<Object?> get props => [isPlayed, isPossessed, wantsToGm];
+  List<Object?> get props => [isPlayed, isPossessed, wantsToGm, wantsToPlay];
   
-  // copyWithメソッドを追加（UIでの部分更新用）
+  // copyWithメソッド
   UserScenarioStatus copyWith({
     bool? isPlayed,
     bool? isPossessed,
     bool? wantsToGm,
+    bool? wantsToPlay, // ★ 追加
   }) {
     return UserScenarioStatus(
       isPlayed: isPlayed ?? this.isPlayed,
       isPossessed: isPossessed ?? this.isPossessed,
       wantsToGm: wantsToGm ?? this.wantsToGm,
+      wantsToPlay: wantsToPlay ?? this.wantsToPlay, // ★ 追加
     );
   }
 }

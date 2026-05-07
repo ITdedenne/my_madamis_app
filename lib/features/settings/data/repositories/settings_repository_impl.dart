@@ -1,5 +1,6 @@
 // ファイルパス: lib/features/settings/data/repositories/settings_repository_impl.dart
 
+import 'dart:convert';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/settings/domain/repositories/settings_repository.dart';
 
@@ -29,5 +30,33 @@ class SettingsRepositoryImpl implements SettingsRepository {
       oldPassword: oldPassword,
       newPassword: newPassword,
     );
+  }
+
+  @override
+  Future<void> deleteAccount() async {
+    const mutation = r'''
+      mutation DeleteUserAccount {
+        deleteUserAccount
+      }
+    ''';
+
+    final request = GraphQLRequest<String>(
+      document: mutation,
+    );
+
+    try {
+      final response = await Amplify.API.mutate(request: request).response;
+      
+      if (response.hasErrors) {
+        throw Exception('GraphQL Errors: ${response.errors.map((e) => e.message).join(', ')}');
+      }
+      
+      // 成功した場合、ローカルセッションも破棄する
+      await Amplify.Auth.signOut();
+      
+    } catch (e) {
+      safePrint('Error deleting account: $e');
+      rethrow;
+    }
   }
 }

@@ -30,7 +30,7 @@ export 'UserScenario.dart';
 
 class ModelProvider implements amplify_core.ModelProviderInterface {
   @override
-  String version = "c62eb340392b7d5021598f74e0efa4b2";
+  String version = "d958afc8cb2ac151010fcddfe345497c";
   @override
   List<amplify_core.ModelSchema> modelSchemas = [User.schema, UserRelationship.schema, UserScenario.schema];
   @override
