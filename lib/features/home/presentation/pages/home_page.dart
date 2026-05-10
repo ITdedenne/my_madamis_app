@@ -100,11 +100,11 @@ class HomePage extends ConsumerWidget {
                               MaterialPageRoute(builder: (_) => const SettingsPage()),
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          _GlassActionButton(
-                            icon: Icons.logout_rounded,
-                            onTap: () => ref.read(authStateNotifierProvider.notifier).signOut(),
-                          ),
+                          // const SizedBox(width: 8),
+                          // _GlassActionButton(
+                          //   icon: Icons.logout_rounded,
+                          //   onTap: () => ref.read(authStateNotifierProvider.notifier).signOut(),
+                          // ),
                         ],
                       ),
                     ],
