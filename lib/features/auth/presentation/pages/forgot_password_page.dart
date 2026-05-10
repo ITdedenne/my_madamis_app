@@ -1,12 +1,10 @@
-// lib/features/auth/presentation/pages/forgot_password_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// 新しいパス構造に合わせる
+import 'package:my_madamis_app/common/widgets/custom_text_form_field.dart';
+import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/reset_password_page.dart';
 
-// ConsumerWidget から ConsumerStatefulWidget に変更
 class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -15,19 +13,17 @@ class ForgotPasswordPage extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
-  // TextEditingControllerをbuildメソッドの外に移動
+  final _formKey = GlobalKey<FormState>();
   late final TextEditingController _emailController;
 
   @override
   void initState() {
     super.initState();
-    // initStateで一度だけ初期化する
     _emailController = TextEditingController();
   }
 
   @override
   void dispose() {
-    // ウィジェットが不要になったらcontrollerを破棄する
     _emailController.dispose();
     super.dispose();
   }
@@ -38,44 +34,59 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
 
     ref.listen(authStateNotifierProvider, (_, next) {
       if (next.status == AuthStatus.passwordResetRequired) {
-        // 状態を保持している_emailControllerからテキストを取得
         Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-                builder: (_) =>
-                    ResetPasswordPage(username: _emailController.text)));
+          context,
+          MaterialPageRoute(
+            builder: (_) => ResetPasswordPage(username: _emailController.text),
+          ),
+        );
+      } else if (next.status == AuthStatus.error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('エラー: ${next.errorMessage}')),
+        );
       }
     });
 
     return Scaffold(
       appBar: AppBar(title: const Text('パスワードをリセット')),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            TextFormField(
-              // controllerを_emailControllerに変更
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: '登録したメールアドレス'),
+      body: Center( // PC対応：中央寄せ
+        child: SingleChildScrollView(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500), // PC対応：横幅制限
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    '登録しているメールアドレスを入力してください。\nパスワード再設定用のリセットコードを送信します。',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  CustomTextFormField(
+                    controller: _emailController,
+                    labelText: '登録したメールアドレス',
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) => (v == null || v.isEmpty) ? 'メールアドレスを入力してください' : null,
+                  ),
+                  const SizedBox(height: 32),
+                  PrimaryButton(
+                    text: 'リセットコードを送信',
+                    isLoading: authState.status == AuthStatus.loading,
+                    onPressed: () {
+                      if (_formKey.currentState!.validate()) {
+                        ref.read(authStateNotifierProvider.notifier).resetPassword(
+                              _emailController.text,
+                            );
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            if (authState.status == AuthStatus.loading)
-              const Center(child: CircularProgressIndicator())
-            else
-              ElevatedButton(
-                onPressed: () => ref
-                    .read(authStateNotifierProvider.notifier)
-                    // controllerを_emailControllerに変更
-                    .resetPassword(_emailController.text),
-                child: const Text('リセットコードを送信'),
-              ),
-            if (authState.status == AuthStatus.error)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text('エラー: ${authState.errorMessage}',
-                    style: const TextStyle(color: Colors.red)),
-              ),
-          ],
+          ),
         ),
       ),
     );

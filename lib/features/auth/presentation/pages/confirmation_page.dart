@@ -8,33 +8,51 @@ import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_n
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/confirmation_viewmodel.dart';
 import '../../../home/presentation/pages/home_page.dart';
 
-class ConfirmationPage extends ConsumerWidget {
+// Controllerを安全に破棄(dispose)するためにConsumerStatefulWidgetを使用します
+class ConfirmationPage extends ConsumerStatefulWidget {
   final String email;
   final String password;
   final String username;
 
-  const ConfirmationPage({super.key, required this.email, required this.password, required this.username});
+  const ConfirmationPage({
+    super.key,
+    required this.email,
+    required this.password,
+    required this.username,
+  });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final codeController = TextEditingController();
+  ConsumerState<ConfirmationPage> createState() => _ConfirmationPageState();
+}
+
+class _ConfirmationPageState extends ConsumerState<ConfirmationPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _codeController = TextEditingController();
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final viewModel = ref.watch(confirmationViewModelProvider);
     final notifier = ref.read(confirmationViewModelProvider.notifier);
-    
+
     ref.listen<ConfirmationState>(confirmationViewModelProvider, (_, next) {
       if (next.status == ConfirmationStatus.error) {
-         ScaffoldMessenger.of(context).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('エラー: ${next.errorMessage}')),
         );
-      }
-      if (next.status == ConfirmationStatus.success) {
-        // ★ 修正: ViewModelから返された正式なユーザー名を使用する
-        final authenticatedName = next.authenticatedUsername ?? username;
-        
+      } else if (next.status == ConfirmationStatus.success) {
+        // ViewModelから返された正式なユーザー名を使用する
+        final authenticatedName = next.authenticatedUsername ?? widget.username;
+
         ref.read(authStateNotifierProvider.notifier).setAuthenticated(
-            authenticatedName, 
-            message: '登録が完了しました。' 
-        );
+              authenticatedName,
+              message: '登録が完了しました。',
+            );
 
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomePage()),
@@ -45,28 +63,47 @@ class ConfirmationPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('コード認証')),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            Text('$email に届いた確認コードを入力してください。'),
-            const SizedBox(height: 16),
-            CustomTextFormField(
-              controller: codeController,
-              labelText: '確認コード',
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 20),
-            PrimaryButton(
-              text: '認証してログイン',
-              isLoading: viewModel.status == ConfirmationStatus.loading,
-              onPressed: () => notifier.confirmSignUp(
-                email: email,
-                password: password,
-                confirmationCode: codeController.text,
+      body: Center( // ★PC対応：中央寄せ
+        child: SingleChildScrollView(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 500), // ★PC対応：横幅制限
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch, // ボタンや入力欄を幅いっぱいに
+                children: [
+                  Text(
+                    '${widget.email} に届いた確認コードを入力してください。',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  CustomTextFormField(
+                    controller: _codeController,
+                    labelText: '確認コード',
+                    keyboardType: TextInputType.number,
+                    validator: (v) => (v == null || v.isEmpty) ? '確認コードを入力してください' : null,
+                  ),
+                  const SizedBox(height: 32),
+                  PrimaryButton(
+                    text: '認証してログイン',
+                    isLoading: viewModel.status == ConfirmationStatus.loading,
+                    onPressed: () {
+                      // 入力チェックを行ってからViewModelのメソッドを呼ぶ
+                      if (_formKey.currentState!.validate()) {
+                        notifier.confirmSignUp(
+                          email: widget.email, // ★エラー解消：正しくemailを渡す
+                          password: widget.password,
+                          confirmationCode: _codeController.text,
+                        );
+                      }
+                    },
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
