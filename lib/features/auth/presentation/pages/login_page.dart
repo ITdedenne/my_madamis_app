@@ -5,6 +5,7 @@ import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/signup_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/login_viewmodel.dart';
+import 'package:my_madamis_app/features/home/presentation/pages/home_page.dart'; // ★追加
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -18,7 +19,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   
-  // パスワードの伏せ字状態管理
   bool _isObscure = true;
 
   @override
@@ -32,10 +32,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     final viewModel = ref.watch(loginViewModelProvider);
 
+    // 状態の変化を監視
     ref.listen<LoginState>(loginViewModelProvider, (previous, next) {
+      // 1. エラーメッセージがある場合はSnackBarを表示
       if (next.errorMessage != null && next.errorMessage!.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.errorMessage!)),
+        );
+      }
+
+      // 2. ★修正: 認証に成功した（isAuthenticated が true になった）場合に画面遷移する
+      if (next.isAuthenticated) {
+        // 現在の画面をスタックから除外してホーム画面へ
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+          (route) => false,
         );
       }
     });
