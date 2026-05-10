@@ -1,0 +1,13 @@
+// amplify/backend/storage/madamisappS3/tsconfig.json
+{
+  "compilerOptions": {
+    "target": "es2018",
+    "module": "commonjs",
+    "lib": ["es2018"],
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "dist",
+    "rootDir": "."  // ← この行を追加または修正
+  },
+  "include": ["."]
+}
