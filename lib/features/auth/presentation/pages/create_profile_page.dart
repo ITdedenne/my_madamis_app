@@ -9,23 +9,36 @@ import 'package:my_madamis_app/features/auth/presentation/viewmodels/create_prof
 
 import '../notifiers/auth_state_notifier.dart';
 
-class CreateProfilePage extends ConsumerWidget {
+// ★修正: 状態を持つ ConsumerStatefulWidget に変更
+class CreateProfilePage extends ConsumerStatefulWidget {
   final String email;
   const CreateProfilePage({super.key, required this.email});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final formKey = GlobalKey<FormState>();
-    final usernameController = TextEditingController();
-    final passwordController = TextEditingController();
-    // 修正により、以下のコントローラは削除
-    // final bioController = TextEditingController();
-    // final twitterController = TextEditingController();
+  ConsumerState<CreateProfilePage> createState() => _CreateProfilePageState();
+}
 
+class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  
+  // ★追加: パスワードの伏せ字状態を管理する変数 (初期値は true = 隠す)
+  bool _isObscure = true;
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final viewModel = ref.watch(createProfileViewModelProvider);
     final notifier = ref.read(createProfileViewModelProvider.notifier);
 
-  ref.listen<CreateProfileState>(createProfileViewModelProvider, (prev, next) {
+    ref.listen<CreateProfileState>(createProfileViewModelProvider, (prev, next) {
       if(next.status == CreateProfileStatus.error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('登録エラー: ${next.errorMessage}')),
@@ -56,9 +69,9 @@ class CreateProfilePage extends ConsumerWidget {
          Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ConfirmationPage(
-              email: email,
+              email: widget.email, // ★ widget.email に修正
               password: passwordForConfirmation,
-              username: usernameController.text,
+              username: _usernameController.text,
             ),
           ),
         );
@@ -70,19 +83,31 @@ class CreateProfilePage extends ConsumerWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
-          key: formKey,
+          key: _formKey,
           child: Column(
             children: [
               CustomTextFormField(
-                controller: usernameController,
+                controller: _usernameController,
                 labelText: 'ユーザー名 *',
                 validator: (v) => (v == null || v.isEmpty) ? 'ユーザー名は必須です' : null,
               ),
               const SizedBox(height: 16),
               CustomTextFormField(
-                controller: passwordController,
+                controller: _passwordController,
                 labelText: 'パスワード (8文字以上) *',
-                obscureText: true,
+                obscureText: _isObscure, // ★追加: 状態変数を使用
+                suffixIcon: IconButton( // ★追加: アイコンボタンを配置
+                  icon: Icon(
+                    _isObscure ? Icons.visibility_off : Icons.visibility,
+                    color: Colors.grey,
+                  ),
+                  onPressed: () {
+                    // ★追加: ボタンが押されたら、伏せ字状態を反転して再描画
+                    setState(() {
+                      _isObscure = !_isObscure;
+                    });
+                  },
+                ),
                 validator: (v) => (v == null || v.length < 8) ? 'パスワードは8文字以上で入力してください' : null,
               ),
               const SizedBox(height: 24),
@@ -90,11 +115,11 @@ class CreateProfilePage extends ConsumerWidget {
                 text: '利用を開始する',
                 isLoading: viewModel.status == CreateProfileStatus.loading,
                 onPressed: () {
-                  if (formKey.currentState!.validate()) {
+                  if (_formKey.currentState!.validate()) {
                     notifier.signUp(
-                      email: email,
-                      password: passwordController.text,
-                      username: usernameController.text,
+                      email: widget.email, // ★ widget.email に修正
+                      password: _passwordController.text,
+                      username: _usernameController.text,
                       // 修正: bio と twitterId は空文字を渡すか、引数を省略する
                       bio: '',
                       twitterId: '',
