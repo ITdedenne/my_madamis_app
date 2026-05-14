@@ -56,7 +56,8 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
               controller: _searchController,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'ユーザー名で検索', // 内部的にID検索可能でもUIに表示しないなら変更を推奨
+                // 修正: ID(7桁)でも検索できることを明示したテキスト
+                hintText: 'ユーザー名、またはID(7桁)で検索',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 // ignore: deprecated_member_use
@@ -90,7 +91,6 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
               (context, index) {
                 final user = searchState.searchResults[index];
                 final isFollowing = friendsState.followingUsers.any((u) => u.id == user.id);
-                // 個別にローディング状態を判定
                 final isThisUserProcessing = searchState.processingUserId == user.id;
 
                 return UserListItem(
