@@ -10,14 +10,14 @@ import 'friends_viewmodel.dart';
 
 class UserSearchState {
   final bool isLoading;
-  final bool isProcessing;
+  final String? processingUserId;
   final List<User> searchResults;
   final String? errorMessage;
   final String? successMessage;
 
   UserSearchState({
     this.isLoading = false,
-    this.isProcessing = false,
+    this.processingUserId,
     this.searchResults = const [],
     this.errorMessage,
     this.successMessage,
@@ -25,14 +25,15 @@ class UserSearchState {
 
   UserSearchState copyWith({
     bool? isLoading,
-    bool? isProcessing,
+    String? processingUserId,
+    bool clearProcessing = false,
     List<User>? searchResults,
     String? errorMessage,
     String? successMessage,
   }) {
     return UserSearchState(
       isLoading: isLoading ?? this.isLoading,
-      isProcessing: isProcessing ?? this.isProcessing,
+      processingUserId: clearProcessing ? null : (processingUserId ?? this.processingUserId),
       searchResults: searchResults ?? this.searchResults,
       errorMessage: errorMessage,
       successMessage: successMessage,
@@ -40,7 +41,6 @@ class UserSearchState {
   }
 }
 
-// autoDisposeにより、画面破棄時に状態もリセット
 final userSearchViewModelProvider = StateNotifierProvider.autoDispose<UserSearchViewModel, UserSearchState>((ref) {
   return UserSearchViewModel(ref.watch(friendsRepositoryProvider), ref);
 });
@@ -52,11 +52,22 @@ class UserSearchViewModel extends StateNotifier<UserSearchState> {
   UserSearchViewModel(this._repository, this._ref) : super(UserSearchState());
 
   Future<void> search(String query) async {
-    if (query.trim().isEmpty) return;
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty) return;
+
+    // 検索のバリデーション: 2文字以上
+    if (trimmedQuery.length < 2) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: '検索キーワードは2文字以上入力してください',
+        searchResults: [],
+      );
+      return;
+    }
     
     state = state.copyWith(isLoading: true, errorMessage: null, searchResults: []);
     try {
-      final results = await _repository.searchUsers(query);
+      final results = await _repository.searchUsers(trimmedQuery);
       state = state.copyWith(isLoading: false, searchResults: results);
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
@@ -64,36 +75,35 @@ class UserSearchViewModel extends StateNotifier<UserSearchState> {
   }
 
   Future<void> followUser(User user) async {
-    state = state.copyWith(isProcessing: true, errorMessage: null, successMessage: null);
+    state = state.copyWith(processingUserId: user.id, errorMessage: null, successMessage: null);
     
     try {
-      // 上限チェック
       final currentCount = await _repository.getFollowingCount();
       
-      // ★ 修正: マジックナンバー(100)を定数に変更
       if (currentCount >= AppConstants.maxFriendsCount) {
         throw Exception('フレンズの上限（${AppConstants.maxFriendsCount}人）に達しているため、これ以上フォローできません。');
       }
 
       await _repository.followUser(user.id);
       
-      state = state.copyWith(
-        isProcessing: false, 
-        successMessage: '${user.username}さんをフォローしました',
-      );
-      
-      // フレンズ一覧を更新して、検索画面側のボタン状態（フォロー済）にも即座に反映させる
+      // ★ 重要: ぐるぐる（回転）を止める前に、最新のフォローリストをロードする
+      // これにより、UI側の isFollowing が true になってから回転が止まるため、表示が戻るフリッカーを防げます
       await _ref.read(friendsViewModelProvider.notifier).loadFollowingUsers();
 
+      state = state.copyWith(
+        clearProcessing: true, 
+        successMessage: '${user.username}さんをフォローしました',
+      );
+
     } catch (e) {
-      state = state.copyWith(isProcessing: false, errorMessage: e.toString());
+      state = state.copyWith(clearProcessing: true, errorMessage: e.toString());
     }
   }
   
   void clearMessages() {
     state = UserSearchState(
       isLoading: state.isLoading,
-      isProcessing: state.isProcessing,
+      processingUserId: state.processingUserId,
       searchResults: state.searchResults,
       errorMessage: null,
       successMessage: null,
