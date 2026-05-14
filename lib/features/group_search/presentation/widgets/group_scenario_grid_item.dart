@@ -127,7 +127,7 @@ class _CompactBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1), // ★修正: withOpacity -> withValues
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
@@ -169,7 +169,7 @@ class _DetailSection extends StatelessWidget {
           children: names.map((name) => Chip(
             label: Text(name, style: const TextStyle(fontSize: 12)),
             visualDensity: VisualDensity.compact,
-            backgroundColor: color.withOpacity(0.05),
+            backgroundColor: color.withValues(alpha: 0.05), // ★修正
             side: BorderSide.none,
           )).toList(),
         ),

@@ -35,35 +35,61 @@ class GroupSearchResultsArea extends ConsumerWidget {
     return Expanded(
       child: Column(
         children: [
-          // ソートバー
+          // ソート・フィルターバー
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             color: Colors.grey.shade50,
-            child: Row(
+            width: double.infinity,
+            child: Column(
               children: [
-                Text('${state.searchResults!.length} 件ヒット', style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
-                const Spacer(),
-                // ★ ソート項目の拡充
-                DropdownButton<GroupSearchSortOrder>(
-                  value: state.sortOrder,
-                  isDense: true,
-                  underline: Container(),
-                  style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
-                  onChanged: (v) { if (v != null) notifier.changeSortOrder(v); },
-                  items: const [
-                    DropdownMenuItem(value: GroupSearchSortOrder.wantsToPlayDesc, child: Text('❤️ PL希望順')),
-                    DropdownMenuItem(value: GroupSearchSortOrder.possessedDesc, child: Text('📚 所持順')),
-                    DropdownMenuItem(value: GroupSearchSortOrder.wantsToGmDesc, child: Text('🛒 購入検討順')),
-                    DropdownMenuItem(value: GroupSearchSortOrder.externalGmDesc, child: Text('👤 GM候補順(合算)')),
-                    DropdownMenuItem(value: GroupSearchSortOrder.titleAsc, child: Text('📝 名前順')),
+                Row(
+                  children: [
+                    Text('${state.searchResults!.length} 件ヒット', style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
+                    const Spacer(),
+                    // ソート
+                    DropdownButton<GroupSearchSortOrder>(
+                      value: state.sortOrder,
+                      isDense: true,
+                      underline: Container(),
+                      style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold, fontSize: 12),
+                      onChanged: (v) { if (v != null) notifier.changeSortOrder(v); },
+                      items: const [
+                        DropdownMenuItem(value: GroupSearchSortOrder.wantsToPlayDesc, child: Text('❤️ PL希望順')),
+                        DropdownMenuItem(value: GroupSearchSortOrder.possessedDesc, child: Text('📚 所持順')),
+                        DropdownMenuItem(value: GroupSearchSortOrder.wantsToGmDesc, child: Text('🛒 購入検討順')),
+                        DropdownMenuItem(value: GroupSearchSortOrder.externalGmDesc, child: Text('👤 GM候補順(合算)')),
+                        DropdownMenuItem(value: GroupSearchSortOrder.titleAsc, child: Text('📝 名前順')),
+                      ],
+                    ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                // ★ ピッタリ人数フィルター (SegmentedButton)
+                SizedBox(
+                  width: double.infinity,
+                  child: SegmentedButton<bool>(
+                    segments: [
+                      const ButtonSegment(value: false, label: Text('すべて', style: TextStyle(fontSize: 12))),
+                      ButtonSegment(
+                        value: true, 
+                        label: Text('${state.totalPlayers}人用のみ', style: const TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                    selected: {state.exactPlayerMatch},
+                    onSelectionChanged: (Set<bool> newSelection) {
+                      notifier.toggleExactPlayerMatch(newSelection.first);
+                    },
+                    style: const ButtonStyle(
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           const Divider(height: 1),
           
-          // 結果リスト
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
