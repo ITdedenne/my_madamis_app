@@ -19,8 +19,8 @@ class _GroupSearchConditionAreaState extends ConsumerState<GroupSearchConditionA
   Widget build(BuildContext context) {
     final state = ref.watch(groupSearchViewModelProvider);
     final notifier = ref.read(groupSearchViewModelProvider.notifier);
+    final colorScheme = Theme.of(context).colorScheme;
     
-    // 検索完了時に自動で閉じるロジック
     ref.listen<GroupSearchState>(groupSearchViewModelProvider, (prev, next) {
       if (prev?.isSearching == true && next.isSearching == false && next.searchResults != null) {
         setState(() => _isExpanded = false);
@@ -36,42 +36,69 @@ class _GroupSearchConditionAreaState extends ConsumerState<GroupSearchConditionA
       alignment: Alignment.topCenter,
       child: Container(
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          color: colorScheme.surface,
           boxShadow: [
             if (!_isExpanded)
-              BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 4)),
+              BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ヘッダーバー (常に表示)
+            // ヘッダーバー
             InkWell(
               onTap: () => setState(() => _isExpanded = !_isExpanded),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  border: Border(bottom: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5))),
+                  color: colorScheme.surfaceContainerLow,
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.group, color: Theme.of(context).primaryColor),
+                    Icon(Icons.group, color: colorScheme.primary, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       'メンバー: 自分 + ${state.selectedFriendIds.length}人',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const Spacer(),
-                    Icon(_isExpanded ? Icons.expand_less : Icons.expand_more),
+                    // ★ 修正点: 閉じている時にボタンのように見える強調表示
+                    if (!_isExpanded)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.5)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.person_search, size: 14, color: colorScheme.primary),
+                            const SizedBox(width: 4),
+                            Text(
+                              'メンバーを変更',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(Icons.expand_more, size: 14, color: colorScheme.primary),
+                          ],
+                        ),
+                      )
+                    else
+                      Icon(Icons.expand_less, color: colorScheme.onSurfaceVariant),
                   ],
                 ),
               ),
             ),
             
-            // 詳細エリア (開閉)
             if (_isExpanded)
-              Flexible( // 画面からはみ出ないように
+              Flexible(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -87,7 +114,6 @@ class _GroupSearchConditionAreaState extends ConsumerState<GroupSearchConditionA
                         onChanged: notifier.updateFriendFilter,
                       ),
                     ),
-                    // 高さ制限付きグリッド
                     SizedBox(
                       height: MediaQuery.of(context).size.height * 0.4,
                       child: state.isLoadingFriends
@@ -96,7 +122,7 @@ class _GroupSearchConditionAreaState extends ConsumerState<GroupSearchConditionA
                               padding: const EdgeInsets.all(12),
                               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                                 maxCrossAxisExtent: 150,
-                                childAspectRatio: 0.85,
+                                childAspectRatio: 0.82, // 少し縦長にして余裕を持たせる
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
                               ),
