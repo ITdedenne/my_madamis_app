@@ -1,5 +1,3 @@
-// ファイルパス: lib/common/widgets/custom_text_form_field.dart
-
 import 'package:flutter/material.dart';
 
 class CustomTextFormField extends StatelessWidget {
@@ -11,6 +9,7 @@ class CustomTextFormField extends StatelessWidget {
   final int? maxLines;
   final int? maxLength;
   final String? prefixText;
+  final Widget? suffixIcon; // ★ 追加：アイコンを受け取るためのプロパティ
 
   const CustomTextFormField({
     super.key,
@@ -22,6 +21,7 @@ class CustomTextFormField extends StatelessWidget {
     this.maxLines = 1,
     this.maxLength,
     this.prefixText,
+    this.suffixIcon, // ★ 追加：コンストラクタの引数
   });
 
   @override
@@ -33,6 +33,7 @@ class CustomTextFormField extends StatelessWidget {
         border: const OutlineInputBorder(),
         prefixText: prefixText,
         alignLabelWithHint: maxLines != null && maxLines! > 1,
+        suffixIcon: suffixIcon, // ★ 追加：InputDecorationにアイコンを設定
       ),
       obscureText: obscureText,
       validator: validator,
