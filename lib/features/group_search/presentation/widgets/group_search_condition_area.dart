@@ -58,12 +58,12 @@ class _GroupSearchConditionAreaState extends ConsumerState<GroupSearchConditionA
                   children: [
                     Icon(Icons.group, color: colorScheme.primary, size: 20),
                     const SizedBox(width: 8),
+                    // 計何人いるのかがわかりやすいようにテキストを微修正
                     Text(
-                      'メンバー: 自分 + ${state.selectedFriendIds.length}人',
+                      'メンバー: 自分 + ${state.selectedFriendIds.length}人 (計${state.totalPlayers}人)',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const Spacer(),
-                    // ★ 修正点: 閉じている時にボタンのように見える強調表示
                     if (!_isExpanded)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -122,7 +122,7 @@ class _GroupSearchConditionAreaState extends ConsumerState<GroupSearchConditionA
                               padding: const EdgeInsets.all(12),
                               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                                 maxCrossAxisExtent: 150,
-                                childAspectRatio: 0.82, // 少し縦長にして余裕を持たせる
+                                childAspectRatio: 0.82, 
                                 crossAxisSpacing: 10,
                                 mainAxisSpacing: 10,
                               ),
@@ -150,6 +150,28 @@ class _GroupSearchConditionAreaState extends ConsumerState<GroupSearchConditionA
                               },
                             ),
                     ),
+                    
+                    const Divider(height: 1),
+                    
+                    // ★追加: 内部GMの有無を切り替えるトグルスイッチ
+                    SwitchListTile(
+                      title: const Text(
+                        'メンバーの1人がGMを担当する', 
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)
+                      ),
+                      subtitle: Text(
+                        'PL人数を「${state.totalPlayers > 0 ? state.totalPlayers - 1 : 0}人」として検索します', 
+                        style: const TextStyle(fontSize: 12)
+                      ),
+                      value: state.hasInternalGm,
+                      onChanged: notifier.toggleHasInternalGm,
+                      activeColor: colorScheme.primary,
+                      secondary: Icon(
+                        Icons.assignment_ind, 
+                        color: state.hasInternalGm ? colorScheme.primary : colorScheme.onSurfaceVariant
+                      ),
+                    ),
+                    
                     Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: SizedBox(

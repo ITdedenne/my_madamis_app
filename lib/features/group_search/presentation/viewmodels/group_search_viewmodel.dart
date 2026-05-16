@@ -32,7 +32,6 @@ class GroupSearchDisplayItem {
   bool get isPlayable => ngUserNames.isEmpty;
   int get totalGmCandidates => possessedNames.length + wantsToGmNames.length;
   
-  // ★ 消えてしまっていたゲッターを復元
   bool get hasWantsToPlay => wantsToPlayNames.isNotEmpty;
   List<String> get externalHolderNames => [...possessedNames, ...wantsToGmNames];
 }
@@ -46,6 +45,7 @@ class GroupSearchState {
   final List<GroupSearchDisplayItem>? searchResults;
   final GroupSearchSortOrder sortOrder;
   final bool exactPlayerMatch; 
+  final bool hasInternalGm; // ★追加: 内部GMの有無
   final String? errorMessage;
 
   GroupSearchState({
@@ -57,6 +57,7 @@ class GroupSearchState {
     this.searchResults,
     this.sortOrder = GroupSearchSortOrder.wantsToPlayDesc,
     this.exactPlayerMatch = false,
+    this.hasInternalGm = false, // ★追加
     this.errorMessage,
   });
 
@@ -71,6 +72,7 @@ class GroupSearchState {
     List<GroupSearchDisplayItem>? searchResults,
     GroupSearchSortOrder? sortOrder,
     bool? exactPlayerMatch,
+    bool? hasInternalGm, // ★追加
     String? errorMessage,
   }) {
     return GroupSearchState(
@@ -82,6 +84,7 @@ class GroupSearchState {
       searchResults: searchResults ?? this.searchResults,
       sortOrder: sortOrder ?? this.sortOrder,
       exactPlayerMatch: exactPlayerMatch ?? this.exactPlayerMatch,
+      hasInternalGm: hasInternalGm ?? this.hasInternalGm, // ★追加
       errorMessage: errorMessage,
     );
   }
@@ -137,6 +140,12 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
     state = state.copyWith(selectedFriendIds: current);
   }
 
+  // ★追加: 内部GMのON/OFFを切り替える
+  void toggleHasInternalGm(bool value) {
+    state = state.copyWith(hasInternalGm: value);
+    clearResults(); // 条件が変わったので結果をクリアして再検索を促す
+  }
+
   void clearResults() {
     _rawResults = [];
     state = state.copyWith(searchResults: null);
@@ -156,8 +165,9 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
     Iterable<GroupSearchDisplayItem> filtered = _rawResults;
     
     if (state.exactPlayerMatch) {
-      final count = state.totalPlayers;
-      filtered = filtered.where((item) => item.scenario.maxPlayerCount == count);
+      // ★修正: 内部GMの有無を考慮して「ぴったり」の人数を計算
+      final targetPlCount = state.hasInternalGm ? state.totalPlayers - 1 : state.totalPlayers;
+      filtered = filtered.where((item) => item.scenario.maxPlayerCount == targetPlCount);
     }
 
     final sorted = filtered.toList();
@@ -201,7 +211,10 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
       } catch (_) {}
 
       final metaMap = {for (var r in results) r.scenarioId: r};
+      
+      // ★修正: 内部GMの有無を考慮してターゲットとなるPL人数を算出
       final totalPlayers = state.totalPlayers;
+      final targetPlCount = state.hasInternalGm ? totalPlayers - 1 : totalPlayers;
 
       List<String> toNames(List<String> ids) {
         return ids.map((uid) {
@@ -213,7 +226,16 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
       final List<GroupSearchDisplayItem> displayItems = [];
       for (var scenario in allScenarios) {
         final meta = metaMap[scenario.id];
-        if (scenario.maxPlayerCount < totalPlayers) continue;
+        
+        // ★改善: minとmaxの両方を見て、ターゲットのPL人数が遊べる範囲に収まっているか厳密に判定
+        if (targetPlCount < scenario.minPlayerCount || targetPlCount > scenario.maxPlayerCount) {
+          continue;
+        }
+
+        // ★改善: 内部GMがいる場合、GM不要(レス専用)のシナリオはGMが暇になってしまうため除外
+        if (state.hasInternalGm && scenario.gmRequirement == GmRequirement.none) {
+          continue;
+        }
 
         displayItems.add(GroupSearchDisplayItem(
           scenario: scenario,
