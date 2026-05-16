@@ -25,15 +25,12 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 検索結果の状態
     final searchState = ref.watch(userSearchViewModelProvider);
     final searchNotifier = ref.read(userSearchViewModelProvider.notifier);
     
-    // フォロー状況を確認するためにフレンズ一覧の状態も監視
     final friendsState = ref.watch(friendsViewModelProvider);
     final friendsNotifier = ref.read(friendsViewModelProvider.notifier);
 
-    // スナックバー制御
     ref.listen<UserSearchState>(userSearchViewModelProvider, (prev, next) {
       if (next.errorMessage != null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -50,10 +47,8 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
     });
 
     return CustomScrollView(
-      // ★ 重要: スクロール時に自動的にキーボードを閉じる
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       slivers: [
-        // 検索バーをSliverとして配置 (スクロールに合わせて隠れるような挙動も可能)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -61,7 +56,8 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
               controller: _searchController,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: 'ユーザー名またはID(7桁)で検索',
+                // 修正: ID(7桁)でも検索できることを明示したテキスト
+                hintText: 'ユーザー名、またはID(7桁)で検索',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
                 // ignore: deprecated_member_use
@@ -81,7 +77,6 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
           ),
         ),
 
-        // 検索結果エリア
         if (searchState.isLoading)
           const SliverFillRemaining(
             child: Center(child: CircularProgressIndicator()),
@@ -95,21 +90,19 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final user = searchState.searchResults[index];
-                // 既にフォローしているか判定
                 final isFollowing = friendsState.followingUsers.any((u) => u.id == user.id);
+                final isThisUserProcessing = searchState.processingUserId == user.id;
 
                 return UserListItem(
                   user: user,
                   isFollowing: isFollowing,
-                  isProcessing: searchState.isProcessing,
+                  isProcessing: isThisUserProcessing,
                   actionButtonLabel: isFollowing ? 'フォロー済' : 'フォロー',
-                  // フォロー済みの場合は薄くして「完了感」を出す
                   actionButtonColor: isFollowing ? Colors.grey[300] : null, 
                   actionButtonTextColor: isFollowing ? Colors.black54 : null,
                   
                   onActionButtonPressed: () {
                     if (isFollowing) {
-                      // フォロー解除確認ダイアログ
                       showDialog(
                         context: context,
                         builder: (_) => AlertDialog(
@@ -131,12 +124,10 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
                         ),
                       );
                     } else {
-                      // フォロー実行
                       searchNotifier.followUser(user);
                     }
                   },
                   onTap: () {
-                    // 詳細画面（他人のマイリスト）へ遷移
                     Navigator.push(
                       context,
                       MaterialPageRoute(

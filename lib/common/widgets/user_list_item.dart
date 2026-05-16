@@ -31,7 +31,6 @@ class UserListItem extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 16.0),
       elevation: 0,
-      // Material 3のSurfaceContainer系を使用してモダンな色合いに
       color: Theme.of(context).colorScheme.surfaceContainer,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
@@ -56,7 +55,7 @@ class UserListItem extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               
-              // ユーザー情報 (名前, ID, Bio)
+              // ユーザー情報 (名前, Bio)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -69,13 +68,7 @@ class UserListItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'ID: ${user.publicUserId}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
+                    // ID表示を削除
                     if (user.bio != null && user.bio!.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
@@ -91,7 +84,7 @@ class UserListItem extends StatelessWidget {
                 ),
               ),
 
-              // アクションボタン (ラベルがある場合のみ表示)
+              // アクションボタン
               if (actionButtonLabel != null) ...[
                 const SizedBox(width: 8),
                 SizedBox(

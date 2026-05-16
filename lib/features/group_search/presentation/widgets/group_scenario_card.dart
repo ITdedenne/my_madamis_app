@@ -33,7 +33,7 @@ class GroupScenarioCard extends ConsumerWidget {
             },
           ),
           
-          // ★ アイコンバッジ (分離して表示)
+          // アイコンバッジ (分離して表示)
           Positioned(
             top: 4,
             right: 4,
@@ -43,13 +43,13 @@ class GroupScenarioCard extends ConsumerWidget {
                 if (item.hasWantsToPlay)
                   _CompactBadge(icon: Icons.favorite, count: item.wantsToPlayNames.length, color: Colors.pink),
                 
-                // ★ 所持 (Book)
+                // 所持 (Book)
                 if (item.possessedNames.isNotEmpty) ...[
                   const SizedBox(width: 4),
                   _CompactBadge(icon: Icons.book, count: item.possessedNames.length, color: Colors.blue),
                 ],
 
-                // ★ 購入検討 (Cart)
+                // 購入検討 (Cart)
                 if (item.wantsToGmNames.isNotEmpty) ...[
                   const SizedBox(width: 4),
                   _CompactBadge(icon: Icons.shopping_cart, count: item.wantsToGmNames.length, color: Colors.orange),
@@ -85,7 +85,6 @@ class GroupScenarioCard extends ConsumerWidget {
                   icon: Icons.favorite,
                 ),
               
-              // ★ 詳細ダイアログも分離表示
               if (item.possessedNames.isNotEmpty) ...[
                 const SizedBox(height: 16),
                 _DetailSection(
@@ -141,9 +140,9 @@ class _CompactBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.9),
+        color: color.withValues(alpha: 0.9), // ★修正: withOpacity -> withValues
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 2)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 2)], // ★修正
       ),
       child: Row(
         children: [
@@ -183,8 +182,7 @@ class _DetailSection extends StatelessWidget {
           children: names.map((n) => Chip(
             label: Text(n, style: const TextStyle(fontSize: 12)),
             visualDensity: VisualDensity.compact,
-            // ignore: deprecated_member_use
-            backgroundColor: color.withOpacity(0.05),
+            backgroundColor: color.withValues(alpha: 0.05), // ★修正
             side: BorderSide.none,
             padding: EdgeInsets.zero,
           )).toList(),
