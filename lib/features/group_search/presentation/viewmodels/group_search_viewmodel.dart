@@ -9,6 +9,8 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenari
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
+// ★追加: Lambdaの生レスポンスを保持するため import を追加
+import 'package:my_madamis_app/features/group_search/domain/entities/group_search_result.dart';
 
 enum GroupSearchSortOrder {
   wantsToPlayDesc, possessedDesc, wantsToGmDesc, externalGmDesc, titleAsc,
@@ -20,6 +22,8 @@ class GroupSearchDisplayItem {
   final List<String> wantsToPlayNames;
   final List<String> possessedNames;
   final List<String> wantsToGmNames;
+  final bool isPlayerCountMatch; 
+  final bool isOverCapacity;     
 
   GroupSearchDisplayItem({
     required this.scenario,
@@ -27,11 +31,12 @@ class GroupSearchDisplayItem {
     this.wantsToPlayNames = const [],
     this.possessedNames = const [],
     this.wantsToGmNames = const [],
+    this.isPlayerCountMatch = true,
+    this.isOverCapacity = false,
   });
 
-  bool get isPlayable => ngUserNames.isEmpty;
+  bool get isPlayable => ngUserNames.isEmpty && !isOverCapacity;
   int get totalGmCandidates => possessedNames.length + wantsToGmNames.length;
-  
   bool get hasWantsToPlay => wantsToPlayNames.isNotEmpty;
   List<String> get externalHolderNames => [...possessedNames, ...wantsToGmNames];
 }
@@ -45,7 +50,7 @@ class GroupSearchState {
   final List<GroupSearchDisplayItem>? searchResults;
   final GroupSearchSortOrder sortOrder;
   final bool exactPlayerMatch; 
-  final bool hasInternalGm; // ★追加: 内部GMの有無
+  final bool hasInternalGm; 
   final String? errorMessage;
 
   GroupSearchState({
@@ -57,7 +62,7 @@ class GroupSearchState {
     this.searchResults,
     this.sortOrder = GroupSearchSortOrder.wantsToPlayDesc,
     this.exactPlayerMatch = false,
-    this.hasInternalGm = false, // ★追加
+    this.hasInternalGm = false, 
     this.errorMessage,
   });
 
@@ -72,7 +77,7 @@ class GroupSearchState {
     List<GroupSearchDisplayItem>? searchResults,
     GroupSearchSortOrder? sortOrder,
     bool? exactPlayerMatch,
-    bool? hasInternalGm, // ★追加
+    bool? hasInternalGm, 
     String? errorMessage,
   }) {
     return GroupSearchState(
@@ -84,7 +89,7 @@ class GroupSearchState {
       searchResults: searchResults ?? this.searchResults,
       sortOrder: sortOrder ?? this.sortOrder,
       exactPlayerMatch: exactPlayerMatch ?? this.exactPlayerMatch,
-      hasInternalGm: hasInternalGm ?? this.hasInternalGm, // ★追加
+      hasInternalGm: hasInternalGm ?? this.hasInternalGm, 
       errorMessage: errorMessage,
     );
   }
@@ -112,7 +117,12 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
   final FriendsRepository _friendsRepository;
   final FindGroupScenariosUseCase _findGroupScenariosUseCase;
   final Ref _ref;
+  
   List<GroupSearchDisplayItem> _rawResults = [];
+  
+  // ★追加: 通信コスト削減のためのキャッシュ変数
+  List<GroupSearchResult>? _lastLambdaResults; 
+  Set<String>? _lastSearchedFriendIds;
 
   GroupSearchViewModel(this._friendsRepository, this._findGroupScenariosUseCase, this._ref) : super(GroupSearchState()) {
     _loadFriends();
@@ -140,14 +150,21 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
     state = state.copyWith(selectedFriendIds: current);
   }
 
-  // ★追加: 内部GMのON/OFFを切り替える
+  // ★修正: 内部GMのON/OFF時、すでに検索結果を持っていれば「ローカルで即座に再計算」する (AWSコスト0・UX最高)
   void toggleHasInternalGm(bool value) {
     state = state.copyWith(hasInternalGm: value);
-    clearResults(); // 条件が変わったので結果をクリアして再検索を促す
+    if (_lastLambdaResults != null && _lastSearchedFriendIds != null && _lastSearchedFriendIds!.length == state.selectedFriendIds.length && _lastSearchedFriendIds!.containsAll(state.selectedFriendIds)) {
+      // メンバー構成が変わっていないなら、通信せずローカルで画面表示用アイテムを再生成
+      _generateDisplayItems(_lastLambdaResults!);
+    } else {
+      clearResults();
+    }
   }
 
   void clearResults() {
     _rawResults = [];
+    _lastLambdaResults = null;
+    _lastSearchedFriendIds = null;
     state = state.copyWith(searchResults: null);
   }
 
@@ -165,9 +182,7 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
     Iterable<GroupSearchDisplayItem> filtered = _rawResults;
     
     if (state.exactPlayerMatch) {
-      // ★修正: 内部GMの有無を考慮して「ぴったり」の人数を計算
-      final targetPlCount = state.hasInternalGm ? state.totalPlayers - 1 : state.totalPlayers;
-      filtered = filtered.where((item) => item.scenario.maxPlayerCount == targetPlCount);
+      filtered = filtered.where((item) => item.isPlayerCountMatch);
     }
 
     final sorted = filtered.toList();
@@ -191,63 +206,87 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
     state = state.copyWith(searchResults: sorted);
   }
 
+  // ★追加: Lambdaの結果を元に、現在の画面設定（GM有無など）に合わせて表示用アイテムを生成する処理を分離
+  Future<void> _generateDisplayItems(List<GroupSearchResult> lambdaResults) async {
+    final allScenarios = await _ref.read(allScenariosProvider.future);
+    final friendMap = {for (var f in state.friends) f.id: f};
+    
+    String myId = '';
+    String myName = '自分';
+    try {
+      final user = await Amplify.Auth.getCurrentUser();
+      myId = user.userId;
+      final authState = _ref.read(authStateNotifierProvider);
+      if (authState.username != null) myName = authState.username!;
+    } catch (_) {}
+
+    final metaMap = {for (var r in lambdaResults) r.scenarioId: r};
+    
+    final totalPlayers = state.totalPlayers;
+    // 内部GMがONの場合は必要PL人数を-1する
+    final targetPlCount = state.hasInternalGm ? totalPlayers - 1 : totalPlayers;
+
+    List<String> toNames(List<String> ids) {
+      return ids.map((uid) {
+        if (uid == myId) return myName;
+        return friendMap[uid]?.username ?? '不明';
+      }).toList();
+    }
+
+    final List<GroupSearchDisplayItem> displayItems = [];
+    for (var scenario in allScenarios) {
+      final meta = metaMap[scenario.id];
+      
+      final bool isCountMatch = targetPlCount == scenario.minPlayerCount && targetPlCount == scenario.maxPlayerCount;
+      final bool isOver = targetPlCount > scenario.maxPlayerCount;
+
+      if (state.hasInternalGm && scenario.gmRequirement == GmRequirement.none) {
+        continue;
+      }
+
+      displayItems.add(GroupSearchDisplayItem(
+        scenario: scenario,
+        ngUserNames: meta != null ? toNames(meta.ngUserIds) : [],
+        wantsToPlayNames: meta != null ? toNames(meta.wantsToPlayUserIds) : [],
+        possessedNames: meta != null ? toNames(meta.possessedUserIds) : [],
+        wantsToGmNames: meta != null ? toNames(meta.wantsToGmUserIds) : [],
+        isPlayerCountMatch: isCountMatch,
+        isOverCapacity: isOver,
+      ));
+    }
+
+    _rawResults = displayItems;
+    _applySort();
+  }
+
   Future<void> search() async {
     if (state.selectedFriendIds.isEmpty) return;
+    // ★修正: 連打対策 (すでに検索中なら弾く)
+    if (state.isSearching) return; 
+
+    // ★修正: キャッシュ判定 (直前とまったく同じメンバーでの検索ならAWS通信をスキップして即表示)
+    if (_lastSearchedFriendIds != null && 
+        _lastSearchedFriendIds!.length == state.selectedFriendIds.length && 
+        _lastSearchedFriendIds!.containsAll(state.selectedFriendIds)) {
+      if (_lastLambdaResults != null) {
+        await _generateDisplayItems(_lastLambdaResults!);
+        return;
+      }
+    }
+
     state = state.copyWith(isSearching: true, errorMessage: null);
 
     try {
       final friendIds = state.selectedFriendIds.toList();
+      
+      // AWS (Lambda) への通信発生
       final results = await _findGroupScenariosUseCase(friendIds);
-      final allScenarios = await _ref.read(allScenariosProvider.future);
-      final friendMap = {for (var f in state.friends) f.id: f};
       
-      String myId = '';
-      String myName = '自分';
-      try {
-        final user = await Amplify.Auth.getCurrentUser();
-        myId = user.userId;
-        final authState = _ref.read(authStateNotifierProvider);
-        if (authState.username != null) myName = authState.username!;
-      } catch (_) {}
-
-      final metaMap = {for (var r in results) r.scenarioId: r};
+      // 成功したら結果と検索時のメンバー構成をキャッシュに保存
+      _lastLambdaResults = results;
+      _lastSearchedFriendIds = Set.from(state.selectedFriendIds);
       
-      // ★修正: 内部GMの有無を考慮してターゲットとなるPL人数を算出
-      final totalPlayers = state.totalPlayers;
-      final targetPlCount = state.hasInternalGm ? totalPlayers - 1 : totalPlayers;
-
-      List<String> toNames(List<String> ids) {
-        return ids.map((uid) {
-          if (uid == myId) return myName;
-          return friendMap[uid]?.username ?? '不明';
-        }).toList();
-      }
-
-      final List<GroupSearchDisplayItem> displayItems = [];
-      for (var scenario in allScenarios) {
-        final meta = metaMap[scenario.id];
-        
-        // ★改善: minとmaxの両方を見て、ターゲットのPL人数が遊べる範囲に収まっているか厳密に判定
-        if (targetPlCount < scenario.minPlayerCount || targetPlCount > scenario.maxPlayerCount) {
-          continue;
-        }
-
-        // ★改善: 内部GMがいる場合、GM不要(レス専用)のシナリオはGMが暇になってしまうため除外
-        if (state.hasInternalGm && scenario.gmRequirement == GmRequirement.none) {
-          continue;
-        }
-
-        displayItems.add(GroupSearchDisplayItem(
-          scenario: scenario,
-          ngUserNames: meta != null ? toNames(meta.ngUserIds) : [],
-          wantsToPlayNames: meta != null ? toNames(meta.wantsToPlayUserIds) : [],
-          possessedNames: meta != null ? toNames(meta.possessedUserIds) : [],
-          wantsToGmNames: meta != null ? toNames(meta.wantsToGmUserIds) : [],
-        ));
-      }
-
-      _rawResults = displayItems;
-      _applySort();
+      await _generateDisplayItems(results);
       state = state.copyWith(isSearching: false);
     } catch (e) {
       state = state.copyWith(isSearching: false, errorMessage: '$e');
