@@ -19,7 +19,6 @@ class GroupSearchConditionArea extends ConsumerWidget {
     final notifier = ref.read(groupSearchViewModelProvider.notifier);
     final colorScheme = Theme.of(context).colorScheme;
     
-    // 検索処理が走り結果が返ってきたら、スマホのBottomSheetの場合は自動的に閉じる
     ref.listen<GroupSearchState>(groupSearchViewModelProvider, (prev, next) {
       if (prev?.isSearching == true && next.isSearching == false && next.searchResults != null) {
         if (isBottomSheet && Navigator.canPop(context)) {
@@ -33,7 +32,7 @@ class GroupSearchConditionArea extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ヘッダーバー (常時展開のため、開閉タップ機能は廃止)
+          // ヘッダーバー
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -49,7 +48,6 @@ class GroupSearchConditionArea extends ConsumerWidget {
                   style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const Spacer(),
-                // スマホのボトムシート時のみ閉じるボタンを表示
                 if (isBottomSheet)
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -60,7 +58,7 @@ class GroupSearchConditionArea extends ConsumerWidget {
             ),
           ),
           
-          // フレンズ検索テキストフィールド
+          // フレンズ検索
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: TextField(
@@ -74,7 +72,7 @@ class GroupSearchConditionArea extends ConsumerWidget {
             ),
           ),
           
-          // フレンズ一覧グリッド (2ペイン化・ボトムシート化に伴い、残りの高さいっぱいに広げるよう Expanded へ変更)
+          // フレンズ一覧グリッド
           Expanded(
             child: state.isLoadingFriends
                 ? const Center(child: CircularProgressIndicator())
@@ -112,25 +110,6 @@ class GroupSearchConditionArea extends ConsumerWidget {
           ),
           
           const Divider(height: 1),
-          
-          // 内部GMの有無を切り替えるトグルスイッチ
-          SwitchListTile(
-            title: const Text(
-              'メンバーの1人がGMを担当する', 
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)
-            ),
-            subtitle: Text(
-              'PL人数を「${state.totalPlayers > 0 ? state.totalPlayers - 1 : 0}人」として検索します', 
-              style: const TextStyle(fontSize: 12)
-            ),
-            value: state.hasInternalGm,
-            onChanged: notifier.toggleHasInternalGm,
-            activeColor: colorScheme.primary,
-            secondary: Icon(
-              Icons.assignment_ind, 
-              color: state.hasInternalGm ? colorScheme.primary : colorScheme.onSurfaceVariant
-            ),
-          ),
           
           // 検索実行ボタン
           Padding(
