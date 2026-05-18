@@ -4,13 +4,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
+// ★ HowToGuideCardのインポートを削除しました
 import 'package:my_madamis_app/features/profile/presentation/pages/profile_page.dart';
-import 'package:my_madamis_app/features/profile/presentation/viewmodels/profile_viewmodel.dart'; // ★ 追加
+import 'package:my_madamis_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
 import 'package:my_madamis_app/features/settings/presentation/pages/settings_page.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/pages/scenario_logbook_page.dart';
 import 'package:my_madamis_app/features/friends/presentation/pages/friends_page.dart';
 import 'package:my_madamis_app/features/player_finder/presentation/pages/player_finder_scenario_select_page.dart';
-import 'package:my_madamis_app/features/group_search/presentation/pages/group_search_page.dart'; // ★ 修正: 新しいページへ
+import 'package:my_madamis_app/features/group_search/presentation/pages/group_search_page.dart';
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -18,12 +19,10 @@ class HomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authStateNotifierProvider);
-    // ★ 追加: ProfileViewModelからも情報を取得（フォールバック用）
     final profileState = ref.watch(profileViewModelProvider);
     
     final theme = Theme.of(context);
 
-    // ★ 修正: 表示名の解決ロジック (AuthState > ProfileState > Guest)
     final displayUsername = authState.username ?? profileState.profile?.username ?? 'Guest';
 
     ref.listen<AuthState>(authStateNotifierProvider, (previous, next) {
@@ -40,7 +39,7 @@ class HomePage extends ConsumerWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // 背景 (変更なし)
+          // 背景
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -100,11 +99,6 @@ class HomePage extends ConsumerWidget {
                               MaterialPageRoute(builder: (_) => const SettingsPage()),
                             ),
                           ),
-                          // const SizedBox(width: 8),
-                          // _GlassActionButton(
-                          //   icon: Icons.logout_rounded,
-                          //   onTap: () => ref.read(authStateNotifierProvider.notifier).signOut(),
-                          // ),
                         ],
                       ),
                     ],
@@ -112,7 +106,7 @@ class HomePage extends ConsumerWidget {
                   const SizedBox(height: 24),
 
                   // ウェルカムヘッダー
-                  _buildGlassWelcomeHeader(context, displayUsername), // ★ 修正後の名前を渡す
+                  _buildGlassWelcomeHeader(context, displayUsername),
                   
                   const SizedBox(height: 32),
 
@@ -141,33 +135,34 @@ class HomePage extends ConsumerWidget {
                         crossAxisSpacing: 16,
                         childAspectRatio: isWideScreen ? 1.5 : 1.8,
                         children: [
+                          // ★ ガイド文をそれぞれのカードの description に直接組み込みました
                           _MenuCard(
                             title: 'シナリオ手帳',
-                            description: '通過・所持シナリオを記録',
+                            description: '遊んだシナリオや、これから遊びたいシナリオを記録・管理しましょう。',
                             icon: Icons.menu_book,
                             gradientColors: [Colors.blue.shade400, Colors.blue.shade700],
                             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScenarioLogbookPage())),
                           ),
                           _MenuCard(
                             title: 'フレンズ',
-                            description: 'フォローリストとユーザー検索',
+                            description: '一緒に遊んだ仲間をフォローして、お互いのマイリストを共有しよう。',
                             icon: Icons.people_alt_rounded,
                             gradientColors: [Colors.orange.shade400, Colors.deepOrange.shade600],
                             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsPage())),
                           ),
                           _MenuCard(
                             title: 'プレイヤーを探す',
-                            description: 'シナリオを指定して未通過者を検索',
+                            description: '特定のシナリオを「まだ遊んでいないフレンド」を探して卓を立てよう。',
                             icon: Icons.person_search_rounded,
                             gradientColors: [Colors.purple.shade400, Colors.deepPurple.shade600],
                             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlayerFinderScenarioSelectPage())),
                           ),
                           _MenuCard(
                             title: 'グループ検索',
-                            description: 'メンバー全員が遊べるシナリオを一括検索',
+                            description: 'メンバーを選択して「誰がGMできるか」「何が遊べるか」を一発検索！',
                             icon: Icons.groups_rounded,
                             gradientColors: [Colors.teal.shade400, Colors.teal.shade700],
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupSearchPage())), // ★ 修正: 統合ページへ
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupSearchPage())),
                           ),
                         ],
                       );
@@ -394,7 +389,8 @@ class _MenuCard extends StatelessWidget {
                       const Spacer(),
                       Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       const SizedBox(height: 4),
-                      Text(description, style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
+                      // ★ ガイド文が収まるように maxLines を 2 -> 3 に変更しました
+                      Text(description, style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, height: 1.2), maxLines: 3, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
