@@ -22,6 +22,22 @@ class GroupSearchResultsArea extends ConsumerWidget {
     if (state.isSearching) {
       return const Center(child: CircularProgressIndicator());
     }
+    
+    if (state.errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            const Text('検索中にエラーが発生しました', style: TextStyle(color: Colors.red)),
+            const SizedBox(height: 8),
+            Text(state.errorMessage!, style: const TextStyle(fontSize: 12, color: Colors.grey), textAlign: TextAlign.center),
+          ],
+        ),
+      );
+    }
+
     if (state.searchResults == null) {
       return const Center(child: Text('メンバーを選んで検索してください'));
     }
@@ -29,7 +45,6 @@ class GroupSearchResultsArea extends ConsumerWidget {
       return const Center(child: Text('条件に合うシナリオはありません'));
     }
 
-    // ベースとなるプレイ可能 / 惜しい の分離
     Iterable<GroupSearchDisplayItem> playableIter = state.searchResults!.where((i) => i.isPlayable);
     Iterable<GroupSearchDisplayItem> nearMissIter = state.searchResults!.where((i) => !i.isPlayable);
 
@@ -41,7 +56,6 @@ class GroupSearchResultsArea extends ConsumerWidget {
     final playableItems = playableIter.toList();
     final nearMissItems = nearMissIter.toList();
 
-    // 内部GMトグルがONの場合は「PL人数分（totalPlayers - 1）」、OFFなら「全体人数」を計算
     final displayTargetPlayers = state.hasInternalGm ? state.totalPlayers - 1 : state.totalPlayers;
 
     return Column(
@@ -60,6 +74,22 @@ class GroupSearchResultsArea extends ConsumerWidget {
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)
                   ),
                   const Spacer(),
+                  // ★ 追加: 身内GM（内部GM）トグルボタン
+                  FilterChip(
+                    label: const Text('身内GM', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    selected: state.hasInternalGm,
+                    onSelected: notifier.toggleHasInternalGm,
+                    showCheckmark: false,
+                    avatar: Icon(
+                      Icons.assignment_ind,
+                      size: 16,
+                      color: state.hasInternalGm ? Theme.of(context).colorScheme.onSecondaryContainer : Colors.grey,
+                    ),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    tooltip: 'メンバーの1人がGMを担当する',
+                  ),
+                  const SizedBox(width: 12),
                   // ソート
                   DropdownButton<GroupSearchSortOrder>(
                     value: state.sortOrder,
@@ -114,7 +144,6 @@ class GroupSearchResultsArea extends ConsumerWidget {
               final crossAxisCount = isPC ? (constraints.maxWidth / _kMinCardWidth).floor() : 1;
               
               if (isPC) {
-                // PC向けのGrid表示
                 return Padding(
                   padding: const EdgeInsets.all(_kGridSpacing),
                   child: CustomScrollView(
@@ -136,7 +165,6 @@ class GroupSearchResultsArea extends ConsumerWidget {
                          const SliverToBoxAdapter(child: SizedBox(height: 32)),
                       ],
                       if (nearMissItems.isNotEmpty) ...[
-                         // ★修正: 文言を正確な判定理由（通過済あり・人数超過）に変更
                          const SliverToBoxAdapter(child: _SectionHeader(title: '惜しい！ (通過済あり・人数超過)', color: Colors.grey)),
                          SliverGrid(
                            delegate: SliverChildBuilderDelegate(
@@ -155,7 +183,6 @@ class GroupSearchResultsArea extends ConsumerWidget {
                   ),
                 );
               } else {
-                // スマホ向けのList表示
                 return ListView(
                   padding: const EdgeInsets.all(_kListSpacing),
                   children: [
@@ -168,7 +195,6 @@ class GroupSearchResultsArea extends ConsumerWidget {
                       const SizedBox(height: 24),
                     ],
                     if (nearMissItems.isNotEmpty) ...[
-                      // ★修正: 文言を正確な判定理由（通過済あり・人数超過）に変更
                       const _SectionHeader(title: '惜しい！ (通過済あり・人数超過)', color: Colors.grey),
                        ...nearMissItems.map((item) => Padding(
                         padding: const EdgeInsets.only(bottom: _kListSpacing),
