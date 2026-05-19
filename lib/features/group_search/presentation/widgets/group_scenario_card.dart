@@ -27,7 +27,7 @@ class GroupScenarioCard extends ConsumerWidget {
           ScenarioListItem(
             scenario: item.scenario,
             status: status,
-            onTap: () => _showDetailDialog(context),
+            onTap: () => _showResponsiveDetail(context),
             onStatusChanged: (newStatus) {
               ref.read(userScenarioStatusProvider.notifier).updateStatus(item.scenario.id, newStatus);
             },
@@ -67,64 +67,103 @@ class GroupScenarioCard extends ConsumerWidget {
     );
   }
 
-  void _showDetailDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(item.scenario.title),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (item.hasWantsToPlay)
-                _DetailSection(
-                  title: '遊びたいメンバー',
-                  names: item.wantsToPlayNames,
-                  color: Colors.pink,
-                  icon: Icons.favorite,
-                ),
-              
-              if (item.possessedNames.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                _DetailSection(
-                  title: '所持しているメンバー',
-                  names: item.possessedNames,
-                  color: Colors.blue,
-                  icon: Icons.book,
-                ),
-              ],
+  // アダプティブな詳細表示 (スマホならスワイプで閉じるModalBottomSheet、PCならAlertDialog)
+  void _showResponsiveDetail(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600.0;
 
-              if (item.wantsToGmNames.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                _DetailSection(
-                  title: '購入を検討しているメンバー',
-                  names: item.wantsToGmNames,
-                  color: Colors.orange,
-                  icon: Icons.shopping_cart,
-                ),
-              ],
-
-              if (isNearMiss) ...[
-                const SizedBox(height: 16),
-                _DetailSection(
-                  title: '通過済みのメンバー',
-                  names: item.ngUserNames,
-                  color: Colors.grey,
-                  icon: Icons.block,
-                ),
-              ],
+    final detailContent = SingleChildScrollView(
+      child: Padding(
+        padding: isMobile ? const EdgeInsets.all(24.0) : EdgeInsets.zero,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isMobile) ...[
+              Text(
+                item.scenario.title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
               const SizedBox(height: 16),
-              const Divider(),
-              const Text('※ 詳細なステータスは「シナリオ手帳」で確認できます。', style: TextStyle(fontSize: 12, color: Colors.grey)),
             ],
-          ),
+            if (item.hasWantsToPlay)
+              _DetailSection(
+                title: '遊びたいメンバー',
+                names: item.wantsToPlayNames,
+                color: Colors.pink,
+                icon: Icons.favorite,
+              ),
+            
+            if (item.possessedNames.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _DetailSection(
+                title: '所持しているメンバー',
+                names: item.possessedNames,
+                color: Colors.blue,
+                icon: Icons.book,
+              ),
+            ],
+
+            if (item.wantsToGmNames.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _DetailSection(
+                title: '購入を検討しているメンバー',
+                names: item.wantsToGmNames,
+                color: Colors.orange,
+                icon: Icons.shopping_cart,
+              ),
+            ],
+
+            if (isNearMiss) ...[
+              const SizedBox(height: 16),
+              _DetailSection(
+                title: '通過済みのメンバー',
+                names: item.ngUserNames,
+                color: Colors.grey,
+                icon: Icons.block,
+              ),
+            ],
+            const SizedBox(height: 16),
+            const Divider(),
+            const Text('※ 詳細なステータスは「シナリオ手帳」で確認できます。', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            if (isMobile) ...[
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonal(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('閉じる'),
+                ),
+              ),
+            ],
+          ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('閉じる')),
-        ],
       ),
     );
+
+    if (isMobile) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        builder: (_) => detailContent,
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(item.scenario.title),
+          content: detailContent,
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('閉じる')),
+          ],
+        ),
+      );
+    }
   }
 }
 
@@ -140,9 +179,9 @@ class _CompactBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.9), // ★修正: withOpacity -> withValues
+        color: color.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 2)], // ★修正
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 2)],
       ),
       child: Row(
         children: [
@@ -182,7 +221,7 @@ class _DetailSection extends StatelessWidget {
           children: names.map((n) => Chip(
             label: Text(n, style: const TextStyle(fontSize: 12)),
             visualDensity: VisualDensity.compact,
-            backgroundColor: color.withValues(alpha: 0.05), // ★修正
+            backgroundColor: color.withValues(alpha: 0.05),
             side: BorderSide.none,
             padding: EdgeInsets.zero,
           )).toList(),

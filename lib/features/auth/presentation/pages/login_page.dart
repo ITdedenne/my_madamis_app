@@ -54,7 +54,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ログイン'),
         elevation: 0,
       ),
       body: Center( 

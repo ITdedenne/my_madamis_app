@@ -28,17 +28,46 @@ class ScenarioListItem extends StatelessWidget {
     return null;
   }
 
+  // --- 表示改善用ヘルパーメソッド ---
+  // ★ 改善: 初見ユーザー向けに「PL（プレイヤー数）」であることを明示
+  String _getPlayerCountText() {
+    if (scenario.minPlayerCount == scenario.maxPlayerCount) {
+      return 'PL ${scenario.minPlayerCount}人';
+    }
+    return 'PL ${scenario.minPlayerCount}〜${scenario.maxPlayerCount}人';
+  }
+
+  String _getGmRequirementText() {
+    switch (scenario.gmRequirement) {
+      case GmRequirement.required:
+        return 'GM必須';
+      case GmRequirement.optional:
+        return 'GM任意';
+      case GmRequirement.none:
+        return 'GM不要';
+    }
+  }
+
+  IconData _getGmRequirementIcon() {
+    switch (scenario.gmRequirement) {
+      case GmRequirement.required:
+        return Icons.assignment_ind; // 必須感のあるアイコン
+      case GmRequirement.optional:
+        return Icons.assignment_ind_outlined;
+      case GmRequirement.none:
+        return Icons.person_off_outlined; // GMレス用
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final statusColor = _getStatusColor();
     final theme = Theme.of(context);
 
-    // ★ 改善: IntrinsicHeight を廃止し、Column で縦方向に積むレイアウトへ変更
-    // これにより横長画面でも間延びせず、必要な高さだけを確保する
     return Card(
-      elevation: 0, // フラットなデザインへ
+      elevation: 0,
       // ignore: deprecated_member_use
-      color: theme.colorScheme.surfaceContainerLow, // モダンな背景色
+      color: theme.colorScheme.surfaceContainerLow,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
@@ -47,7 +76,6 @@ class ScenarioListItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap ?? (isReadOnly ? null : () => _showStatusMenu(context)),
         child: Container(
-          // 左端にステータスカラーのボーダーを表示
           decoration: BoxDecoration(
             border: statusColor != null 
                 ? Border(left: BorderSide(color: statusColor, width: 6))
@@ -74,21 +102,46 @@ class ScenarioListItem extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${scenario.minPlayerCount}-${scenario.maxPlayerCount}人  /  ${scenario.authorName}',
+                        const SizedBox(height: 6),
+                        
+                        // メタ情報を1行に集約し、Overflow対策と視認性を両立
+                        DefaultTextStyle(
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
+                          ) ?? const TextStyle(),
+                          child: Row(
+                            children: [
+                              // 人数 (PL表記にアップデート)
+                              const Icon(Icons.people_outline, size: 14),
+                              const SizedBox(width: 4),
+                              Text(_getPlayerCountText()),
+                              
+                              const SizedBox(width: 12),
+                              
+                              // GM要否
+                              Icon(_getGmRequirementIcon(), size: 14),
+                              const SizedBox(width: 4),
+                              Text(_getGmRequirementText()),
+                              
+                              const SizedBox(width: 12),
+                              
+                              // 作者名 (Expandedで囲み、狭い画面でのOverflowを防ぐ)
+                              Expanded(
+                                child: Text(
+                                  'by ${scenario.authorName}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ),
                   ),
                   if (!isReadOnly)
                     Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
+                      padding: const EdgeInsets.only(left: 8.0, top: 2.0),
                       child: Icon(
                         Icons.more_vert, 
                         size: 20, 
@@ -168,7 +221,7 @@ class _CompactStatusChip extends StatelessWidget {
   }
 }
 
-// ステータス変更シート (既存のまま)
+// ステータス変更シート
 class _StatusSelectionSheet extends StatefulWidget {
   final UserScenarioStatus initialStatus;
   final Function(UserScenarioStatus newStatus) onStatusChanged;

@@ -27,7 +27,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
   @override
   void initState() {
     super.initState();
-    // ★ 修正: タブ数を 4 -> 5 に変更
     _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) return;
@@ -64,7 +63,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
                       Tab(text: '通過済'),
                       Tab(text: '所持'),
                       Tab(text: '購入検討'),
-                      // ★ 追加: PL希望タブ
                       Tab(text: 'PL希望'),
                     ],
                   ),
@@ -186,11 +184,10 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
 
   Widget _buildEmptyState(MyListFilter filter) {
     final message = switch (filter) {
-      MyListFilter.all => '記録されたシナリオはありません。\n「探す」画面から追加しましょう！',
+      MyListFilter.all => '記録されたシナリオはありません。\nまずは遊んだシナリオを登録しましょう！', // ★ ここを変更しました
       MyListFilter.played => '「通過済」のシナリオはありません。',
       MyListFilter.possessed => '「所持」しているシナリオはありません。',
       MyListFilter.wantsToGm => '「購入検討中」のシナリオはありません。',
-      // ★ 追加: ヌケモレ修正
       MyListFilter.wantsToPlay => '「PL希望」のシナリオはありません。\n遊びたいシナリオを登録しましょう！',
     };
 
