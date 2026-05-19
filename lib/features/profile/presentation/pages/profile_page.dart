@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/profile/presentation/pages/edit_profile_page.dart';
 import 'package:my_madamis_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
-// ★ 追加: サービス（クリップボード）を利用するため
+// サービス（クリップボード）を利用するため
 import 'package:flutter/services.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -17,6 +17,8 @@ class ProfilePage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('プロフィール'),
+        centerTitle: true,
+        elevation: 0,
         actions: [
           IconButton(
             onPressed: profileState.profile != null
@@ -30,43 +32,55 @@ class ProfilePage extends ConsumerWidget {
                     );
                   }
                 : null,
-            icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.edit_outlined),
             tooltip: 'プロフィールを編集',
           ),
         ],
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(profileViewModelProvider.notifier).loadUserProfile(),
+        onRefresh: () =>
+            ref.read(profileViewModelProvider.notifier).loadUserProfile(),
         child: Center(
           child: switch (profileState.status) {
             ProfileStatus.loading => const CircularProgressIndicator(),
             ProfileStatus.error => Text('エラー: ${profileState.errorMessage}'),
             ProfileStatus.loaded => ListView(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
                 children: [
                   _buildProfileHeader(context, profileState.profile!.username),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
-                  // ★ ここから追加 (publicUserId が null でない場合のみ表示) ★
+                  // フレンドID (publicUserId が null でない場合のみ表示)
                   if (profileState.profile!.publicUserId != null) ...[
-                    _buildSectionTitle('フレンドID'),
-                    const SizedBox(height: 8),
-                    _buildFriendId(context, profileState.profile!.publicUserId!),
-                    const SizedBox(height: 24),
+                    _buildInfoCard(
+                      context: context,
+                      title: 'フレンドID',
+                      icon: Icons.badge_outlined,
+                      content: _buildFriendId(
+                        context,
+                        profileState.profile!.publicUserId!,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                   ],
-                  // ★ 追加ここまで ★
 
-                  _buildSectionTitle('自己紹介'),
-                  const SizedBox(height: 8),
-                  // 6.2.7 準拠: 単純な Text ウィジェットで表示
-                  Text(
-                    profileState.profile!.bio.isNotEmpty
-                        ? profileState.profile!.bio
-                        : '自己紹介が設定されていません。',
-                    style: Theme.of(context).textTheme.bodyLarge,
+                  // 自己紹介
+                  _buildInfoCard(
+                    context: context,
+                    title: '自己紹介',
+                    icon: Icons.person_outline,
+                    content: Text(
+                      profileState.profile!.bio.isNotEmpty
+                          ? profileState.profile!.bio
+                          : '自己紹介が設定されていません。',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            height: 1.5,
+                            color: profileState.profile!.bio.isNotEmpty
+                                ? Colors.black87
+                                : Colors.black54,
+                          ),
+                    ),
                   ),
-                  const SizedBox(height: 24),
-                  // ★ 修正箇所: X (Twitter) ID のセクションを削除
                 ],
               ),
             ProfileStatus.initial => const SizedBox.shrink(),
@@ -76,58 +90,116 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
+  /// プロフィールヘッダー（アバターとユーザー名を中央に配置）
   Widget _buildProfileHeader(BuildContext context, String username) {
-    return Row(
+    return Column(
       children: [
-        const CircleAvatar(
-          radius: 40,
-          child: Icon(Icons.person, size: 40),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            username,
-            style: Theme.of(context).textTheme.headlineSmall,
+        CircleAvatar(
+          radius: 50,
+          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+          child: Icon(
+            Icons.person,
+            size: 50,
+            color: Theme.of(context).colorScheme.onPrimaryContainer,
           ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          username,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+  /// 各セクションを囲む汎用カードウィジェット
+  Widget _buildInfoCard({
+    required BuildContext context,
+    required String title,
+    required IconData icon,
+    required Widget content,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey.shade200),
+      ),
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                ),
+              ],
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12.0),
+              child: Divider(height: 1),
+            ),
+            content,
+          ],
+        ),
+      ),
     );
   }
-  
-  // ★ 追加: フレンドID表示用のウィジェット
+
+  /// フレンドID表示用のウィジェット
   Widget _buildFriendId(BuildContext context, String friendId) {
     return InkWell(
       onTap: () {
         Clipboard.setData(ClipboardData(text: friendId));
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('フレンドIDをコピーしました')),
+          SnackBar(
+            content: const Text('フレンドIDをコピーしました'),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
         );
       },
-      borderRadius: BorderRadius.circular(8), // InkWellのエフェクト用
+      borderRadius: BorderRadius.circular(8),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: Colors.grey.shade50,
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.shade300),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              friendId,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontFamily: 'monospace', // IDらしさを出す
-                color: Colors.black87,
+            Expanded(
+              child: Text(
+                friendId,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                      letterSpacing: 1.2,
+                    ),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            const Icon(Icons.copy_outlined, color: Colors.grey, size: 20),
+            Icon(
+              Icons.copy_outlined,
+              color: Theme.of(context).colorScheme.primary,
+              size: 20,
+            ),
           ],
         ),
       ),
