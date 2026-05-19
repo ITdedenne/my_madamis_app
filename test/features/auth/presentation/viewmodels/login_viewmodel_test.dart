@@ -1,71 +1,85 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/login_viewmodel.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
-import 'package:my_madamis_app/providers.dart';
-
-import '../../../../mocks/mocks.mocks.dart';
+import '../../../../mocks/mocks.mocks.dart'; 
 
 void main() {
   late MockAuthRepository mockAuthRepository;
-  late ProviderContainer container;
+  late LoginViewModel viewModel;
 
   setUp(() {
     mockAuthRepository = MockAuthRepository();
-    container = ProviderContainer(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(mockAuthRepository),
-      ],
-    );
-  });
-
-  tearDown(() {
-    container.dispose();
+    viewModel = LoginViewModel(mockAuthRepository);
   });
 
   group('LoginViewModel Tests', () {
-    const tEmail = 'test@example.com';
-    const tPassword = 'password';
-    const tUsername = 'test_user';
+    const testEmail = 'test@example.com';
+    const testPassword = 'password123';
+    const testUsername = 'test_user';
 
-    test('signInが成功した場合、isAuthenticatedがtrueになること', () async {
-      // Arrange
-      when(mockAuthRepository.signOut()).thenAnswer((_) async {}); // ログイン前のサインアウト処理
-      when(mockAuthRepository.signIn(username: tEmail, password: tPassword))
-          .thenAnswer((_) async => const SignInResult(isSignedIn: true, nextStep: AuthNextSignInStep(signInStep: AuthSignInStep.done)));
+    const dummySignInResult = SignInResult(
+      isSignedIn: true,
+      nextStep: AuthNextSignInStep(signInStep: AuthSignInStep.done),
+    );
+
+    test('ログインに成功し、状態が isAuthenticated = true になること', () async {
+      when(mockAuthRepository.signOut()).thenAnswer((_) async {});
+      when(mockAuthRepository.signIn(username: testEmail, password: testPassword))
+          .thenAnswer((_) async => dummySignInResult);
       when(mockAuthRepository.getCurrentUserAttributes()).thenAnswer((_) async => [
             const AuthUserAttribute(
-                userAttributeKey: AuthUserAttributeKey.preferredUsername,
-                value: tUsername)
+              userAttributeKey: AuthUserAttributeKey.preferredUsername,
+              value: testUsername,
+            ),
           ]);
 
-      // Act
-      await container.read(loginViewModelProvider.notifier).signIn(tEmail, tPassword);
-      final state = container.read(loginViewModelProvider);
+      await viewModel.signIn(testEmail, testPassword);
 
-      // Assert
-      expect(state.isAuthenticated, isTrue);
-      expect(state.username, tUsername);
-      expect(state.isLoading, isFalse);
-      expect(state.errorMessage, isNull);
+      expect(viewModel.state.isLoading, false);
+      expect(viewModel.state.isAuthenticated, true);
+      expect(viewModel.state.username, testUsername);
+      expect(viewModel.state.errorMessage, isNull);
+
+      verify(mockAuthRepository.signOut()).called(1);
+      verify(mockAuthRepository.signIn(username: testEmail, password: testPassword)).called(1);
     });
 
-    test('signInが失敗した場合(UserNotFoundException)、errorMessageが設定されること', () async {
-      // Arrange
-      const exception = UserNotFoundException('User does not exist.');
+    test('AuthException が発生した場合、適切にエラー状態に変換されること', () async {
       when(mockAuthRepository.signOut()).thenAnswer((_) async {});
-      when(mockAuthRepository.signIn(username: tEmail, password: tPassword))
-          .thenThrow(exception);
+      when(mockAuthRepository.signIn(username: testEmail, password: testPassword))
+          .thenThrow(const AuthNotAuthorizedException('NotAuthorizedException'));
 
-      // Act
-      await container.read(loginViewModelProvider.notifier).signIn(tEmail, tPassword);
-      final state = container.read(loginViewModelProvider);
+      await viewModel.signIn(testEmail, testPassword);
 
-      // Assert
-      expect(state.isAuthenticated, isFalse);
-      expect(state.errorMessage, isNotNull);
-      expect(state.isLoading, isFalse);
+      expect(viewModel.state.isLoading, false);
+      expect(viewModel.state.isAuthenticated, false);
+      expect(viewModel.state.errorMessage, 'ログインに失敗しました: NotAuthorizedException');
+    });
+
+    test('予期せぬ Exception が発生した場合でも、汎用エラーとして安全に処理されること', () async {
+      when(mockAuthRepository.signOut()).thenAnswer((_) async {});
+      when(mockAuthRepository.signIn(username: testEmail, password: testPassword))
+          .thenThrow(Exception('ネットワークに接続されていません'));
+
+      await viewModel.signIn(testEmail, testPassword);
+
+      expect(viewModel.state.isLoading, false);
+      expect(viewModel.state.isAuthenticated, false);
+      expect(viewModel.state.errorMessage, '予期せぬエラーが発生しました: Exception: ネットワークに接続されていません');
+    });
+
+    test('事前の signOut 処理がエラーを吐いても、signIn 処理が継続されること', () async {
+      when(mockAuthRepository.signOut()).thenThrow(Exception('すでにログアウトしています'));
+      when(mockAuthRepository.signIn(username: testEmail, password: testPassword))
+          .thenAnswer((_) async => dummySignInResult);
+      when(mockAuthRepository.getCurrentUserAttributes()).thenAnswer((_) async => []);
+
+      await viewModel.signIn(testEmail, testPassword);
+
+      expect(viewModel.state.isAuthenticated, true);
+      expect(viewModel.state.username, testEmail); 
+      verify(mockAuthRepository.signIn(username: testEmail, password: testPassword)).called(1);
     });
   });
 }

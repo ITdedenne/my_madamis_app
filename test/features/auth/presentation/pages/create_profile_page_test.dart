@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
+import 'package:my_madamis_app/common/widgets/custom_text_form_field.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/create_profile_page.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/create_profile_viewmodel.dart';
@@ -9,7 +10,6 @@ import 'package:my_madamis_app/providers.dart';
 
 import '../../../../mocks/mocks.mocks.dart';
 
-// ViewModelのモック
 class MockCreateProfileViewModel extends StateNotifier<CreateProfileState>
     with Mock
     implements CreateProfileViewModel {
@@ -47,7 +47,6 @@ void main() {
   });
 
   testWidgets('必須項目が未入力の場合、バリデーションエラーが表示されること', (tester) async {
-    // Arrange
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -58,21 +57,18 @@ void main() {
               .overrideWith((ref) => AuthStateNotifier(mockAuthRepository)),
         ],
         child: const MaterialApp(
-            home: CreateProfilePage(email: 'test@example.com')),
+            home: Scaffold(body: CreateProfilePage(email: 'test@example.com'))),
       ),
     );
 
-    // Act
     await tester.tap(find.text('利用を開始する'));
-    await tester.pump(); // バリデーションが走り、UIが更新されるのを待つ
+    await tester.pump(); 
 
-    // Assert
     expect(find.text('ユーザー名は必須です'), findsOneWidget);
     expect(find.text('パスワードは8文字以上で入力してください'), findsOneWidget);
   });
 
   testWidgets('正常に入力してボタンをタップすると、signUpが呼ばれること', (tester) async {
-    // Arrange
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -83,27 +79,23 @@ void main() {
               .overrideWith((ref) => AuthStateNotifier(mockAuthRepository)),
         ],
         child: const MaterialApp(
-            home: CreateProfilePage(email: 'test@example.com')),
+            home: Scaffold(body: CreateProfilePage(email: 'test@example.com'))),
       ),
     );
 
-    // Act
     await tester.enterText(
-        find.widgetWithText(TextFormField, 'ユーザー名 *'), 'test_user');
+        find.widgetWithText(CustomTextFormField, 'ユーザー名 *'), 'test_user');
     await tester.enterText(
-        find.widgetWithText(TextFormField, 'パスワード (8文字以上) *'),
+        find.widgetWithText(CustomTextFormField, 'パスワード (8文字以上) *'),
         'password123');
-    await tester.enterText(
-        find.widgetWithText(TextFormField, '自己紹介 (任意)'), 'hello');
 
     await tester.tap(find.text('利用を開始する'));
 
-    // Assert
     verify(mockCreateProfileViewModel.signUp(
       email: 'test@example.com',
       password: 'password123',
       username: 'test_user',
-      bio: 'hello',
+      bio: '', 
       twitterId: '',
     )).called(1);
   });
