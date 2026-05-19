@@ -57,7 +57,6 @@ void main() {
       expect(viewModel.state.errorMessage, 'ログインに失敗しました: NotAuthorizedException');
     });
 
-    // ▼▼▼ 今回追加したテストケース ▼▼▼
     test('メールアドレス未確認ユーザーの場合、UserNotConfirmedException を適切に処理すること', () async {
       when(mockAuthRepository.signOut()).thenAnswer((_) async {});
       when(mockAuthRepository.signIn(username: testEmail, password: testPassword))
@@ -67,10 +66,8 @@ void main() {
 
       expect(viewModel.state.isLoading, false);
       expect(viewModel.state.isAuthenticated, false);
-      // 実際の実装に合わせてエラーメッセージ文言は調整してください
       expect(viewModel.state.errorMessage, contains('User is not confirmed')); 
     });
-    // ▲▲▲ 今回追加したテストケース ▲▲▲
 
     test('予期せぬ Exception が発生した場合でも、汎用エラーとして安全に処理されること', () async {
       when(mockAuthRepository.signOut()).thenAnswer((_) async {});
@@ -95,6 +92,24 @@ void main() {
       expect(viewModel.state.isAuthenticated, true);
       expect(viewModel.state.username, testEmail); 
       verify(mockAuthRepository.signIn(username: testEmail, password: testPassword)).called(1);
+    });
+
+    test('メールアドレスが空の場合、ログイン処理を行わずエラー状態になること', () async {
+      await viewModel.signIn('', testPassword);
+
+      expect(viewModel.state.isLoading, false);
+      expect(viewModel.state.isAuthenticated, false);
+      expect(viewModel.state.errorMessage, isNotNull);
+      verifyNever(mockAuthRepository.signIn(username: anyNamed('username'), password: anyNamed('password')));
+    });
+
+    test('パスワードが空の場合、ログイン処理を行わずエラー状態になること', () async {
+      await viewModel.signIn(testEmail, '');
+
+      expect(viewModel.state.isLoading, false);
+      expect(viewModel.state.isAuthenticated, false);
+      expect(viewModel.state.errorMessage, isNotNull);
+      verifyNever(mockAuthRepository.signIn(username: anyNamed('username'), password: anyNamed('password')));
     });
   });
 }

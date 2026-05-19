@@ -10,6 +10,13 @@ class SignUpUseCase {
     required String password,
     required UserProfile profile,
   }) async {
+    if (email.isEmpty) {
+      throw Exception('メールアドレスを入力してください');
+    }
+    if (password.isEmpty) {
+      throw Exception('パスワードを入力してください');
+    }
+
     await _repository.signUp(
       email: email,
       password: password,

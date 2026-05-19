@@ -1,5 +1,3 @@
-// test/features/auth/domain/usecases/sign_up_usecase_test.dart
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart' hide UserProfile;
@@ -60,5 +58,33 @@ void main() {
               profile: tProfile,
             ),
         throwsA(isA<Exception>()));
+  });
+
+  test('メールアドレスが空の場合、例外をスローすること', () async {
+    expect(
+        () => signUpUseCase.call(
+              email: '',
+              password: tPassword,
+              profile: tProfile,
+            ),
+        throwsA(isA<Exception>()));
+    verifyNever(mockAuthRepository.signUp(
+        email: anyNamed('email'),
+        password: anyNamed('password'),
+        username: anyNamed('username')));
+  });
+
+  test('パスワードが空の場合、例外をスローすること', () async {
+    expect(
+        () => signUpUseCase.call(
+              email: tEmail,
+              password: '',
+              profile: tProfile,
+            ),
+        throwsA(isA<Exception>()));
+    verifyNever(mockAuthRepository.signUp(
+        email: anyNamed('email'),
+        password: anyNamed('password'),
+        username: anyNamed('username')));
   });
 }
