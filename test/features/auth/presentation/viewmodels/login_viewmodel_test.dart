@@ -1,6 +1,6 @@
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/auth/presentation/viewmodels/login_viewmodel.dart';
 import '../../../../mocks/mocks.mocks.dart'; 
 
@@ -56,6 +56,21 @@ void main() {
       expect(viewModel.state.isAuthenticated, false);
       expect(viewModel.state.errorMessage, 'ログインに失敗しました: NotAuthorizedException');
     });
+
+    // ▼▼▼ 今回追加したテストケース ▼▼▼
+    test('メールアドレス未確認ユーザーの場合、UserNotConfirmedException を適切に処理すること', () async {
+      when(mockAuthRepository.signOut()).thenAnswer((_) async {});
+      when(mockAuthRepository.signIn(username: testEmail, password: testPassword))
+          .thenThrow(const UserNotConfirmedException('User is not confirmed.'));
+
+      await viewModel.signIn(testEmail, testPassword);
+
+      expect(viewModel.state.isLoading, false);
+      expect(viewModel.state.isAuthenticated, false);
+      // 実際の実装に合わせてエラーメッセージ文言は調整してください
+      expect(viewModel.state.errorMessage, contains('User is not confirmed')); 
+    });
+    // ▲▲▲ 今回追加したテストケース ▲▲▲
 
     test('予期せぬ Exception が発生した場合でも、汎用エラーとして安全に処理されること', () async {
       when(mockAuthRepository.signOut()).thenAnswer((_) async {});
