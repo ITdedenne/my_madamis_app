@@ -31,7 +31,6 @@ void main() {
     publicUserId: '1234567',
     username: 'new_user',
     bio: 'new_bio',
-    twitterId: '',
   );
 
   setUp(() {
