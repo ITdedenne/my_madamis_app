@@ -7,12 +7,12 @@ import 'dart:async' as _i3;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:my_madamis_app/features/friends/domain/repositories/friends_repository.dart'
-    as _i2;
-import 'package:my_madamis_app/features/group_search/domain/entities/group_search_result.dart'
-    as _i6;
-import 'package:my_madamis_app/features/group_search/domain/usecases/find_group_scenarios_usecase.dart'
     as _i5;
-import 'package:my_madamis_app/models/ModelProvider.dart' as _i4;
+import 'package:my_madamis_app/features/group_search/domain/entities/group_search_result.dart'
+    as _i4;
+import 'package:my_madamis_app/features/group_search/domain/repositories/group_search_repository.dart'
+    as _i2;
+import 'package:my_madamis_app/models/ModelProvider.dart' as _i6;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -29,22 +29,44 @@ import 'package:my_madamis_app/models/ModelProvider.dart' as _i4;
 // ignore_for_file: subtype_of_sealed_class
 // ignore_for_file: invalid_use_of_internal_member
 
+/// A class which mocks [GroupSearchRepository].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockGroupSearchRepository extends _i1.Mock
+    implements _i2.GroupSearchRepository {
+  MockGroupSearchRepository() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i3.Future<List<_i4.GroupSearchResult>> findGroupScenarios(
+          List<String>? friendIds) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #findGroupScenarios,
+          [friendIds],
+        ),
+        returnValue: _i3.Future<List<_i4.GroupSearchResult>>.value(
+            <_i4.GroupSearchResult>[]),
+      ) as _i3.Future<List<_i4.GroupSearchResult>>);
+}
+
 /// A class which mocks [FriendsRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockFriendsRepository extends _i1.Mock implements _i2.FriendsRepository {
+class MockFriendsRepository extends _i1.Mock implements _i5.FriendsRepository {
   MockFriendsRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.Future<List<_i4.User>> searchUsers(String? query) => (super.noSuchMethod(
+  _i3.Future<List<_i6.User>> searchUsers(String? query) => (super.noSuchMethod(
         Invocation.method(
           #searchUsers,
           [query],
         ),
-        returnValue: _i3.Future<List<_i4.User>>.value(<_i4.User>[]),
-      ) as _i3.Future<List<_i4.User>>);
+        returnValue: _i3.Future<List<_i6.User>>.value(<_i6.User>[]),
+      ) as _i3.Future<List<_i6.User>>);
 
   @override
   _i3.Future<void> followUser(String? followedUserId) => (super.noSuchMethod(
@@ -67,13 +89,13 @@ class MockFriendsRepository extends _i1.Mock implements _i2.FriendsRepository {
       ) as _i3.Future<void>);
 
   @override
-  _i3.Future<List<_i4.User>> fetchFollowingUsers() => (super.noSuchMethod(
+  _i3.Future<List<_i6.User>> fetchFollowingUsers() => (super.noSuchMethod(
         Invocation.method(
           #fetchFollowingUsers,
           [],
         ),
-        returnValue: _i3.Future<List<_i4.User>>.value(<_i4.User>[]),
-      ) as _i3.Future<List<_i4.User>>);
+        returnValue: _i3.Future<List<_i6.User>>.value(<_i6.User>[]),
+      ) as _i3.Future<List<_i6.User>>);
 
   @override
   _i3.Future<int> getFollowingCount() => (super.noSuchMethod(
@@ -83,25 +105,4 @@ class MockFriendsRepository extends _i1.Mock implements _i2.FriendsRepository {
         ),
         returnValue: _i3.Future<int>.value(0),
       ) as _i3.Future<int>);
-}
-
-/// A class which mocks [FindGroupScenariosUseCase].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockFindGroupScenariosUseCase extends _i1.Mock
-    implements _i5.FindGroupScenariosUseCase {
-  MockFindGroupScenariosUseCase() {
-    _i1.throwOnMissingStub(this);
-  }
-
-  @override
-  _i3.Future<List<_i6.GroupSearchResult>> call(List<String>? friendIds) =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #call,
-          [friendIds],
-        ),
-        returnValue: _i3.Future<List<_i6.GroupSearchResult>>.value(
-            <_i6.GroupSearchResult>[]),
-      ) as _i3.Future<List<_i6.GroupSearchResult>>);
 }
