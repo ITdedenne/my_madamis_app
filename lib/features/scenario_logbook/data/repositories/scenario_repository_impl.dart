@@ -26,7 +26,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       final List<dynamic> rawScenarios = jsonDecode(utf8.decode(scenariosResult.bytes));
       final List<dynamic> rawAuthors = jsonDecode(utf8.decode(authorsResult.bytes));
 
-      // 【修正ポイント】 Authors.json のキーは 'authorName' です
       final Map<String, String> authorMap = {
         for (var a in rawAuthors) 
           (a['authorId']?.toString() ?? ''): (a['authorName']?.toString() ?? '不明')
@@ -86,7 +85,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     try {
       final result = await Amplify.Storage.downloadData(key: 'Authors.json').result;
       final List<dynamic> rawAuthors = jsonDecode(utf8.decode(result.bytes));
-      // 【修正ポイント】 キー名を 'authorName' に修正
       return rawAuthors.map((a) => (a['authorName']?.toString() ?? '不明')).toList();
     } catch (e) {
       return [];
@@ -154,7 +152,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         wantsToGm: status.wantsToGm,
       );
 
-      // copyWith を使用して Nullable フィールドをセット
       newModel = newModel.copyWith(wantsToPlay: status.wantsToPlay);
 
       final request = ModelMutations.create(newModel);
