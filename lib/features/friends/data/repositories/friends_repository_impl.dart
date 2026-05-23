@@ -68,7 +68,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
     final response = await Amplify.API.mutate(request: request).response;
     
     if (response.hasErrors) {
-      // --- 暫定処置: 以下のエラーは無視して成功扱いにする (要件 3.4.6) ---
       final errorMessage = response.errors.first.message;
       
       // 1. 既にフォロー済み (重複エラー)
@@ -103,7 +102,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
     
     final response = await Amplify.API.mutate(request: request).response;
     if (response.hasErrors) {
-      // --- 暫定処置: 以下のエラーは無視して成功扱いにする (要件 3.4.6) ---
       final errorMessage = response.errors.first.message;
 
       // 1. 既に削除済み、または存在しない
@@ -127,8 +125,6 @@ class FriendsRepositoryImpl implements FriendsRepository {
     final currentUserId = await _getCurrentUserId();
     final List<UserRelationship> allRelationships = [];
 
-    // ★ 修正: limit: 1000 を廃止し、hasNextResultを用いたページネーションループを実装
-    // 非機能要件 6.1.2 準拠
     var request = ModelQueries.list(
       UserRelationship.classType,
       where: UserRelationship.FOLLOWINGID.eq(currentUserId),
@@ -171,5 +167,15 @@ class FriendsRepositoryImpl implements FriendsRepository {
   Future<int> getFollowingCount() async {
     final users = await fetchFollowingUsers();
     return users.length;
+  }
+
+  static bool isAcceptableError(String errorMessage) {
+    final isAlreadyExists = errorMessage.contains('The conditional request failed') ||
+                            errorMessage.contains('DynamoDB:ConditionalCheckFailedException');
+    final isDataMismatch = errorMessage.contains('Cannot return null for non-nullable type');
+    final isSerializationError = errorMessage.contains('Can\'t serialize value') || 
+                                 errorMessage.contains('Unable to serialize');
+                                 
+    return isAlreadyExists || isDataMismatch || isSerializationError;
   }
 }
