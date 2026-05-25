@@ -16,25 +16,23 @@ void main() {
   const validEmail = 'new@example.com';
 
   test('有効なメールアドレスの場合、リポジトリのupdateEmailが呼ばれること', () async {
-    // Arrange
+
     when(mockSettingsRepository.updateEmail(any)).thenAnswer((_) async {});
 
-    // Act
     await useCase(validEmail);
 
-    // Assert
     verify(mockSettingsRepository.updateEmail(validEmail)).called(1);
   });
 
   group('バリデーション', () {
     test('メールアドレスが空の場合、例外をスローすること', () {
-      // Act & Assert
+
       expect(() => useCase(''), throwsA(isA<Exception>()));
       verifyNever(mockSettingsRepository.updateEmail(any));
     });
 
     test('メールアドレスの形式が不正な場合、例外をスローすること', () {
-      // Act & Assert
+
       expect(() => useCase('invalid-email'), throwsA(isA<Exception>()));
       verifyNever(mockSettingsRepository.updateEmail(any));
     });

@@ -17,42 +17,38 @@ void main() {
   });
 
   const tUserProfile = UserProfile(
-    publicUserId: '1234567', // ★ 追加
+    publicUserId: '1234567',
     username: 'updated_user',
     bio: 'Updated bio.',
     twitterId: 'updated_twitter',
   );
 
   test('有効なUserProfileでリポジトリのupdateUserProfileが呼ばれること', () async {
-    // Arrange
+
     when(mockProfileRepository.updateUserProfile(any))
         .thenAnswer((_) async {});
 
-    // Act
     await useCase(tUserProfile);
 
-    // Assert
     verify(mockProfileRepository.updateUserProfile(tUserProfile));
     verifyNoMoreInteractions(mockProfileRepository);
   });
 
   group('バリデーション', () {
     test('ユーザー名が空の場合、例外をスローすること', () {
-      // Arrange
+
       final profileWithEmptyUsername =
           tUserProfile.copyWith(username: '');
 
-      // Act & Assert
       expect(() => useCase(profileWithEmptyUsername), throwsA(isA<Exception>()));
       verifyNever(mockProfileRepository.updateUserProfile(any));
     });
 
     test('ユーザー名がスペースのみの場合、例外をスローすること', () {
-      // Arrange
+
       final profileWithWhitespaceUsername =
           tUserProfile.copyWith(username: '   ');
 
-      // Act & Assert
       expect(() => useCase(profileWithWhitespaceUsername), throwsA(isA<Exception>()));
       verifyNever(mockProfileRepository.updateUserProfile(any));
     });

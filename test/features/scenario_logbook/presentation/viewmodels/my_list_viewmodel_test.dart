@@ -33,7 +33,6 @@ void main() {
   ProviderContainer createContainer() {
     return ProviderContainer(overrides: [
       allScenariosProvider.overrideWith((ref) async => mockAllScenarios),
-      // ★ 修正: Mapを直接返すのではなく、作成したMockクラスで包んで返すように変更
       userScenarioStatusProvider.overrideWith((ref) => MockUserScenarioStatusNotifier(mockUserStatuses)),
     ]);
   }

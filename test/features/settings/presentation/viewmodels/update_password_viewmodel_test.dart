@@ -27,38 +27,34 @@ void main() {
   const newPassword = 'newPassword123';
 
   test('パスワード更新が成功した場合、stateがsuccessになること', () async {
-    // Arrange
+
     when(mockSettingsRepository.updatePassword(
       oldPassword: oldPassword,
       newPassword: newPassword,
     )).thenAnswer((_) async {});
 
-    // Act
     await container.read(updatePasswordViewModelProvider.notifier).updatePassword(
           oldPassword: oldPassword,
           newPassword: newPassword,
         );
 
-    // Assert
     final state = container.read(updatePasswordViewModelProvider);
     expect(state.status, UpdatePasswordStatus.success);
   });
 
   test('パスワード更新が失敗した場合、stateがerrorになること', () async {
-    // Arrange
+
     final exception = Exception('更新失敗');
     when(mockSettingsRepository.updatePassword(
       oldPassword: oldPassword,
       newPassword: newPassword,
     )).thenThrow(exception);
 
-    // Act
     await container.read(updatePasswordViewModelProvider.notifier).updatePassword(
           oldPassword: oldPassword,
           newPassword: newPassword,
         );
 
-    // Assert
     final state = container.read(updatePasswordViewModelProvider);
     expect(state.status, UpdatePasswordStatus.error);
     expect(state.errorMessage, isNotNull);

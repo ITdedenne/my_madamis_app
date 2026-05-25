@@ -33,19 +33,18 @@ void main() {
 
   setUp(() {
     mockAuthRepository = MockAuthRepository();
-    // 初期状態を渡してモックを作成
+
     mockLoginViewModel = MockLoginViewModel(LoginState());
   });
 
   testWidgets('ログインボタンをタップすると、ViewModelのsignInが呼ばれること', (tester) async {
-    // Arrange
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           // 各Providerをモックで上書き
           authRepositoryProvider.overrideWithValue(mockAuthRepository),
           loginViewModelProvider.overrideWith((ref) => mockLoginViewModel),
-          // authStateNotifierProviderも必要に応じてモック化
           authStateNotifierProvider.overrideWith(
               (ref) => AuthStateNotifier(mockAuthRepository)),
         ],
@@ -56,15 +55,13 @@ void main() {
     const email = 'test@example.com';
     const password = 'password';
 
-    // Act: フォームに入力してボタンをタップ
     await tester.enterText(
         find.widgetWithText(TextFormField, 'メールアドレス'), email);
     await tester.enterText(
         find.widgetWithText(TextFormField, 'パスワード'), password);
     await tester.tap(find.widgetWithText(PrimaryButton, 'ログイン'));
-    await tester.pump(); // stateの更新を反映
+    await tester.pump();
 
-    // Assert: signInが正しい引数で1回呼ばれたことを確認
     verify(mockLoginViewModel.signIn(email, password)).called(1);
   });
 }

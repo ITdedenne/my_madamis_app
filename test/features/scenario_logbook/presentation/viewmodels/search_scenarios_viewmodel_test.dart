@@ -61,7 +61,7 @@ void main() {
       final viewModel = container.read(searchScenariosViewModelProvider.notifier);
 
       viewModel.onSearchTermChanged('ミステリー　田中');
-      await Future.delayed(const Duration(milliseconds: 350)); // Debounce待機
+      await Future.delayed(const Duration(milliseconds: 350));
 
       final displayedAsync = container.read(displayedScenariosProvider);
       

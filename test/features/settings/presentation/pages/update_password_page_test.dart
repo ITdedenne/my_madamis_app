@@ -6,7 +6,6 @@ import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/settings/presentation/pages/update_password_page.dart';
 import 'package:my_madamis_app/features/settings/presentation/viewmodels/update_password_viewmodel.dart';
 
-// Mockクラス
 class MockUpdatePasswordViewModel extends StateNotifier<UpdatePasswordState>
     with Mock
     implements UpdatePasswordViewModel {
@@ -32,7 +31,7 @@ void main() {
   });
 
   testWidgets('フォーム入力後にボタンをタップするとupdatePasswordが呼ばれること', (tester) async {
-    // Arrange
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -45,14 +44,12 @@ void main() {
     const oldPassword = 'oldPassword123';
     const newPassword = 'newPassword123';
 
-    // Act
     await tester.enterText(
         find.widgetWithText(TextFormField, '現在のパスワード'), oldPassword);
     await tester.enterText(
         find.widgetWithText(TextFormField, '新しいパスワード (8文字以上)'), newPassword);
     await tester.tap(find.widgetWithText(PrimaryButton, 'パスワードを変更'));
 
-    // Assert
     verify(mockViewModel.updatePassword(
       oldPassword: oldPassword,
       newPassword: newPassword,

@@ -26,26 +26,22 @@ void main() {
   const newEmail = 'new@example.com';
 
   test('メールアドレス更新が成功した場合、stateがrequiresConfirmationになること', () async {
-    // Arrange
+
     when(mockSettingsRepository.updateEmail(newEmail)).thenAnswer((_) async {});
 
-    // Act
     await container.read(updateEmailViewModelProvider.notifier).updateEmail(newEmail);
 
-    // Assert
     final state = container.read(updateEmailViewModelProvider);
     expect(state.status, UpdateEmailStatus.requiresConfirmation);
   });
 
   test('メールアドレス更新が失敗した場合、stateがerrorになること', () async {
-    // Arrange
+
     final exception = Exception('更新失敗');
     when(mockSettingsRepository.updateEmail(newEmail)).thenThrow(exception);
 
-    // Act
     await container.read(updateEmailViewModelProvider.notifier).updateEmail(newEmail);
 
-    // Assert
     final state = container.read(updateEmailViewModelProvider);
     expect(state.status, UpdateEmailStatus.error);
     expect(state.errorMessage, isNotNull);
