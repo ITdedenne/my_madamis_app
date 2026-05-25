@@ -80,7 +80,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                 },
                 child: const Text('パスワードを再設定'),
               ),
-            // ★修正: errorMessageが定義されたため、エラー表示が機能する
+
             if (authState.status == AuthStatus.error)
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),

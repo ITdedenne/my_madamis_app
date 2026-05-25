@@ -56,12 +56,10 @@ class _UserSearchPageState extends ConsumerState<UserSearchPage> {
               controller: _searchController,
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                // 修正: ID(7桁)でも検索できることを明示したテキスト
                 hintText: 'ユーザー名、またはID(7桁)で検索',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                // ignore: deprecated_member_use
-                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                   borderSide: BorderSide.none,

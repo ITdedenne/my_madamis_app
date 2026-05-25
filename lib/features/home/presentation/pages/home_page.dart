@@ -4,7 +4,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
-// ★ HowToGuideCardのインポートを削除しました
 import 'package:my_madamis_app/features/profile/presentation/pages/profile_page.dart';
 import 'package:my_madamis_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
 import 'package:my_madamis_app/features/settings/presentation/pages/settings_page.dart';
@@ -39,7 +38,6 @@ class HomePage extends ConsumerWidget {
     return Scaffold(
       body: Stack(
         children: [
-          // 背景
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -79,7 +77,6 @@ class HomePage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // ヘッダー
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -105,7 +102,6 @@ class HomePage extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
 
-                  // ウェルカムヘッダー
                   _buildGlassWelcomeHeader(context, displayUsername),
                   
                   const SizedBox(height: 32),
@@ -135,7 +131,6 @@ class HomePage extends ConsumerWidget {
                         crossAxisSpacing: 16,
                         childAspectRatio: isWideScreen ? 1.5 : 1.8,
                         children: [
-                          // ★ ガイド文をそれぞれのカードの description に直接組み込みました
                           _MenuCard(
                             title: 'シナリオ手帳',
                             description: '遊んだシナリオや、これから遊びたいシナリオを記録・管理しましょう。',
@@ -389,7 +384,6 @@ class _MenuCard extends StatelessWidget {
                       const Spacer(),
                       Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       const SizedBox(height: 4),
-                      // ★ ガイド文が収まるように maxLines を 2 -> 3 に変更しました
                       Text(description, style: TextStyle(color: Colors.white.withValues(alpha:0.9), fontSize: 12, height: 1.2), maxLines: 3, overflow: TextOverflow.ellipsis),
                     ],
                   ),

@@ -34,7 +34,7 @@ class FriendSelectionCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(8.0), // 余白を少し詰める
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -42,7 +42,7 @@ class FriendSelectionCard extends StatelessWidget {
               Stack(
                 children: [
                   CircleAvatar(
-                    radius: 26, // 30 -> 26 に縮小して高さを抑える
+                    radius: 26,
                     backgroundColor: colorScheme.surfaceContainerHighest,
                     child: Text(
                       user.username.isNotEmpty ? user.username[0].toUpperCase() : '?',
@@ -76,14 +76,14 @@ class FriendSelectionCard extends StatelessWidget {
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   color: isSelected ? colorScheme.primary : colorScheme.onSurface,
-                  fontSize: 12, // 少しフォントサイズを調整
+                  fontSize: 12,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
               if (user.bio != null && user.bio!.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Flexible( // はみ出しを防止
+                Flexible(
                   child: Text(
                     user.bio!,
                     textAlign: TextAlign.center,

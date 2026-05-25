@@ -3,7 +3,6 @@ import 'package:my_madamis_app/features/player_finder/domain/entities/searched_u
 import 'package:my_madamis_app/features/player_finder/domain/usecases/find_unplayed_friends_usecase.dart';
 import 'package:my_madamis_app/providers.dart';
 
-// ★ 検索モード定義
 enum PlayerFinderMode { player, gm }
 
 // ★ 状態クラスを作成してモードも管理
@@ -32,7 +31,6 @@ final findUnplayedFriendsUseCaseProvider = Provider<FindUnplayedFriendsUseCase>(
   return FindUnplayedFriendsUseCase(ref.watch(playerFinderRepositoryProvider));
 });
 
-// ★ StateNotifierの型を変更
 final playerFinderProvider = StateNotifierProvider.autoDispose
     .family<PlayerFinderViewModel, PlayerFinderState, String>((ref, scenarioId) {
   return PlayerFinderViewModel(

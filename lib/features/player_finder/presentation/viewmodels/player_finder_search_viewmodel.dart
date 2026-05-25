@@ -5,13 +5,11 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenari
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 
-// 1. 検索状態管理 (autoDisposeあり)
 final playerFinderSearchViewModelProvider =
     StateNotifierProvider.autoDispose<PlayerFinderSearchViewModel, SearchScenariosState>((ref) {
   return PlayerFinderSearchViewModel();
 });
 
-// 2. フィルタリングロジック (計算用)
 final _playerFinderFilteredScenariosProvider = Provider.autoDispose<AsyncValue<List<Scenario>>>((ref) {
   final allScenariosAsync = ref.watch(allScenariosProvider);
   final searchState = ref.watch(playerFinderSearchViewModelProvider);
@@ -21,11 +19,10 @@ final _playerFinderFilteredScenariosProvider = Provider.autoDispose<AsyncValue<L
       // リストをコピーして変更可能な状態にする
       List<Scenario> filtered = List.of(allScenarios);
 
-      // ★ 修正点: ここで強制的にタイトル順にソートし、「所持優先」の並びをリセットする
+      // ここで強制的にタイトル順にソートし、「所持優先」の並びをリセットする
       // (よみがなフィールドがあれば compareTo(b.yomigana) を推奨)
       filtered.sort((a, b) => a.title.compareTo(b.title));
 
-      // --- 以下、検索フィルターロジック (変更なし) ---
       final filter = searchState.filter;
       final rawTerm = searchState.searchTerm.toLowerCase().trim();
       
@@ -74,6 +71,4 @@ final playerFinderDisplayedScenariosProvider = Provider.autoDispose<AsyncValue<L
   });
 });
 
-class PlayerFinderSearchViewModel extends SearchScenariosViewModel {
-  // 必要なオーバーライドがあれば記述
-}
+class PlayerFinderSearchViewModel extends SearchScenariosViewModel {}

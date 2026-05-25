@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/profile/presentation/pages/edit_profile_page.dart';
 import 'package:my_madamis_app/features/profile/presentation/viewmodels/profile_viewmodel.dart';
-// サービス（クリップボード）を利用するため
 import 'package:flutter/services.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -64,7 +63,6 @@ class ProfilePage extends ConsumerWidget {
                     const SizedBox(height: 16),
                   ],
 
-                  // 自己紹介
                   _buildInfoCard(
                     context: context,
                     title: '自己紹介',
@@ -90,7 +88,6 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  /// プロフィールヘッダー（アバターとユーザー名を中央に配置）
   Widget _buildProfileHeader(BuildContext context, String username) {
     return Column(
       children: [
@@ -115,7 +112,6 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  /// 各セクションを囲む汎用カードウィジェット
   Widget _buildInfoCard({
     required BuildContext context,
     required String title,

@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/friends/presentation/pages/friend_mylist_page.dart';
 import 'package:my_madamis_app/features/friends/presentation/viewmodels/friends_viewmodel.dart';
 import 'package:my_madamis_app/common/widgets/user_list_item.dart';
-import 'package:my_madamis_app/models/ModelProvider.dart'; // User型
+import 'package:my_madamis_app/models/ModelProvider.dart';
 
 class FriendsListPage extends ConsumerStatefulWidget {
   const FriendsListPage({super.key});
@@ -72,7 +72,6 @@ class _FriendsListPageState extends ConsumerState<FriendsListPage> {
 
     return Column(
       children: [
-        // ★ クライアントサイド検索バー (v2.15)
         Padding(
           padding: const EdgeInsets.all(8.0),
           child: TextField(

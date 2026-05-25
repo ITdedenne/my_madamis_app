@@ -80,7 +80,7 @@ class PlayerFinderPage extends ConsumerWidget {
                 if (users.isEmpty) {
                   final emptyMessage = state.mode == PlayerFinderMode.player
                       ? '未通過のフレンズは見つかりませんでした。'
-                      : 'GM可能なフレンズは見つかりませんでした。\n(所持・購入検討)'; // 通過済を除外したので文言も修正
+                      : 'GM可能なフレンズは見つかりませんでした。\n(所持・購入検討)';
                   return Center(
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
@@ -117,7 +117,7 @@ class PlayerFinderPage extends ConsumerWidget {
     if (mode == PlayerFinderMode.player) {
       // PL検索モード: PL希望者を目立たせる
       if (searchedUser.wantsToPlay) {
-        label = '❤️ PL希望！'; // ★ 強調
+        label = '❤️ PL希望！';
         color = Colors.pink.shade50;
         textColor = Colors.pink;
       }

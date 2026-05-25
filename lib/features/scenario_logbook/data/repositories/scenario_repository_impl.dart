@@ -4,13 +4,9 @@ import 'dart:convert';
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
-
-// 1. ドメイン層のエンティティをインポート
 import '../../domain/entities/scenario.dart';
 import '../../domain/entities/user_scenario.dart';
 import '../../domain/repositories/scenario_repository.dart';
-
-// 2. Amplify生成モデルを「models」としてインポート
 import '../../../../models/ModelProvider.dart' as models;
 
 class ScenarioRepositoryImpl implements ScenarioRepository {

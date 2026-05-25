@@ -3,26 +3,26 @@
 import 'package:equatable/equatable.dart'; 
 
 class UserProfile extends Equatable { 
-  final String? publicUserId; // ★ 修正: String? (Null許容型) に変更
+  final String? publicUserId;
   final String username;
   final String bio;
   final String twitterId;
 
   const UserProfile({
-    this.publicUserId, // ★ 修正: オプショナル引数に変更
+    this.publicUserId,
     required this.username,
     this.bio = '',
     this.twitterId = '',
   });
 
   UserProfile copyWith({
-    String? publicUserId, // ★ 修正: publicUserId を追加
+    String? publicUserId,
     String? username,
     String? bio,
     String? twitterId,
   }) {
     return UserProfile(
-      publicUserId: publicUserId ?? this.publicUserId, // ★ 修正: publicUserId を追加
+      publicUserId: publicUserId ?? this.publicUserId,
       username: username ?? this.username,
       bio: bio ?? this.bio,
       twitterId: twitterId ?? this.twitterId,
@@ -30,5 +30,5 @@ class UserProfile extends Equatable {
   }
 
   @override
-  List<Object?> get props => [publicUserId, username, bio, twitterId]; // ★ 修正: publicUserId を props に追加
+  List<Object?> get props => [publicUserId, username, bio, twitterId];
 }

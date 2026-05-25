@@ -22,7 +22,7 @@ class DeleteAccountState {
   }) {
     return DeleteAccountState(
       status: status ?? this.status,
-      errorMessage: errorMessage, // nullを渡せばクリア
+      errorMessage: errorMessage,
     );
   }
 }

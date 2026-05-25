@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:my_madamis_app/common/widgets/custom_text_form_field.dart';
 import 'package:my_madamis_app/common/widgets/primary_button.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/create_profile_page.dart';
-import 'package:my_madamis_app/core/constants/terms_of_service.dart'; // ★規約クラスをインポート
+import 'package:my_madamis_app/core/constants/terms_of_service.dart';
 import 'package:amplify_flutter/amplify_flutter.dart'; 
 
 class SignUpPage extends StatefulWidget {
@@ -114,7 +114,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   const SizedBox(height: 32),
                   
                   const Text(
-                    TermsOfService.title, // ★別ファイルから取得
+                    TermsOfService.title,
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
@@ -131,7 +131,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         controller: _scrollController,
                         padding: const EdgeInsets.all(16.0),
                         child: const Text(
-                          TermsOfService.content, // ★別ファイルから取得
+                          TermsOfService.content,
                           style: TextStyle(fontSize: 13),
                         ),
                       ),
