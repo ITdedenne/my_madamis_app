@@ -10,9 +10,7 @@ import 'package:my_madamis_app/features/profile/presentation/viewmodels/profile_
 import 'package:my_madamis_app/providers.dart';
 
 import '../../../../mocks/mocks.mocks.dart';
-// import '../pages/profile_page_test.dart'; // ★ 修正: 不要なインポートを削除
 
-// ★ 修正: FakeProfileViewModelをトップレベルに移動
 class FakeProfileViewModel extends StateNotifier<ProfileState>
     implements ProfileViewModel {
   FakeProfileViewModel(super.state);
@@ -29,12 +27,10 @@ void main() {
   late MockAuthRepository mockAuthRepository;
   late ProviderContainer container;
 
-  // ★ 修正: tProfile のインスタンス化
   const tProfile = UserProfile(
     publicUserId: '1234567',
     username: 'new_user',
     bio: 'new_bio',
-    twitterId: '', // twitterIdは空文字固定
   );
 
   setUp(() {
@@ -44,7 +40,6 @@ void main() {
       overrides: [
         profileRepositoryProvider.overrideWithValue(mockProfileRepository),
         authRepositoryProvider.overrideWithValue(mockAuthRepository),
-        // ★ 修正: editProfileViewModelが依存するprofileViewModelProviderをモック化
         profileViewModelProvider
             .overrideWith((ref) => FakeProfileViewModel(ProfileState())),
       ],
@@ -55,54 +50,44 @@ void main() {
     container.dispose();
   });
 
-  test('プロファイル更新が成功した場合、stateがsuccessになり、関連するViewModelが更新されること', () async {
-    // Arrange
-    when(mockProfileRepository.updateUserProfile(any)).thenAnswer((_) async {});
-    when(mockAuthRepository.getCurrentUserAttributes())
-        .thenAnswer((_) async => []);
+  group('EditProfileViewModel', () {
+    test('プロファイル更新が成功した場合、success状態となり関連ViewModelが更新されること', () async {
+      when(mockProfileRepository.updateUserProfile(any)).thenAnswer((_) async {});
+      when(mockAuthRepository.getCurrentUserAttributes())
+          .thenAnswer((_) async => []);
 
-    // Act
-    // ★ 修正: updateProfile の呼び出し
-    await container
-        .read(editProfileViewModelProvider.notifier)
-        .updateProfile(
-          publicUserId: tProfile.publicUserId, // ★ 修正
-          username: tProfile.username,
-          bio: tProfile.bio,
-          twitterId: tProfile.twitterId,
-        );
+      await container.read(editProfileViewModelProvider.notifier).updateProfile(
+            publicUserId: tProfile.publicUserId,
+            username: tProfile.username,
+            bio: tProfile.bio,
+            twitterId: tProfile.twitterId,
+          );
 
-    // Assert
-    final state = container.read(editProfileViewModelProvider);
-    expect(state.status, EditProfileStatus.success);
+      final state = container.read(editProfileViewModelProvider);
+      expect(state.status, EditProfileStatus.success);
 
-    // 関連するViewModelが更新されたかどうかの検証
-    final profileState = container.read(profileViewModelProvider);
-    expect(profileState.profile, tProfile);
+      // プロフィールとAuthの関連状態が更新されているか検証
+      final profileState = container.read(profileViewModelProvider);
+      expect(profileState.profile, tProfile);
 
-    final authState = container.read(authStateNotifierProvider);
-    expect(authState.username, tProfile.username);
-  });
+      final authState = container.read(authStateNotifierProvider);
+      expect(authState.username, tProfile.username);
+    });
 
-  test('プロファイル更新が失敗した場合、stateがerrorになること', () async {
-    // Arrange
-    final exception = Exception('Update failed');
-    when(mockProfileRepository.updateUserProfile(any)).thenThrow(exception);
+    test('プロファイル更新が失敗した場合、error状態になること', () async {
+      when(mockProfileRepository.updateUserProfile(any))
+          .thenThrow(Exception('Update failed'));
 
-    // Act
-    // ★ 修正: updateProfile の呼び出し
-    await container
-        .read(editProfileViewModelProvider.notifier)
-        .updateProfile(
-          publicUserId: tProfile.publicUserId, // ★ 修正
-          username: tProfile.username,
-          bio: tProfile.bio,
-          twitterId: tProfile.twitterId,
-        );
+      await container.read(editProfileViewModelProvider.notifier).updateProfile(
+            publicUserId: tProfile.publicUserId,
+            username: tProfile.username,
+            bio: tProfile.bio,
+            twitterId: tProfile.twitterId,
+          );
 
-    // Assert
-    final state = container.read(editProfileViewModelProvider);
-    expect(state.status, EditProfileStatus.error);
-    expect(state.errorMessage, isNotNull);
+      final state = container.read(editProfileViewModelProvider);
+      expect(state.status, EditProfileStatus.error);
+      expect(state.errorMessage, isNotNull);
+    });
   });
 }

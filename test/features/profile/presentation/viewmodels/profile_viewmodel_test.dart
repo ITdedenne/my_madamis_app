@@ -13,7 +13,6 @@ void main() {
   late MockProfileRepository mockProfileRepository;
   late ProviderContainer container;
 
-  // 各テストの前に実行
   setUp(() {
     mockProfileRepository = MockProfileRepository();
     container = ProviderContainer(
@@ -23,74 +22,59 @@ void main() {
     );
   });
 
-  // 各テストの後に実行
   tearDown(() {
     container.dispose();
   });
 
   const tUserProfile = UserProfile(
-    publicUserId: '123', // ★ 追加
-    username: 'test_user', 
-    bio: 'test bio'
+    publicUserId: '123',
+    username: 'test_user',
+    bio: 'test bio',
   );
 
-  // ▼▼▼ このテストを修正します ▼▼▼
-  test('初期化時にloadUserProfileが呼ばれ、成功時にstateがloadedになること', () async {
-    // Arrange
-    when(mockProfileRepository.fetchUserProfile())
-        .thenAnswer((_) async => tUserProfile);
+  group('ProfileViewModel', () {
+    test('初期化時にプロフィール取得が成功し、stateがloadedになること', () async {
+      when(mockProfileRepository.fetchUserProfile())
+          .thenAnswer((_) async => tUserProfile);
 
-    // Act
-    // ViewModelをインスタンス化します。これによりコンストラクタ内のloadUserProfileが自動で実行されます。
-    container.read(profileViewModelProvider.notifier);
+      // ViewModelをインスタンス化（コンストラクタ内でloadUserProfileが呼ばれる想定）
+      container.read(profileViewModelProvider.notifier);
 
-    // 非同期処理が完了するのを待ちます。
-    // `viewModel.state` をチェックする前に、マイクロタスクを処理させるための短い待機を入れます。
-    await Future.delayed(Duration.zero);
+      // 非同期の完了を待機
+      await Future.delayed(Duration.zero);
 
-    // Assert
-    final state = container.read(profileViewModelProvider);
-    expect(state.status, ProfileStatus.loaded);
-    expect(state.profile, tUserProfile);
-    
-    // `fetchUserProfile` がコンストラクタから1回だけ呼ばれたことを確認します。
-    verify(mockProfileRepository.fetchUserProfile()).called(1);
-  });
-  // ▲▲▲ 修正完了 ▲▲▲
+      final state = container.read(profileViewModelProvider);
+      expect(state.status, ProfileStatus.loaded);
+      expect(state.profile, tUserProfile);
+      verify(mockProfileRepository.fetchUserProfile()).called(1);
+    });
 
-  test('loadUserProfileが失敗した場合、stateがerrorになること', () async {
-    // Arrange
-    final exception = Exception('Failed to load');
-    when(mockProfileRepository.fetchUserProfile()).thenThrow(exception);
+    test('プロフィール取得に失敗した場合、stateがerrorになること', () async {
+      when(mockProfileRepository.fetchUserProfile())
+          .thenThrow(Exception('Failed to load'));
 
-    // Act
-    // このテストも同様に、明示的な呼び出しは不要です。
-    container.read(profileViewModelProvider.notifier);
-    await Future.delayed(Duration.zero);
-    
-    final state = container.read(profileViewModelProvider);
+      container.read(profileViewModelProvider.notifier);
+      await Future.delayed(Duration.zero);
 
-    // Assert
-    expect(state.status, ProfileStatus.error);
-    expect(state.errorMessage, isNotNull);
-    verify(mockProfileRepository.fetchUserProfile()).called(1);
-  });
+      final state = container.read(profileViewModelProvider);
+      expect(state.status, ProfileStatus.error);
+      expect(state.errorMessage, isNotNull);
+      verify(mockProfileRepository.fetchUserProfile()).called(1);
+    });
 
-  test('updateStateWithNewProfileメソッドでStateが直接更新されること', () {
-    // Arrange
-    const newProfile = UserProfile(
-      publicUserId: '456', // ★ 追加
-      username: 'new_user', 
-      bio: 'new bio'
-    );
+    test('updateStateWithNewProfile呼び出しでStateが更新されること', () {
+      const newProfile = UserProfile(
+        publicUserId: '456',
+        username: 'new_user',
+        bio: 'new bio',
+      );
 
-    // Act
-    container
-        .read(profileViewModelProvider.notifier)
-        .updateStateWithNewProfile(newProfile);
-    final state = container.read(profileViewModelProvider);
-
-    // Assert
-    expect(state.profile, newProfile);
+      container
+          .read(profileViewModelProvider.notifier)
+          .updateStateWithNewProfile(newProfile);
+      
+      final state = container.read(profileViewModelProvider);
+      expect(state.profile, newProfile);
+    });
   });
 }

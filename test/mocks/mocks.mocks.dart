@@ -74,8 +74,6 @@ class MockAuthRepository extends _i1.Mock implements _i4.AuthRepository {
     required String? email,
     required String? password,
     required String? username,
-    String? bio,
-    String? twitterId,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -85,8 +83,6 @@ class MockAuthRepository extends _i1.Mock implements _i4.AuthRepository {
             #email: email,
             #password: password,
             #username: username,
-            #bio: bio,
-            #twitterId: twitterId,
           },
         ),
         returnValue: _i5.Future<_i2.SignUpResult>.value(_FakeSignUpResult_0(
@@ -98,8 +94,6 @@ class MockAuthRepository extends _i1.Mock implements _i4.AuthRepository {
               #email: email,
               #password: password,
               #username: username,
-              #bio: bio,
-              #twitterId: twitterId,
             },
           ),
         )),
@@ -182,6 +176,17 @@ class MockAuthRepository extends _i1.Mock implements _i4.AuthRepository {
       ) as _i5.Future<void>);
 
   @override
+  _i5.Future<List<_i2.AuthUserAttribute>> getCurrentUserAttributes() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getCurrentUserAttributes,
+          [],
+        ),
+        returnValue: _i5.Future<List<_i2.AuthUserAttribute>>.value(
+            <_i2.AuthUserAttribute>[]),
+      ) as _i5.Future<List<_i2.AuthUserAttribute>>);
+
+  @override
   _i5.Future<void> resetPassword({required String? username}) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -212,17 +217,6 @@ class MockAuthRepository extends _i1.Mock implements _i4.AuthRepository {
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
       ) as _i5.Future<void>);
-
-  @override
-  _i5.Future<List<_i2.AuthUserAttribute>> getCurrentUserAttributes() =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #getCurrentUserAttributes,
-          [],
-        ),
-        returnValue: _i5.Future<List<_i2.AuthUserAttribute>>.value(
-            <_i2.AuthUserAttribute>[]),
-      ) as _i5.Future<List<_i2.AuthUserAttribute>>);
 }
 
 /// A class which mocks [SettingsRepository].
@@ -268,6 +262,16 @@ class MockSettingsRepository extends _i1.Mock
             #oldPassword: oldPassword,
             #newPassword: newPassword,
           },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> deleteAccount() => (super.noSuchMethod(
+        Invocation.method(
+          #deleteAccount,
+          [],
         ),
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
