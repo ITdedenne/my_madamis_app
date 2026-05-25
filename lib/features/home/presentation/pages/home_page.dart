@@ -46,9 +46,9 @@ class HomePage extends ConsumerWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
                   theme.colorScheme.surface,
-                  theme.colorScheme.secondaryContainer.withOpacity(0.2),
+                  theme.colorScheme.secondaryContainer.withValues(alpha: 0.2),
                 ],
                 stops: const [0.0, 0.5, 1.0],
               ),
@@ -62,11 +62,11 @@ class HomePage extends ConsumerWidget {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withOpacity(0.05),
+                color: theme.colorScheme.primary.withValues(alpha: 0.05),
                 boxShadow: [
                   BoxShadow(
                     blurRadius: 100,
-                    color: theme.colorScheme.primary.withOpacity(0.1),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
                   )
                 ]
               ),
@@ -87,7 +87,7 @@ class HomePage extends ConsumerWidget {
                         'Home',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface.withOpacity(0.8),
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                         ),
                       ),
                       Row(
@@ -116,7 +116,7 @@ class HomePage extends ConsumerWidget {
                       'メニュー',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.colorScheme.onSurface.withOpacity(0.8),
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                       ),
                     ),
                   ),
@@ -191,16 +191,16 @@ class HomePage extends ConsumerWidget {
               context,
               MaterialPageRoute(builder: (_) => const ProfilePage()),
             ),
-            highlightColor: theme.colorScheme.primary.withOpacity(0.1),
-            splashColor: theme.colorScheme.primary.withOpacity(0.2),
+            highlightColor: theme.colorScheme.primary.withValues(alpha: 0.1),
+            splashColor: theme.colorScheme.primary.withValues(alpha:0.2),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withOpacity(0.6),
+                color: theme.colorScheme.surface.withValues(alpha:0.6),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: theme.colorScheme.onSurface.withOpacity(0.1),
+                  color: theme.colorScheme.onSurface.withValues(alpha:0.1),
                   width: 1,
                 ),
               ),
@@ -255,14 +255,14 @@ class HomePage extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.colorScheme.onSurface.withOpacity(0.3)),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.colorScheme.onSurface.withValues(alpha:0.3)),
                     ],
                   ),
                   const SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.05),
+                      color: theme.colorScheme.primary.withValues(alpha:0.05),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -314,11 +314,11 @@ class _GlassActionButton extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withOpacity(0.5),
+                color: theme.colorScheme.surface.withValues(alpha:0.5),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: theme.colorScheme.onSurface.withOpacity(0.1)),
+                border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha:0.1)),
               ),
-              child: Icon(icon, color: theme.colorScheme.onSurface.withOpacity(0.7), size: 22),
+              child: Icon(icon, color: theme.colorScheme.onSurface.withValues(alpha:0.7), size: 22),
             ),
           ),
         ),
@@ -348,7 +348,7 @@ class _MenuCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: gradientColors.last.withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6)),
+          BoxShadow(color: gradientColors.last.withValues(alpha:0.3), blurRadius: 12, offset: const Offset(0, 6)),
         ],
       ),
       child: Card(
@@ -366,11 +366,11 @@ class _MenuCard extends StatelessWidget {
               children: [
                 Positioned(
                   right: -24, bottom: -24,
-                  child: Transform.rotate(angle: -0.2, child: Icon(icon, size: 140, color: Colors.white.withOpacity(0.1))),
+                  child: Transform.rotate(angle: -0.2, child: Icon(icon, size: 140, color: Colors.white.withValues(alpha:0.1))),
                 ),
                 Positioned(
                   top: -20, left: -20,
-                  child: Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.1))),
+                  child: Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha:0.1))),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -380,9 +380,9 @@ class _MenuCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.25),
+                          color: Colors.white.withValues(alpha:0.25),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
+                          border: Border.all(color: Colors.white.withValues(alpha:0.3), width: 1),
                         ),
                         child: Icon(icon, color: Colors.white, size: 26),
                       ),
@@ -390,7 +390,7 @@ class _MenuCard extends StatelessWidget {
                       Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       const SizedBox(height: 4),
                       // ★ ガイド文が収まるように maxLines を 2 -> 3 に変更しました
-                      Text(description, style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12, height: 1.2), maxLines: 3, overflow: TextOverflow.ellipsis),
+                      Text(description, style: TextStyle(color: Colors.white.withValues(alpha:0.9), fontSize: 12, height: 1.2), maxLines: 3, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),

@@ -1,7 +1,5 @@
 // lib/features/scenario_logbook/domain/entities/scenario.dart
 
-import 'package:flutter/material.dart';
-
 enum GmRequirement {
   required,
   optional,

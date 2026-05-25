@@ -119,7 +119,6 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
       final List<UserScenario> userScenarios = [];
 
       for (final m in items.whereType<models.UserScenario>()) {
-        if (m.scenarioId == null) continue;
         final scenario = scenarioMap[m.scenarioId];
         if (scenario != null) {
           final status = UserScenarioStatus(

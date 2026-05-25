@@ -21,7 +21,7 @@ class FriendSelectionCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     final borderColor = isSelected ? colorScheme.primary : Colors.transparent;
-    final backgroundColor = isSelected ? colorScheme.primaryContainer.withOpacity(0.2) : colorScheme.surfaceContainer;
+    final backgroundColor = isSelected ? colorScheme.primaryContainer.withValues(alpha: 0.2) : colorScheme.surfaceContainer;
 
     return Card(
       elevation: isSelected ? 4 : 0,

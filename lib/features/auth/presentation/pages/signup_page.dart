@@ -113,9 +113,9 @@ class _SignUpPageState extends State<SignUpPage> {
                   
                   const SizedBox(height: 32),
                   
-                  Text(
+                  const Text(
                     TermsOfService.title, // ★別ファイルから取得
-                    style: const TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Container(
