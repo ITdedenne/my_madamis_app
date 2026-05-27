@@ -1,7 +1,9 @@
+// ファイルパス: lib/features/auth/presentation/pages/login_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:math';
-import 'dart:ui'; // BackdropFilter用
+import 'dart:ui';
 
 import 'package:my_madamis_app/common/widgets/custom_text_form_field.dart';
 import 'package:my_madamis_app/common/widgets/primary_button.dart';
@@ -57,11 +59,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Colors.white), // 戻るボタンなどを白に
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Stack(
         children: [
-          // === 1. 最背面：夜空の深みを表現するグラデーション ===
+          // === 1. 背景：夜空の深みを表現するグラデーション ===
           Positioned.fill(
             child: Container(
               decoration: const BoxDecoration(
@@ -69,30 +71,29 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Color(0xFF0B1021), // 深いミッドナイトブルー
-                    Color(0xFF1B2735), // 少し明るい夜空
-                    Color(0xFF090A0F), // 地平線に近い漆黒
+                    Color(0xFF0B1021),
+                    Color(0xFF1B2735),
+                    Color(0xFF090A0F),
                   ],
                 ),
               ),
             ),
           ),
 
-          // === 2. 中間面：本物の夜空のような「瞬く星々」 ===
+          // === 2. 背景アニメーション：瞬く星々と星座 ===
           const Positioned.fill(
             child: IgnorePointer(
-              child: NightSkyBackground(),
+              child: NightSkyBackground(showLines: true),
             ),
           ),
           
-          // === 3. 前面：すりガラス風（グラスモーフィズム）のログインフォーム ===
+          // === 3. 中央配置のグラスモーフィズムフォーム ===
           Positioned.fill(
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
                 child: Container(
                   constraints: const BoxConstraints(maxWidth: 420),
-                  // この画面のフォームだけをダークモード化する高度なテクニック
                   child: Theme(
                     data: ThemeData.dark().copyWith(
                       primaryColor: primaryColor,
@@ -113,7 +114,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(24.0),
                       child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0), // すりガラス効果
+                        filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
                         child: Container(
                           padding: const EdgeInsets.all(40.0),
                           decoration: BoxDecoration(
@@ -146,7 +147,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             child: Icon(
               Icons.auto_stories_rounded,
               size: 56,
-              color: primaryColor.withValues(alpha: 0.9), // 夜空に合わせて少し透けさせる
+              color: primaryColor.withValues(alpha: 0.9),
             ),
           ),
           const SizedBox(height: 16),
@@ -155,12 +156,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             style: TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.bold,
-              letterSpacing: 2.0,
+              letterSpacing: 4.0,
               color: Colors.white,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 48),
+          const SizedBox(height: 12),
+          Text(
+            '一生に一度の体験を刻む。',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withValues(alpha: 0.65),
+              letterSpacing: 1.0,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 40),
           
           CustomTextFormField(
             controller: _emailController,
@@ -198,10 +209,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 context,
                 MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
               ),
-              child: const Text(
-                'パスワードを忘れた場合',
-                style: TextStyle(color: Colors.white70),
-              ),
+              child: const Text('パスワードを忘れた場合', style: TextStyle(color: Colors.white70)),
             ),
           ),
           
@@ -220,7 +228,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             },
           ),
           
-          const SizedBox(height: 48), 
+          const SizedBox(height: 40), 
           
           Row(
             children: [
@@ -246,17 +254,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               side: BorderSide(color: primaryColor, width: 1.5),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.0),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
             ),
             child: Text(
               '新規アカウント作成',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: primaryColor, // ボタンの文字色をプライマリに
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: primaryColor),
             ),
           ),
         ],
@@ -265,46 +267,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 }
 
-// ============================================================================
-// 没入感を高める「本物の夜空」アニメーションウィジェット
-// ============================================================================
-
+// === 共通星空ペインタークラス ===
 class NightSkyBackground extends StatefulWidget {
-  const NightSkyBackground({super.key});
+  final bool showLines;
+  const NightSkyBackground({super.key, this.showLines = false});
 
   @override
   State<NightSkyBackground> createState() => _NightSkyBackgroundState();
 }
 
-class _NightSkyBackgroundState extends State<NightSkyBackground>
-    with SingleTickerProviderStateMixin {
+class _NightSkyBackgroundState extends State<NightSkyBackground> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late List<_StarNode> _stars;
-  
-  // 星の数を大幅に増やし、密度を上げることでリアリティを出します
-  final int _starCount = 180; 
+  late List<_Star> _stars;
+  final int _starCount = 120;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(days: 365),
-    )..forward();
-
+    _controller = AnimationController(vsync: this, duration: const Duration(days: 365))..forward();
     final random = Random();
     _stars = List.generate(_starCount, (index) {
-      // 大半は小さな星、ごく一部を大きな星にしてメリハリをつける
-      final isLargeStar = random.nextDouble() > 0.92;
-      
-      return _StarNode(
+      return _Star(
         x: random.nextDouble(),
         y: random.nextDouble(),
-        size: isLargeStar ? 1.5 + random.nextDouble() * 2.0 : 0.5 + random.nextDouble() * 1.2,
-        blinkSpeed: 0.5 + random.nextDouble() * 2.5,
+        size: random.nextDouble() > 0.85 ? 1.5 + random.nextDouble() * 1.5 : 0.4 + random.nextDouble() * 1.0,
+        blinkSpeed: 0.6 + random.nextDouble() * 2.0,
         blinkOffset: random.nextDouble() * pi * 2,
-        // 星空全体がごく僅かに横へ流れる（地球の自転を表現）
-        driftX: 0.002 + random.nextDouble() * 0.003,
+        driftX: 0.001 + random.nextDouble() * 0.002,
       );
     });
   }
@@ -323,77 +312,53 @@ class _NightSkyBackgroundState extends State<NightSkyBackground>
         final double t = _controller.lastElapsedDuration?.inMilliseconds.toDouble() ?? 0.0;
         return CustomPaint(
           size: Size.infinite,
-          painter: _NightSkyPainter(
-            stars: _stars,
-            time: t / 1000.0,
-          ),
+          painter: _NightSkyPainter(stars: _stars, time: t / 1000.0, showLines: widget.showLines, color: Theme.of(context).primaryColor),
         );
       },
     );
   }
 }
 
-class _StarNode {
-  final double x;
-  final double y;
-  final double size;
-  final double blinkSpeed;
-  final double blinkOffset;
-  final double driftX;
-
-  _StarNode({
-    required this.x,
-    required this.y,
-    required this.size,
-    required this.blinkSpeed,
-    required this.blinkOffset,
-    required this.driftX,
-  });
+class _Star {
+  final double x; final double y; final double size; final double blinkSpeed; final double blinkOffset; final double driftX;
+  _Star({required this.x, required this.y, required this.size, required this.blinkSpeed, required this.blinkOffset, required this.driftX});
 }
 
 class _NightSkyPainter extends CustomPainter {
-  final List<_StarNode> stars;
-  final double time;
-
-  _NightSkyPainter({
-    required this.stars,
-    required this.time,
-  });
+  final List<_Star> stars; final double time; final bool showLines; final Color color;
+  _NightSkyPainter({required this.stars, required this.time, required this.showLines, required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
+    final List<Offset> positions = [];
+    final List<double> opacities = [];
+
     for (var star in stars) {
-      // 画面をゆっくりループして横切る計算
       double xPos = (star.x + star.driftX * time) % 1.0;
       if (xPos < 0) xPos += 1.0;
-      
-      final currentX = xPos * size.width;
-      final currentY = star.y * size.height;
-
-      // 星の瞬き（サイン波を使用して自然な明滅を表現）
+      positions.add(Offset(xPos * size.width, star.y * size.height));
       final double blink = sin(time * star.blinkSpeed + star.blinkOffset);
-      
-      // 不透明度のベース値を下げ、よりリアルな遠くの星を表現
-      const double baseOpacity = 0.1;
-      const double maxOpacity = 0.8;
-      final double opacity = (baseOpacity + (blink + 1.0) / 2.0 * (maxOpacity - baseOpacity)).clamp(0.0, 1.0);
+      opacities.add((0.1 + (blink + 1.0) / 2.0 * 0.6).clamp(0.0, 1.0));
+    }
 
-      // 星自体は純白（Colors.white）にし、サイズや透明度で遠近感を出す
-      final paint = Paint()
-        ..color = Colors.white.withValues(alpha: opacity)
-        ..style = PaintingStyle.fill;
-        
-      // 大きめの星には発光エフェクト（ブラー）をつける
-      if (star.size > 2.0) {
-        paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.0);
+    if (showLines) {
+      final double maxConnectDistance = min(size.width, size.height) * 0.20;
+      for (int i = 0; i < positions.length; i++) {
+        for (int j = i + 1; j < positions.length; j++) {
+          final double distance = (positions[i] - positions[j]).distance;
+          if (distance < maxConnectDistance) {
+            final double lineOpacity = (1.0 - (distance / maxConnectDistance)) * (opacities[i] + opacities[j]) * 0.12;
+            canvas.drawLine(positions[i], positions[j], Paint()..color = color.withValues(alpha: lineOpacity.clamp(0.0, 0.08))..strokeWidth = 0.6);
+          }
+        }
       }
+    }
 
-      canvas.drawCircle(Offset(currentX, currentY), star.size, paint);
+    for (int i = 0; i < positions.length; i++) {
+      final paint = Paint()..color = Colors.white.withValues(alpha: opacities[i]);
+      if (stars[i].size > 1.8) paint.maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
+      canvas.drawCircle(positions[i], stars[i].size, paint);
     }
   }
-
-  @override
-  bool shouldRepaint(covariant _NightSkyPainter oldDelegate) {
-    return oldDelegate.time != time;
-  }
+  @override bool shouldRepaint(covariant _NightSkyPainter oldDelegate) => oldDelegate.time != time;
 }
