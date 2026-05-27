@@ -21,6 +21,7 @@ class HomePage extends ConsumerWidget {
     final profileState = ref.watch(profileViewModelProvider);
     
     final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
 
     final displayUsername = authState.username ?? profileState.profile?.username ?? 'Guest';
 
@@ -28,7 +29,11 @@ class HomePage extends ConsumerWidget {
       if (next.flashMessage != null && next.status == AuthStatus.authenticated) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(next.flashMessage!)),
+            SnackBar(
+              content: Text(next.flashMessage!),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
           );
           ref.read(authStateNotifierProvider.notifier).clearFlashMessage();
         });
@@ -36,67 +41,85 @@ class HomePage extends ConsumerWidget {
     });
 
     return Scaffold(
+      backgroundColor: theme.colorScheme.surface, // ベースは清潔感のあるSurface（白/ライトグレー）
       body: Stack(
         children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                  theme.colorScheme.surface,
-                  theme.colorScheme.secondaryContainer.withValues(alpha: 0.2),
-                ],
-                stops: const [0.0, 0.5, 1.0],
-              ),
-            ),
-          ),
+          // === 1. 背景：マダレコのブランドカラーを「淡い光（アンビエント）」として配置 ===
+          // 左上の淡い光
           Positioned(
             top: -100,
-            right: -100,
+            left: -100,
             child: Container(
               width: 300,
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                color: primaryColor.withValues(alpha: 0.05), // 極めて薄いブランドカラー
                 boxShadow: [
                   BoxShadow(
-                    blurRadius: 100,
-                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    blurRadius: 100, // 大きくぼかして空間に溶け込ませる
+                    color: primaryColor.withValues(alpha: 0.1),
+                  )
+                ]
+              ),
+            ),
+          ),
+          // 右下の淡い光（画面全体に対角線上の透明感を生む）
+          Positioned(
+            bottom: -150,
+            right: -100,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.colorScheme.secondary.withValues(alpha: 0.05),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 120,
+                    color: primaryColor.withValues(alpha: 0.08),
                   )
                 ]
               ),
             ),
           ),
 
+          // === 2. メインコンテンツ（実用性・視認性MAX） ===
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // ヘッダーエリア
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Home',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                        ),
-                      ),
                       Row(
                         children: [
-                          _GlassActionButton(
-                            icon: Icons.settings_outlined,
-                            onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => const SettingsPage()),
+                          // ログイン画面から引き継いだ「手記（マダレコ）」のアイコンをさりげなく配置
+                          Icon(
+                            Icons.auto_stories_rounded,
+                            color: primaryColor,
+                            size: 28,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Home',
+                            style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                             ),
                           ),
                         ],
+                      ),
+                      _GlassActionButton(
+                        icon: Icons.settings_outlined,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const SettingsPage()),
+                        ),
                       ),
                     ],
                   ),
@@ -113,6 +136,7 @@ class HomePage extends ConsumerWidget {
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
@@ -131,6 +155,7 @@ class HomePage extends ConsumerWidget {
                         crossAxisSpacing: 16,
                         childAspectRatio: isWideScreen ? 1.5 : 1.8,
                         children: [
+                          // 各カードの色は実用（機能の識別）のために元の鮮やかな色をキープ
                           _MenuCard(
                             title: 'シナリオ手帳',
                             description: '遊んだシナリオや、これから遊びたいシナリオを記録・管理しましょう。',
@@ -174,11 +199,12 @@ class HomePage extends ConsumerWidget {
 
   Widget _buildGlassWelcomeHeader(BuildContext context, String username) {
     final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
     
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -186,18 +212,26 @@ class HomePage extends ConsumerWidget {
               context,
               MaterialPageRoute(builder: (_) => const ProfilePage()),
             ),
-            highlightColor: theme.colorScheme.primary.withValues(alpha: 0.1),
-            splashColor: theme.colorScheme.primary.withValues(alpha:0.2),
+            highlightColor: primaryColor.withValues(alpha: 0.05),
+            splashColor: primaryColor.withValues(alpha: 0.1),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withValues(alpha:0.6),
+                // 真っ白ではなく、ほんの少しだけブランドカラーを混ぜて透明感（ガラス感）を出す
+                color: theme.colorScheme.surface.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: theme.colorScheme.onSurface.withValues(alpha:0.1),
-                  width: 1,
+                  color: primaryColor.withValues(alpha: 0.15), // 枠線にブランドカラーを適用
+                  width: 1.5,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withValues(alpha: 0.05),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  )
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,10 +241,10 @@ class HomePage extends ConsumerWidget {
                       Hero(
                         tag: 'profile-avatar',
                         child: Container(
-                          padding: const EdgeInsets.all(2),
+                          padding: const EdgeInsets.all(3),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: theme.colorScheme.primary, width: 2),
+                            border: Border.all(color: primaryColor.withValues(alpha: 0.5), width: 2),
                           ),
                           child: CircleAvatar(
                             radius: 26,
@@ -234,8 +268,9 @@ class HomePage extends ConsumerWidget {
                             Text(
                               'Welcome back',
                               style: theme.textTheme.labelLarge?.copyWith(
-                                color: theme.colorScheme.primary,
+                                color: primaryColor,
                                 letterSpacing: 1.2,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -243,6 +278,7 @@ class HomePage extends ConsumerWidget {
                               '$username さん',
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w800,
+                                color: theme.colorScheme.onSurface,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -250,27 +286,27 @@ class HomePage extends ConsumerWidget {
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.colorScheme.onSurface.withValues(alpha:0.3)),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 16, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
                     ],
                   ),
                   const SizedBox(height: 20),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha:0.05),
+                      color: primaryColor.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.auto_awesome, size: 16, color: theme.colorScheme.primary),
+                        Icon(Icons.auto_awesome, size: 16, color: primaryColor),
                         const SizedBox(width: 8),
                         Flexible(
                           child: Text(
                             'プロフィールを確認・編集する',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.primary,
-                              fontWeight: FontWeight.w500,
+                              color: primaryColor,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -296,6 +332,8 @@ class _GlassActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+    
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: BackdropFilter(
@@ -309,11 +347,11 @@ class _GlassActionButton extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: theme.colorScheme.surface.withValues(alpha:0.5),
+                color: theme.colorScheme.surface.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha:0.1)),
+                border: Border.all(color: primaryColor.withValues(alpha: 0.15)), // ボタンの枠線にもブランドカラー
               ),
-              child: Icon(icon, color: theme.colorScheme.onSurface.withValues(alpha:0.7), size: 22),
+              child: Icon(icon, color: primaryColor, size: 24), // アイコンをブランドカラーに
             ),
           ),
         ),
@@ -343,7 +381,12 @@ class _MenuCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: gradientColors.last.withValues(alpha:0.3), blurRadius: 12, offset: const Offset(0, 6)),
+          // 影の色を少し上品（透明度を下げてぼかしを強く）に調整
+          BoxShadow(
+            color: gradientColors.last.withValues(alpha: 0.25), 
+            blurRadius: 16, 
+            offset: const Offset(0, 8)
+          ),
         ],
       ),
       child: Card(
@@ -361,11 +404,11 @@ class _MenuCard extends StatelessWidget {
               children: [
                 Positioned(
                   right: -24, bottom: -24,
-                  child: Transform.rotate(angle: -0.2, child: Icon(icon, size: 140, color: Colors.white.withValues(alpha:0.1))),
+                  child: Transform.rotate(angle: -0.2, child: Icon(icon, size: 140, color: Colors.white.withValues(alpha: 0.1))),
                 ),
                 Positioned(
                   top: -20, left: -20,
-                  child: Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha:0.1))),
+                  child: Container(width: 80, height: 80, decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.1))),
                 ),
                 Padding(
                   padding: const EdgeInsets.all(20.0),
@@ -375,16 +418,16 @@ class _MenuCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha:0.25),
+                          color: Colors.white.withValues(alpha: 0.25),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white.withValues(alpha:0.3), width: 1),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 1),
                         ),
                         child: Icon(icon, color: Colors.white, size: 26),
                       ),
                       const Spacer(),
                       Text(title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       const SizedBox(height: 4),
-                      Text(description, style: TextStyle(color: Colors.white.withValues(alpha:0.9), fontSize: 12, height: 1.2), maxLines: 3, overflow: TextOverflow.ellipsis),
+                      Text(description, style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12, height: 1.2), maxLines: 3, overflow: TextOverflow.ellipsis),
                     ],
                   ),
                 ),
