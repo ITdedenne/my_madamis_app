@@ -1,5 +1,3 @@
-// ファイルパス: lib/features/auth/domain/repositories/auth_repository.dart
-
 import 'package:amplify_flutter/amplify_flutter.dart';
 
 abstract class AuthRepository {
@@ -7,8 +5,6 @@ abstract class AuthRepository {
     required String email,
     required String password,
     required String username,
-    String? bio,
-    String? twitterId,
   });
 
   Future<SignUpResult> confirmSignUp({
@@ -25,6 +21,8 @@ abstract class AuthRepository {
 
   Future<void> signOut();
 
+  Future<List<AuthUserAttribute>> getCurrentUserAttributes();
+
   Future<void> resetPassword({required String username});
 
   Future<void> confirmResetPassword({
@@ -32,6 +30,4 @@ abstract class AuthRepository {
     required String newPassword,
     required String confirmationCode,
   });
-
-  Future<List<AuthUserAttribute>> getCurrentUserAttributes();
 }

@@ -2,12 +2,11 @@ export type AmplifyDependentResourcesAttributes = {
   "api": {
     "mymadamisapp": {
       "GraphQLAPIEndpointOutput": "string",
-      "GraphQLAPIIdOutput": "string",
-      "GraphQLAPIKeyOutput": "string"
+      "GraphQLAPIIdOutput": "string"
     }
   },
   "auth": {
-    "mymadamisapp2c00b4e92c00b4e9": {
+    "mymadamisappb2bf781d": {
       "AppClientID": "string",
       "AppClientIDWeb": "string",
       "IdentityPoolId": "string",
@@ -18,14 +17,35 @@ export type AmplifyDependentResourcesAttributes = {
     }
   },
   "function": {
-    "csvImporterFunction": {
+    "deleteUserAccount": {
       "Arn": "string",
       "LambdaExecutionRole": "string",
       "LambdaExecutionRoleArn": "string",
       "Name": "string",
       "Region": "string"
     },
-    "mymadamisapp2c00b4e92c00b4e9PostConfirmation": {
+    "findGroupScenarios": {
+      "Arn": "string",
+      "LambdaExecutionRole": "string",
+      "LambdaExecutionRoleArn": "string",
+      "Name": "string",
+      "Region": "string"
+    },
+    "findUnplayedFriends": {
+      "Arn": "string",
+      "LambdaExecutionRole": "string",
+      "LambdaExecutionRoleArn": "string",
+      "Name": "string",
+      "Region": "string"
+    },
+    "mymadamisappb2bf781dPostConfirmation": {
+      "Arn": "string",
+      "LambdaExecutionRole": "string",
+      "LambdaExecutionRoleArn": "string",
+      "Name": "string",
+      "Region": "string"
+    },
+    "updateUserProfile": {
       "Arn": "string",
       "LambdaExecutionRole": "string",
       "LambdaExecutionRoleArn": "string",
@@ -34,7 +54,7 @@ export type AmplifyDependentResourcesAttributes = {
     }
   },
   "storage": {
-    "myMadamisAppS3storage": {
+    "madamisappS3": {
       "BucketName": "string",
       "Region": "string"
     }

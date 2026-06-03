@@ -1,48 +1,101 @@
 // ファイルパス: lib/features/profile/data/repositories/profile_repository_impl.dart
 
+import 'dart:convert';
 import 'package:amplify_flutter/amplify_flutter.dart' hide UserProfile;
 import 'package:my_madamis_app/features/profile/domain/entities/user_profile.dart';
 import 'package:my_madamis_app/features/profile/domain/repositories/profile_repository.dart';
+import 'package:my_madamis_app/models/ModelProvider.dart';
 
 class ProfileRepositoryImpl implements ProfileRepository {
+  
+  static const _updateUserProfileMutation = r'''
+    mutation UpdateUserProfile($username: String!, $bio: String) {
+      updateUserProfile(username: $username, bio: $bio)
+    }
+  ''';
+  
+  static const _getUserQuery = r'''
+    query GetUser($id: ID!) {
+      getUser(id: $id) {
+        id
+        username
+        bio
+        publicUserId 
+      }
+    }
+  ''';
+
+  Future<String> _getCurrentUserId() async {
+    try {
+      final attributes = await Amplify.Auth.fetchUserAttributes();
+      return attributes
+          .firstWhere((a) => a.userAttributeKey == AuthUserAttributeKey.sub) 
+          .value;
+    } on Exception catch (e) {
+       safePrint('Failed to get current userId: $e');
+       throw Exception('Authentication required to access user data.');
+    }
+  }
+
   @override
   Future<UserProfile> fetchUserProfile() async {
-    final attributes = await Amplify.Auth.fetchUserAttributes();
+    final userId = await _getCurrentUserId();
+    
+    final request = GraphQLRequest<User>(
+      document: _getUserQuery,
+      modelType: User.classType,
+      variables: {
+        'id': userId, 
+      },
+      decodePath: 'getUser',
+      authorizationMode: APIAuthorizationType.userPools,
+    );
 
-    final username = attributes
-        .firstWhere((a) => a.userAttributeKey == AuthUserAttributeKey.preferredUsername,
-            orElse: () => const AuthUserAttribute(userAttributeKey: AuthUserAttributeKey.preferredUsername, value: ''))
-        .value;
-    final bio = attributes
-        .firstWhere((a) => a.userAttributeKey == const CognitoUserAttributeKey.custom('bio'),
-            // ▼▼▼ ここのタイプミスを修正しました ▼▼▼
-            orElse: () => const AuthUserAttribute(userAttributeKey: CognitoUserAttributeKey.custom('bio'), value: ''))
-        .value;
-    final twitterId = attributes
-        .firstWhere((a) => a.userAttributeKey == const CognitoUserAttributeKey.custom('twitter_id'),
-            // ▼▼▼ ここのタイプミスを修正しました ▼▼▼
-            orElse: () => const AuthUserAttribute(userAttributeKey: CognitoUserAttributeKey.custom('twitter_id'), value: ''))
-        .value;
+    final response = await Amplify.API.query(request: request).response;
 
-    return UserProfile(username: username, bio: bio, twitterId: twitterId);
+    if (response.data == null || response.hasErrors) {
+      safePrint('GraphQL Error fetching profile: ${response.errors}');
+      throw Exception('Failed to fetch user profile: ${response.errors.map((e) => e.message).join(", ")}');
+    }
+    
+    final userModel = response.data!;
+    
+    return UserProfile(
+      publicUserId: userModel.publicUserId, 
+      username: userModel.username, 
+      bio: userModel.bio ?? '', 
+      twitterId: '', 
+    );
   }
 
   @override
   Future<void> updateUserProfile(UserProfile profile) async {
-    final attributesToUpdate = [
-      AuthUserAttribute(
-        userAttributeKey: AuthUserAttributeKey.preferredUsername,
-        value: profile.username,
-      ),
-      AuthUserAttribute(
-        userAttributeKey: const CognitoUserAttributeKey.custom('bio'),
-        value: profile.bio,
-      ),
-      AuthUserAttribute(
-        userAttributeKey: const CognitoUserAttributeKey.custom('twitter_id'),
-        value: profile.twitterId,
-      ),
-    ];
-    await Amplify.Auth.updateUserAttributes(attributes: attributesToUpdate);
+    try {
+      final request = GraphQLRequest(
+        document: _updateUserProfileMutation,
+        variables: {
+          'username': profile.username,
+          'bio': profile.bio,
+        },
+        authorizationMode: APIAuthorizationType.userPools,
+      );
+
+      final response = await Amplify.API.mutate(request: request).response;
+
+      if (response.hasErrors) {
+        if (response.data != null) {
+            try {
+                final body = jsonDecode(response.data!);
+                if (body['updateUserProfile'] != null && body['updateUserProfile']['error'] != null) {
+                    throw Exception(body['updateUserProfile']['error']);
+                }
+            } catch (_) {}
+        }
+        throw Exception('GraphQL Mutation Error: ${response.errors.map((e) => e.message).join(", ")}');
+      }
+    } on Exception catch (e) {
+      safePrint('Failed to update profile via Lambda: $e');
+      rethrow;
+    }
   }
 }

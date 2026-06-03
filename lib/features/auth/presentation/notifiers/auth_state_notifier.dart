@@ -1,5 +1,3 @@
-// ファイルパス: lib/features/auth/presentation/notifiers/auth_state_notifier.dart
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:my_madamis_app/providers.dart';
@@ -18,26 +16,26 @@ class AuthState {
   final AuthStatus status;
   final String? username;
   final String? errorMessage;
-  final String? flashMessage; // ★追加: フラッシュメッセージ
+  final String? flashMessage;
 
   const AuthState({
     this.status = AuthStatus.initial,
     this.username,
     this.errorMessage,
-    this.flashMessage, // ★追加
+    this.flashMessage,
   });
 
   AuthState copyWith({
     AuthStatus? status,
     String? username,
     String? errorMessage, 
-    String? flashMessage, // ★追加: nullを渡してクリアできるようにする
+    String? flashMessage,
   }) {
     return AuthState(
       status: status ?? this.status,
       username: username ?? this.username,
       errorMessage: errorMessage, 
-      flashMessage: flashMessage, // ★修正: 渡された値を使用
+      flashMessage: flashMessage,
     );
   }
 }
@@ -57,12 +55,25 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
   Future<void> _checkCurrentUser() async {
     try {
       final attributes = await _authRepository.getCurrentUserAttributes();
-      final username = attributes
-          .firstWhere((element) =>
-              element.userAttributeKey == AuthUserAttributeKey.preferredUsername)
-          .value;
-      state = state.copyWith(status: AuthStatus.authenticated, username: username);
+      
+      //preferredUsername が無い場合は email をフォールバックとして使用する防衛的実装
+      final usernameAttribute = attributes.firstWhere(
+        (element) => element.userAttributeKey == AuthUserAttributeKey.preferredUsername,
+        orElse: () => attributes.firstWhere(
+          (element) => element.userAttributeKey == AuthUserAttributeKey.email,
+          orElse: () => const AuthUserAttribute(
+            userAttributeKey: AuthUserAttributeKey.preferredUsername, 
+            value: 'Unknown User'
+          ),
+        ),
+      );
+
+      state = state.copyWith(
+        status: AuthStatus.authenticated, 
+        username: usernameAttribute.value,
+      );
     } catch (e) {
+      safePrint('Session check failed: $e');
       state = const AuthState(status: AuthStatus.unauthenticated);
     }
   }
@@ -76,7 +87,6 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(username: newUsername);
   }
 
-  // ログイン成功時にViewModelから呼び出す
   void setAuthenticated(String username, {String? message}) { 
       state = state.copyWith(
         status: AuthStatus.authenticated, 
@@ -85,7 +95,7 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       );
   }
 
-    void clearFlashMessage() { 
+  void clearFlashMessage() { 
       state = state.copyWith(flashMessage: null);
   }
   
@@ -98,12 +108,12 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.resetPassword(username: username);
-      // 成功したら次の画面へ遷移させるステータスに変更
       state = state.copyWith(
           status: AuthStatus.passwordResetRequired, errorMessage: null);
     } on Exception catch (e) {
+      // API層で投げられたエラーメッセージから "Exception: " の文字列を取り除いてUIへ渡す
       state = state.copyWith(
-          status: AuthStatus.error, errorMessage: e.toString());
+          status: AuthStatus.error, errorMessage: e.toString().replaceAll('Exception: ', ''));
     }
   }
 
@@ -116,11 +126,10 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
         newPassword: newPassword,
         confirmationCode: code,
       );
-      // パスワードリセット成功後、ログイン画面に戻るために unauthenticated 状態に遷移させる
       state = const AuthState(status: AuthStatus.unauthenticated);
     } on Exception catch (e) {
       state = state.copyWith(
-          status: AuthStatus.error, errorMessage: e.toString());
+          status: AuthStatus.error, errorMessage: e.toString().replaceAll('Exception: ', ''));
     }
   }
 }

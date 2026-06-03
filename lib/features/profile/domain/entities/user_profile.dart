@@ -3,22 +3,26 @@
 import 'package:equatable/equatable.dart'; 
 
 class UserProfile extends Equatable { 
+  final String? publicUserId;
   final String username;
   final String bio;
   final String twitterId;
 
   const UserProfile({
+    this.publicUserId,
     required this.username,
     this.bio = '',
     this.twitterId = '',
   });
 
   UserProfile copyWith({
+    String? publicUserId,
     String? username,
     String? bio,
     String? twitterId,
   }) {
     return UserProfile(
+      publicUserId: publicUserId ?? this.publicUserId,
       username: username ?? this.username,
       bio: bio ?? this.bio,
       twitterId: twitterId ?? this.twitterId,
@@ -26,5 +30,5 @@ class UserProfile extends Equatable {
   }
 
   @override
-  List<Object?> get props => [username, bio, twitterId];
+  List<Object?> get props => [publicUserId, username, bio, twitterId];
 }

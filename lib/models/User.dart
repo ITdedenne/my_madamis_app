@@ -28,10 +28,10 @@ import 'package:collection/collection.dart';
 class User extends amplify_core.Model {
   static const classType = const _UserModelType();
   final String id;
+  final String? _publicUserId;
   final String? _username;
   final String? _bio;
-  final String? _friendID;
-  final List<UserScenario>? _scenarios;
+  final List<UserScenario>? _userScenarios;
   final List<UserRelationship>? _following;
   final amplify_core.TemporalDateTime? _createdAt;
   final amplify_core.TemporalDateTime? _updatedAt;
@@ -47,6 +47,19 @@ class User extends amplify_core.Model {
       return UserModelIdentifier(
         id: id
       );
+  }
+  
+  String get publicUserId {
+    try {
+      return _publicUserId!;
+    } catch(e) {
+      throw amplify_core.AmplifyCodeGenModelException(
+          amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
+          recoverySuggestion:
+            amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastRecoverySuggestion,
+          underlyingException: e.toString()
+          );
+    }
   }
   
   String get username {
@@ -66,21 +79,8 @@ class User extends amplify_core.Model {
     return _bio;
   }
   
-  String get friendID {
-    try {
-      return _friendID!;
-    } catch(e) {
-      throw amplify_core.AmplifyCodeGenModelException(
-          amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastExceptionMessage,
-          recoverySuggestion:
-            amplify_core.AmplifyExceptionMessages.codeGenRequiredFieldForceCastRecoverySuggestion,
-          underlyingException: e.toString()
-          );
-    }
-  }
-  
-  List<UserScenario>? get scenarios {
-    return _scenarios;
+  List<UserScenario>? get userScenarios {
+    return _userScenarios;
   }
   
   List<UserRelationship>? get following {
@@ -95,15 +95,15 @@ class User extends amplify_core.Model {
     return _updatedAt;
   }
   
-  const User._internal({required this.id, required username, bio, required friendID, scenarios, following, createdAt, updatedAt}): _username = username, _bio = bio, _friendID = friendID, _scenarios = scenarios, _following = following, _createdAt = createdAt, _updatedAt = updatedAt;
+  const User._internal({required this.id, required publicUserId, required username, bio, userScenarios, following, createdAt, updatedAt}): _publicUserId = publicUserId, _username = username, _bio = bio, _userScenarios = userScenarios, _following = following, _createdAt = createdAt, _updatedAt = updatedAt;
   
-  factory User({String? id, required String username, String? bio, required String friendID, List<UserScenario>? scenarios, List<UserRelationship>? following}) {
+  factory User({String? id, required String publicUserId, required String username, String? bio, List<UserScenario>? userScenarios, List<UserRelationship>? following}) {
     return User._internal(
       id: id == null ? amplify_core.UUID.getUUID() : id,
+      publicUserId: publicUserId,
       username: username,
       bio: bio,
-      friendID: friendID,
-      scenarios: scenarios != null ? List<UserScenario>.unmodifiable(scenarios) : scenarios,
+      userScenarios: userScenarios != null ? List<UserScenario>.unmodifiable(userScenarios) : userScenarios,
       following: following != null ? List<UserRelationship>.unmodifiable(following) : following);
   }
   
@@ -116,10 +116,10 @@ class User extends amplify_core.Model {
     if (identical(other, this)) return true;
     return other is User &&
       id == other.id &&
+      _publicUserId == other._publicUserId &&
       _username == other._username &&
       _bio == other._bio &&
-      _friendID == other._friendID &&
-      DeepCollectionEquality().equals(_scenarios, other._scenarios) &&
+      DeepCollectionEquality().equals(_userScenarios, other._userScenarios) &&
       DeepCollectionEquality().equals(_following, other._following);
   }
   
@@ -132,9 +132,9 @@ class User extends amplify_core.Model {
     
     buffer.write("User {");
     buffer.write("id=" + "$id" + ", ");
+    buffer.write("publicUserId=" + "$_publicUserId" + ", ");
     buffer.write("username=" + "$_username" + ", ");
     buffer.write("bio=" + "$_bio" + ", ");
-    buffer.write("friendID=" + "$_friendID" + ", ");
     buffer.write("createdAt=" + (_createdAt != null ? _createdAt!.format() : "null") + ", ");
     buffer.write("updatedAt=" + (_updatedAt != null ? _updatedAt!.format() : "null"));
     buffer.write("}");
@@ -142,47 +142,47 @@ class User extends amplify_core.Model {
     return buffer.toString();
   }
   
-  User copyWith({String? username, String? bio, String? friendID, List<UserScenario>? scenarios, List<UserRelationship>? following}) {
+  User copyWith({String? publicUserId, String? username, String? bio, List<UserScenario>? userScenarios, List<UserRelationship>? following}) {
     return User._internal(
       id: id,
+      publicUserId: publicUserId ?? this.publicUserId,
       username: username ?? this.username,
       bio: bio ?? this.bio,
-      friendID: friendID ?? this.friendID,
-      scenarios: scenarios ?? this.scenarios,
+      userScenarios: userScenarios ?? this.userScenarios,
       following: following ?? this.following);
   }
   
   User copyWithModelFieldValues({
+    ModelFieldValue<String>? publicUserId,
     ModelFieldValue<String>? username,
     ModelFieldValue<String?>? bio,
-    ModelFieldValue<String>? friendID,
-    ModelFieldValue<List<UserScenario>?>? scenarios,
+    ModelFieldValue<List<UserScenario>?>? userScenarios,
     ModelFieldValue<List<UserRelationship>?>? following
   }) {
     return User._internal(
       id: id,
+      publicUserId: publicUserId == null ? this.publicUserId : publicUserId.value,
       username: username == null ? this.username : username.value,
       bio: bio == null ? this.bio : bio.value,
-      friendID: friendID == null ? this.friendID : friendID.value,
-      scenarios: scenarios == null ? this.scenarios : scenarios.value,
+      userScenarios: userScenarios == null ? this.userScenarios : userScenarios.value,
       following: following == null ? this.following : following.value
     );
   }
   
   User.fromJson(Map<String, dynamic> json)  
     : id = json['id'],
+      _publicUserId = json['publicUserId'],
       _username = json['username'],
       _bio = json['bio'],
-      _friendID = json['friendID'],
-      _scenarios = json['scenarios']  is Map
-        ? (json['scenarios']['items'] is List
-          ? (json['scenarios']['items'] as List)
+      _userScenarios = json['userScenarios']  is Map
+        ? (json['userScenarios']['items'] is List
+          ? (json['userScenarios']['items'] as List)
               .where((e) => e != null)
               .map((e) => UserScenario.fromJson(new Map<String, dynamic>.from(e)))
               .toList()
           : null)
-        : (json['scenarios'] is List
-          ? (json['scenarios'] as List)
+        : (json['userScenarios'] is List
+          ? (json['userScenarios'] as List)
               .where((e) => e?['serializedData'] != null)
               .map((e) => UserScenario.fromJson(new Map<String, dynamic>.from(e?['serializedData'])))
               .toList()
@@ -204,15 +204,15 @@ class User extends amplify_core.Model {
       _updatedAt = json['updatedAt'] != null ? amplify_core.TemporalDateTime.fromString(json['updatedAt']) : null;
   
   Map<String, dynamic> toJson() => {
-    'id': id, 'username': _username, 'bio': _bio, 'friendID': _friendID, 'scenarios': _scenarios?.map((UserScenario? e) => e?.toJson()).toList(), 'following': _following?.map((UserRelationship? e) => e?.toJson()).toList(), 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
+    'id': id, 'publicUserId': _publicUserId, 'username': _username, 'bio': _bio, 'userScenarios': _userScenarios?.map((UserScenario? e) => e?.toJson()).toList(), 'following': _following?.map((UserRelationship? e) => e?.toJson()).toList(), 'createdAt': _createdAt?.format(), 'updatedAt': _updatedAt?.format()
   };
   
   Map<String, Object?> toMap() => {
     'id': id,
+    'publicUserId': _publicUserId,
     'username': _username,
     'bio': _bio,
-    'friendID': _friendID,
-    'scenarios': _scenarios,
+    'userScenarios': _userScenarios,
     'following': _following,
     'createdAt': _createdAt,
     'updatedAt': _updatedAt
@@ -220,11 +220,11 @@ class User extends amplify_core.Model {
 
   static final amplify_core.QueryModelIdentifier<UserModelIdentifier> MODEL_IDENTIFIER = amplify_core.QueryModelIdentifier<UserModelIdentifier>();
   static final ID = amplify_core.QueryField(fieldName: "id");
+  static final PUBLICUSERID = amplify_core.QueryField(fieldName: "publicUserId");
   static final USERNAME = amplify_core.QueryField(fieldName: "username");
   static final BIO = amplify_core.QueryField(fieldName: "bio");
-  static final FRIENDID = amplify_core.QueryField(fieldName: "friendID");
-  static final SCENARIOS = amplify_core.QueryField(
-    fieldName: "scenarios",
+  static final USERSCENARIOS = amplify_core.QueryField(
+    fieldName: "userScenarios",
     fieldType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.model, ofModelName: 'UserScenario'));
   static final FOLLOWING = amplify_core.QueryField(
     fieldName: "following",
@@ -240,9 +240,7 @@ class User extends amplify_core.Model {
         identityClaim: "cognito:username",
         provider: amplify_core.AuthRuleProvider.USERPOOLS,
         operations: const [
-          amplify_core.ModelOperation.READ,
-          amplify_core.ModelOperation.UPDATE,
-          amplify_core.ModelOperation.CREATE
+          amplify_core.ModelOperation.READ
         ]),
       amplify_core.AuthRule(
         authStrategy: amplify_core.AuthStrategy.PRIVATE,
@@ -253,10 +251,17 @@ class User extends amplify_core.Model {
     
     modelSchemaDefinition.indexes = [
       amplify_core.ModelIndex(fields: const ["id"], name: null),
-      amplify_core.ModelIndex(fields: const ["friendID"], name: "byFriendID")
+      amplify_core.ModelIndex(fields: const ["publicUserId"], name: "byPublicUserId"),
+      amplify_core.ModelIndex(fields: const ["username"], name: "byUsername")
     ];
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.id());
+    
+    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
+      key: User.PUBLICUSERID,
+      isRequired: true,
+      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
+    ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
       key: User.USERNAME,
@@ -270,14 +275,8 @@ class User extends amplify_core.Model {
       ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
     ));
     
-    modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.field(
-      key: User.FRIENDID,
-      isRequired: true,
-      ofType: amplify_core.ModelFieldType(amplify_core.ModelFieldTypeEnum.string)
-    ));
-    
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.hasMany(
-      key: User.SCENARIOS,
+      key: User.USERSCENARIOS,
       isRequired: false,
       ofModelName: 'UserScenario',
       associatedKey: UserScenario.USER
@@ -287,7 +286,7 @@ class User extends amplify_core.Model {
       key: User.FOLLOWING,
       isRequired: false,
       ofModelName: 'UserRelationship',
-      associatedKey: UserRelationship.FOLLOWERUSER
+      associatedKey: UserRelationship.FOLLOWINGUSER
     ));
     
     modelSchemaDefinition.addField(amplify_core.ModelFieldDefinition.nonQueryField(

@@ -1,0 +1,13 @@
+{
+  "resourceName": "madamisappS3",
+  "policyUUID": "f80018b4",
+  "bucketName": "mymadamisapp-master-data",
+  "storageAccess": "authAndGuest",
+  "guestAccess": [
+    "READ"
+  ],
+  "authAccess": [
+    "READ"
+  ],
+  "groupAccess": {}
+}

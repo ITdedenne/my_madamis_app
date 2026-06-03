@@ -1,5 +1,3 @@
-// ファイルパス: lib/features/auth/data/repositories/auth_repository_impl.dart
-
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository.dart';
 
@@ -9,16 +7,10 @@ class AuthRepositoryImpl implements AuthRepository {
     required String email,
     required String password,
     required String username,
-    String? bio,
-    String? twitterId,
   }) async {
     final userAttributes = <AuthUserAttributeKey, String>{
       AuthUserAttributeKey.email: email,
       AuthUserAttributeKey.preferredUsername: username,
-      if (bio != null && bio.trim().isNotEmpty)
-        const CognitoUserAttributeKey.custom('bio'): bio,
-      if (twitterId != null && twitterId.trim().isNotEmpty)
-        const CognitoUserAttributeKey.custom('twitter_id'): twitterId,
     };
 
     final options = SignUpOptions(userAttributes: userAttributes);
@@ -58,12 +50,11 @@ class AuthRepositoryImpl implements AuthRepository {
   
   @override
   Future<void> signOut() async {
-    // ★修正ポイント: globalSignOut を使用して、デバイス上のセッションを強制的にクリアする
     const options = SignOutOptions(globalSignOut: true);
     await Amplify.Auth.signOut(options: options);
   }
   
-    @override
+  @override
   Future<List<AuthUserAttribute>> getCurrentUserAttributes() async {
     try {
       return await Amplify.Auth.fetchUserAttributes();
@@ -72,10 +63,9 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
-    @override
+  @override
   Future<void> resetPassword({required String username}) async {
     try {
-      // Cognitoにリセットコードの送信をリクエスト
       await Amplify.Auth.resetPassword(username: username);
     } on AuthException catch (e) {
       safePrint('Reset password failed with error: ${e.message}');
@@ -93,7 +83,6 @@ class AuthRepositoryImpl implements AuthRepository {
     required String confirmationCode,
   }) async {
     try {
-      // リセットコードと新しいパスワードで確定処理をリクエスト
       await Amplify.Auth.confirmResetPassword(
         username: username,
         newPassword: newPassword,

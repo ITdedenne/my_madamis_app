@@ -1,0 +1,35 @@
+[
+  {
+    "Action": [
+      "dynamodb:PutItem"
+    ],
+    "Resource": [
+      {
+        "Fn::Sub": [
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-${ApiId}-${Env}",
+          {
+            "ApiId": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "Env": {
+              "Ref": "env"
+            }
+          }
+        ]
+      },
+      {
+        "Fn::Sub": [
+          "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/User-${ApiId}-${Env}/index/*",
+          {
+            "ApiId": {
+              "Ref": "apimymadamisappGraphQLAPIIdOutput"
+            },
+            "Env": {
+              "Ref": "env"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
