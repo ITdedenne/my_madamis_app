@@ -9,7 +9,6 @@ class UserListItem extends StatelessWidget {
   final bool isProcessing;
   final VoidCallback? onActionButtonPressed;
   final VoidCallback? onTap;
-  /// ボタンのラベル。nullの場合はボタンを表示しません（表示専用モード）
   final String? actionButtonLabel;
   final Color? actionButtonColor;
   final Color? actionButtonTextColor;
@@ -55,7 +54,6 @@ class UserListItem extends StatelessWidget {
               ),
               const SizedBox(width: 16),
               
-              // ユーザー情報 (名前, Bio)
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +66,6 @@ class UserListItem extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    // ID表示を削除
                     if (user.bio != null && user.bio!.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(

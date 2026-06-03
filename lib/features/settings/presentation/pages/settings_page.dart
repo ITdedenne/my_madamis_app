@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/login_page.dart';
 
-// ★ 変更点: LoginViewModel ではなく AuthStateNotifier をインポートします
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 
 import 'package:my_madamis_app/features/settings/presentation/pages/update_email_page.dart';
@@ -88,7 +87,7 @@ class SettingsPage extends ConsumerWidget {
               if (confirm != true) return;
 
               // 2. ログアウト処理を実行
-              // ★ 変更点: authStateNotifierProvider の signOut を呼び出します
+              // authStateNotifierProvider の signOut を呼び出し
               await ref.read(authStateNotifierProvider.notifier).signOut();
 
               // 3. ログイン画面へ遷移（これまでの画面スタックをすべて削除）

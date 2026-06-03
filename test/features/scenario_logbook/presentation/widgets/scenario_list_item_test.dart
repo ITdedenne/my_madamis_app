@@ -6,7 +6,7 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_sc
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
 
 void main() {
-  // テスト用のダミーシナリオ
+  
   final tScenario = Scenario(
     id: '1',
     title: '狂気山脈',

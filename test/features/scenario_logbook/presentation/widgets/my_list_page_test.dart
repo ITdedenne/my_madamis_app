@@ -23,7 +23,6 @@ void main() {
     status: const UserScenarioStatus(isPlayed: true),
   );
 
-  // テスト対象のページを生成するヘルパー関数
   Widget createPageUnderTest(AsyncValue<List<UserScenario>> mockState) {
     return ProviderScope(
       overrides: [

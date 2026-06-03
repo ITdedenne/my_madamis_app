@@ -14,7 +14,6 @@ class SignInUseCase {
     await _repository.signIn(username: email, password: password);
     final attributes = await _repository.getCurrentUserAttributes();
     
-    // ★修正ポイント: firstWhere を orElse を使って安全にする
     final usernameAttribute = attributes
         .firstWhere(
           (element) =>

@@ -67,7 +67,7 @@ void main() {
     });
 
     test('処理中は status が loading になること', () async {
-      // Arrange
+
       when(mockAuthRepository.confirmSignUp(
               username: testEmail, confirmationCode: testCode))
           .thenAnswer((_) async {

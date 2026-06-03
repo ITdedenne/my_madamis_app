@@ -34,7 +34,7 @@ class SearchScenariosState {
   final String? successMessage;
   final SearchFilter filter;
   final String searchTerm;
-  final int displayLimit; // 現在の表示上限数
+  final int displayLimit;
 
   SearchScenariosState({
     this.errorMessage,
@@ -77,7 +77,6 @@ final _filteredAllScenariosProvider = Provider<AsyncValue<List<Scenario>>>((ref)
 
       // 検索フィルターロジック
       final filter = searchState.filter;
-      // ★ 改善: トリムして前後の空白を除去
       final rawTerm = searchState.searchTerm.toLowerCase().trim();
       
       // 検索ワードによる絞り込み (AND検索対応)

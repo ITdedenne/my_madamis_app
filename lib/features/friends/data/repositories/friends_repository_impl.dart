@@ -2,7 +2,7 @@
 
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:my_madamis_app/core/constants/app_constants.dart'; // ★ 追加
+import 'package:my_madamis_app/core/constants/app_constants.dart';
 import 'package:my_madamis_app/features/friends/domain/repositories/friends_repository.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 

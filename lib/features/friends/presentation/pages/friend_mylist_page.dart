@@ -6,7 +6,7 @@ import 'package:my_madamis_app/common/widgets/user_list_item.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/usecases/get_user_scenarios_usecase.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
-import 'package:my_madamis_app/models/ModelProvider.dart' hide UserScenario; // Userモデル用
+import 'package:my_madamis_app/models/ModelProvider.dart' hide UserScenario;
 import 'package:my_madamis_app/providers.dart';
 
 final otherUserScenariosProvider = FutureProvider.family<List<UserScenario>, String>((ref, userId) async {
@@ -15,7 +15,7 @@ final otherUserScenariosProvider = FutureProvider.family<List<UserScenario>, Str
 });
 
 class FriendMyListPage extends ConsumerWidget {
-  // ★ 修正: 個別のフィールドではなく User オブジェクトを受け取る
+
   final User targetUser;
 
   const FriendMyListPage({
@@ -33,14 +33,12 @@ class FriendMyListPage extends ConsumerWidget {
       ),
       body: Column(
         children: [
-          // ★ 修正: 共通コンポーネントを使用してリッチなプロフィールヘッダーを表示
-          // ボタンラベルを指定しないことで、表示専用モードになる
           UserListItem(
             user: targetUser,
             onActionButtonPressed: null,
-            actionButtonLabel: null, // 表示専用
+            actionButtonLabel: null,
           ),
-          const Divider(height: 1), // 区切り線
+          const Divider(height: 1),
           
           Expanded(
             child: scenariosAsync.when(

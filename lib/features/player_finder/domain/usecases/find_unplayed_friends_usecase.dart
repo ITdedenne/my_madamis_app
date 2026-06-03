@@ -5,7 +5,6 @@ class FindUnplayedFriendsUseCase {
   final PlayerFinderRepository _repository;
   FindUnplayedFriendsUseCase(this._repository);
 
-  // ★ mode引数を追加
   Future<List<SearchedUser>> call(String scenarioId, {String mode = 'player'}) {
     return _repository.findUnplayedFriends(scenarioId, mode: mode);
   }

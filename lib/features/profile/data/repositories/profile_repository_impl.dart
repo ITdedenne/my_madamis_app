@@ -14,7 +14,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
     }
   ''';
   
-  // ★ 修正: friendIDエイリアスを廃止し、publicUserIdを直接取得
   static const _getUserQuery = r'''
     query GetUser($id: ID!) {
       getUser(id: $id) {
@@ -61,7 +60,6 @@ class ProfileRepositoryImpl implements ProfileRepository {
     
     final userModel = response.data!;
     
-    // ★ 修正: userModel.publicUserId を使用
     return UserProfile(
       publicUserId: userModel.publicUserId, 
       username: userModel.username, 

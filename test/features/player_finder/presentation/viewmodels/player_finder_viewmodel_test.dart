@@ -19,7 +19,6 @@ void main() {
     mockRepo = MockPlayerFinderRepository();
   });
 
-  // 実際のエンティティの構造に合わせたダミー生成ヘルパー
   SearchedUser createDummyUser({
     required String id,
     bool isPlayed = false,
@@ -28,7 +27,6 @@ void main() {
     bool wantsToPlay = false,
   }) {
     return SearchedUser(
-      // 実際の Amplify User モデルを渡す
       user: User(id: id, username: 'User_$id', publicUserId: 'pub_$id'),
       isPlayed: isPlayed,
       isPossessed: isPossessed,
@@ -59,7 +57,6 @@ void main() {
       // 実行: モードをGMに切り替える
       viewModel.setMode(PlayerFinderMode.gm);
       
-      // モード切替後の再検索(_search)が完了するのを少し待機
       await Future.delayed(const Duration(milliseconds: 50));
 
       // 検証: gmモードでリポジトリが呼ばれたか
@@ -69,7 +66,7 @@ void main() {
     test('【PL希望者の強調ソート】PL探しモード時、データが正常にViewModelに反映されること', () async {
       final dummyUsers = [
         createDummyUser(id: 'u1', wantsToPlay: false),
-        createDummyUser(id: 'u2', wantsToPlay: true), // PL希望
+        createDummyUser(id: 'u2', wantsToPlay: true),
       ];
 
       when(mockRepo.findUnplayedFriends(any, mode: anyNamed('mode')))

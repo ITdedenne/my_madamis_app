@@ -11,7 +11,7 @@ enum ConfirmationStatus { initial, loading, success, error }
 class ConfirmationState {
   final ConfirmationStatus status;
   final String? errorMessage;
-  final String? authenticatedUsername; // ★ 追加: 認証されたユーザー名
+  final String? authenticatedUsername;
 
   ConfirmationState({
     this.status = ConfirmationStatus.initial,
@@ -64,14 +64,11 @@ class ConfirmationViewModel extends StateNotifier<ConfirmationState> {
         }
       }
       
-      // 4. 自動ログインを試み、ユーザー名を取得する
-      // ★ 修正: usernameを受け取る
       final username = await _signInUseCase(email, password);
        
-      // 5. 成功状態とユーザー名をセット
       state = state.copyWith(
         status: ConfirmationStatus.success,
-        authenticatedUsername: username, // ★ セット
+        authenticatedUsername: username,
       );
 
     } catch (e) {

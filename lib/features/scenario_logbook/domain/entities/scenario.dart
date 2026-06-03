@@ -1,7 +1,5 @@
 // lib/features/scenario_logbook/domain/entities/scenario.dart
 
-import 'package:flutter/material.dart';
-
 enum GmRequirement {
   required,
   optional,
@@ -44,7 +42,7 @@ class Scenario {
       gmReq = GmRequirement.none;
     }
 
-    // すべてのStringフィールドに対して .toString() と ?? '' を使い、絶対Nullにならないようにします
+    // すべてのStringフィールドに対して .toString() と ?? '' を使い、絶対Nullにならないようにする
     final id = (json['scenarioId'] ?? json['id'] ?? '').toString();
     final title = (json['title'] ?? '無題').toString();
     final authorId = (json['authorId'] ?? '').toString();

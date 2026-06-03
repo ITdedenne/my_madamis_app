@@ -12,7 +12,7 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/sc
 // --- レイアウト定数 (Magic Numbersの排除) ---
 const double _kMobileBreakpoint = 600.0;
 const double _kMinCardWidth = 300.0;
-const double _kGridAspectRatio = 2.0;    // PC: 2.0 (調整済み)
+const double _kGridAspectRatio = 2.0;
 const double _kGridSpacing = 16.0;
 const double _kListSpacing = 8.0;
 const double _kHorizontalPadding = 8.0;
@@ -31,7 +31,7 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
   @override
   void initState() {
     super.initState();
-    // ★ 改善: ViewModelに保存されている検索ワードを初期値としてセットする
+    // ViewModelに保存されている検索ワードを初期値としてセットする
     final currentSearchTerm = ref.read(searchScenariosViewModelProvider).searchTerm;
     _searchController = TextEditingController(text: currentSearchTerm);
   }
@@ -74,9 +74,8 @@ class _SearchScenariosPageState extends ConsumerState<SearchScenariosPage> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'シナリオ名・作者名 (スペースでAND検索)', // ヒントも更新
+                    hintText: 'シナリオ名・作者名 (スペースでAND検索)',
                     prefixIcon: const Icon(Icons.search),
-                    // 検索ワードが入っている時だけクリアボタンを表示するUX改善
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear),

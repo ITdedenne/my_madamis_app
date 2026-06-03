@@ -23,7 +23,6 @@ class GroupScenarioCard extends ConsumerWidget {
       opacity: opacity,
       child: Stack(
         children: [
-          // ベースのカード
           ScenarioListItem(
             scenario: item.scenario,
             status: status,
@@ -33,7 +32,6 @@ class GroupScenarioCard extends ConsumerWidget {
             },
           ),
           
-          // アイコンバッジ (分離して表示)
           Positioned(
             top: 4,
             right: 4,

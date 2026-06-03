@@ -2,11 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// 新しいパス構造に合わせる
 import 'package:my_madamis_app/features/auth/presentation/notifiers/auth_state_notifier.dart';
 import 'package:my_madamis_app/features/auth/presentation/pages/reset_password_page.dart';
 
-// ConsumerWidget から ConsumerStatefulWidget に変更
 class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -15,19 +13,18 @@ class ForgotPasswordPage extends ConsumerStatefulWidget {
 }
 
 class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
-  // TextEditingControllerをbuildメソッドの外に移動
   late final TextEditingController _emailController;
 
   @override
   void initState() {
     super.initState();
-    // initStateで一度だけ初期化する
+
     _emailController = TextEditingController();
   }
 
   @override
   void dispose() {
-    // ウィジェットが不要になったらcontrollerを破棄する
+    
     _emailController.dispose();
     super.dispose();
   }
@@ -54,7 +51,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
         child: Column(
           children: [
             TextFormField(
-              // controllerを_emailControllerに変更
               controller: _emailController,
               decoration: const InputDecoration(labelText: '登録したメールアドレス'),
             ),
@@ -65,7 +61,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               ElevatedButton(
                 onPressed: () => ref
                     .read(authStateNotifierProvider.notifier)
-                    // controllerを_emailControllerに変更
                     .resetPassword(_emailController.text),
                 child: const Text('リセットコードを送信'),
               ),

@@ -10,7 +10,7 @@ class FriendsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // タブの数
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('フレンズ'),

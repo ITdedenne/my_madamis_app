@@ -93,7 +93,7 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               // 1. 非同期でデータを取得
               final allAuthors = await ref.read(scenarioRepositoryProvider).fetchAllAuthorNames();
               
-              // ★ 修正: Contextを使用する前にマウント状態を確認
+              // Contextを使用する前にマウント状態を確認
               if (!context.mounted) return;
 
               // 2. 画面遷移

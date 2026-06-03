@@ -1,15 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:collection/collection.dart'; // firstWhereOrNull用
+import 'package:collection/collection.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/domain/entities/user_scenario.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
 import 'package:my_madamis_app/providers.dart';
 
-// ★ 修正: wantsToPlay (PL希望) を追加
 enum MyListFilter { all, played, possessed, wantsToGm, wantsToPlay }
 enum SortOrder { byTitle, byAuthor }
 
-// UI状態
 class MyListPageState {
   final MyListFilter filter;
   final SortOrder sortOrder;
@@ -62,7 +60,6 @@ final filteredAndSortedMyListProvider = Provider<AsyncValue<List<UserScenario>>>
       case MyListFilter.wantsToGm:
         filtered = myList.where((s) => s.status.wantsToGm).toList();
         break;
-      // ★ 追加: PL希望でのフィルタリング
       case MyListFilter.wantsToPlay:
         filtered = myList.where((s) => s.status.wantsToPlay).toList();
         break;

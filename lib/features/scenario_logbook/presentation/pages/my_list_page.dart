@@ -48,7 +48,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
     return Scaffold(
       body: Column(
         children: [
-          // 上部コントロールエリア
           Container(
             color: Theme.of(context).scaffoldBackgroundColor,
             child: Row(
@@ -80,7 +79,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
             ),
           ),
           
-          // コンテンツエリア
           Expanded(
             child: RefreshIndicator(
               onRefresh: () async {
@@ -110,13 +108,11 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
           return _buildEmptyState(pageState.filter);
         }
 
-        // レスポンシブ設定
         final isPC = screenWidth >= _kMobileBreakpoint;
         final int crossAxisCount = isPC ? (screenWidth / _kMinCardWidth).floor() : 1;
         
         return CustomScrollView(
           slivers: [
-            // 1. サマリー表示
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.all(_kSummaryPadding),
@@ -137,7 +133,6 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
               ),
             ),
 
-            // 2. グリッド/リスト表示
             SliverPadding(
               padding: const EdgeInsets.symmetric(horizontal: _kGridSpacing),
               sliver: isPC
@@ -184,7 +179,7 @@ class _MyListPageState extends ConsumerState<MyListPage> with SingleTickerProvid
 
   Widget _buildEmptyState(MyListFilter filter) {
     final message = switch (filter) {
-      MyListFilter.all => '記録されたシナリオはありません。\nまずは遊んだシナリオを登録しましょう！', // ★ ここを変更しました
+      MyListFilter.all => '記録されたシナリオはありません。\nまずは遊んだシナリオを登録しましょう！',
       MyListFilter.played => '「通過済」のシナリオはありません。',
       MyListFilter.possessed => '「所持」しているシナリオはありません。',
       MyListFilter.wantsToGm => '「購入検討中」のシナリオはありません。',

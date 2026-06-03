@@ -156,7 +156,7 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
   bool? _showPossessed = true; 
   bool? _showWantsToGm;
   bool? _showPlayed;
-  bool? _showWantsToPlay; // ★ 追加
+  bool? _showWantsToPlay;
 
   @override
   Widget build(BuildContext context) {
@@ -191,7 +191,6 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
                   selectedColor: Colors.orange.shade700
               ),
               const SizedBox(width: 8),
-              // ★ 追加: PL希望チップ
               _buildFilterChip(
                   label: 'PL希望', 
                   isSelected: _showWantsToPlay == true, 
@@ -231,7 +230,6 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
                   if (_showPossessed == true && status.isPossessed) return true;
                   if (_showWantsToGm == true && status.wantsToGm) return true;
                   if (_showPlayed == true && status.isPlayed) return true;
-                  // ★ 追加: フィルタロジック
                   if (_showWantsToPlay == true && status.wantsToPlay) return true;
 
                   return false;
@@ -269,7 +267,6 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
   }
 
   bool _isAllSelected() {
-    // ★ 追加: PL希望も含めて判定
     return _showPossessed == null && _showWantsToGm == null && _showPlayed == null && _showWantsToPlay == null;
   }
 
@@ -278,7 +275,7 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
       _showPossessed = null;
       _showWantsToGm = null;
       _showPlayed = null;
-      _showWantsToPlay = null; // ★ 追加
+      _showWantsToPlay = null;
     });
   }
 

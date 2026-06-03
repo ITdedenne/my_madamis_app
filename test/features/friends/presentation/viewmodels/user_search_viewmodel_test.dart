@@ -12,7 +12,6 @@ import 'package:my_madamis_app/providers.dart';
 @GenerateMocks([FriendsRepository])
 import 'user_search_viewmodel_test.mocks.dart';
 
-// 他のViewModelへの依存(ロード処理)を隔離するためのモック
 class MockFriendsViewModel extends StateNotifier<FriendsState> implements FriendsViewModel {
   MockFriendsViewModel() : super(FriendsState());
   

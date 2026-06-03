@@ -6,8 +6,8 @@ class GroupSearchResult extends Equatable {
   final String scenarioId;
   final List<String> ngUserIds;
   final List<String> wantsToPlayUserIds;
-  final List<String> possessedUserIds;   // ★ 追加: 所持
-  final List<String> wantsToGmUserIds;   // ★ 追加: 購入検討
+  final List<String> possessedUserIds;
+  final List<String> wantsToGmUserIds;
 
   const GroupSearchResult({
     required this.scenarioId,
@@ -28,8 +28,8 @@ class GroupSearchResult extends Equatable {
       scenarioId: json['scenarioId'] as String,
       ngUserIds: parseList('ngUserIds'),
       wantsToPlayUserIds: parseList('wantsToPlayUserIds'),
-      possessedUserIds: parseList('possessedUserIds'), // ★ マッピング
-      wantsToGmUserIds: parseList('wantsToGmUserIds'), // ★ マッピング
+      possessedUserIds: parseList('possessedUserIds'),
+      wantsToGmUserIds: parseList('wantsToGmUserIds'),
     );
   }
 }

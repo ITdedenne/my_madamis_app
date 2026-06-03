@@ -6,13 +6,13 @@ class UserScenarioStatus extends Equatable {
   final bool isPlayed;
   final bool isPossessed;
   final bool wantsToGm;
-  final bool wantsToPlay; // ★ 追加: PL希望
+  final bool wantsToPlay;
 
   const UserScenarioStatus({
     this.isPlayed = false,
     this.isPossessed = false,
     this.wantsToGm = false,
-    this.wantsToPlay = false, // ★ 追加
+    this.wantsToPlay = false,
   });
 
   // 全てfalseなら「未登録」とみなす
@@ -21,18 +21,17 @@ class UserScenarioStatus extends Equatable {
   @override
   List<Object?> get props => [isPlayed, isPossessed, wantsToGm, wantsToPlay];
   
-  // copyWithメソッド
   UserScenarioStatus copyWith({
     bool? isPlayed,
     bool? isPossessed,
     bool? wantsToGm,
-    bool? wantsToPlay, // ★ 追加
+    bool? wantsToPlay,
   }) {
     return UserScenarioStatus(
       isPlayed: isPlayed ?? this.isPlayed,
       isPossessed: isPossessed ?? this.isPossessed,
       wantsToGm: wantsToGm ?? this.wantsToGm,
-      wantsToPlay: wantsToPlay ?? this.wantsToPlay, // ★ 追加
+      wantsToPlay: wantsToPlay ?? this.wantsToPlay,
     );
   }
 }

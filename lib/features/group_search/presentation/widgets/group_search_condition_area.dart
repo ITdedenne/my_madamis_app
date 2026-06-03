@@ -32,7 +32,6 @@ class GroupSearchConditionArea extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ヘッダーバー
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(

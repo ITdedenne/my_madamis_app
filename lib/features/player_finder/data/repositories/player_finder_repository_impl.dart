@@ -8,9 +8,7 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
   static const String _kQueryKey = 'findUnplayedFriends';
   
   @override
-  // ★ mode引数を追加
   Future<List<SearchedUser>> findUnplayedFriends(String scenarioId, {String mode = 'player'}) async {
-    // ★ queryに $mode 変数を追加
     const query = r'''
       query FindUnplayedFriends($scenarioId: String!, $mode: String) {
         ''' + _kQueryKey + r'''(scenarioId: $scenarioId, mode: $mode)
@@ -21,7 +19,7 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
       document: query,
       variables: {
         'scenarioId': scenarioId,
-        'mode': mode, // ★ 変数にセット
+        'mode': mode,
       },
     );
 
@@ -51,10 +49,9 @@ class PlayerFinderRepositoryImpl implements PlayerFinderRepository {
          throw Exception('Decoded JSON is not a List');
       }
 
-      // ★ 変換ロジックを更新: ステータス情報をパース
       return decodedList.map((json) {
         if (json is Map<String, dynamic>) {
-          // Userモデルの復元
+
           final user = User.fromJson(json);
           
           return SearchedUser(

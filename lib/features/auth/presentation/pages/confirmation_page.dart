@@ -33,7 +33,6 @@ class ConfirmationPage extends ConsumerWidget {
         );
       }
       if (next.status == ConfirmationStatus.success) {
-        // ★ 修正: ViewModelから返された正式なユーザー名を使用する
         final authenticatedName = next.authenticatedUsername ?? username;
         
         ref.read(authStateNotifierProvider.notifier).setAuthenticated(
@@ -51,9 +50,8 @@ class ConfirmationPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('コード認証'),
-        elevation: 0, // LoginPageのデザインと合わせる
+        elevation: 0,
       ),
-      // ★ 修正箇所: LoginPageを参考に中央寄せ＆最大幅を設定
       body: Center(
         child: SingleChildScrollView(
           child: Container(
@@ -61,7 +59,7 @@ class ConfirmationPage extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 40.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch, // 要素を横幅いっぱいに広げる
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   '$email に届いた\n確認コードを入力してください。',

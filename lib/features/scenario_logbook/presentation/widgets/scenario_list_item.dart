@@ -28,8 +28,6 @@ class ScenarioListItem extends StatelessWidget {
     return null;
   }
 
-  // --- 表示改善用ヘルパーメソッド ---
-  // ★ 改善: 初見ユーザー向けに「PL（プレイヤー数）」であることを明示
   String _getPlayerCountText() {
     if (scenario.minPlayerCount == scenario.maxPlayerCount) {
       return 'PL ${scenario.minPlayerCount}人';
@@ -51,11 +49,11 @@ class ScenarioListItem extends StatelessWidget {
   IconData _getGmRequirementIcon() {
     switch (scenario.gmRequirement) {
       case GmRequirement.required:
-        return Icons.assignment_ind; // 必須感のあるアイコン
+        return Icons.assignment_ind;
       case GmRequirement.optional:
         return Icons.assignment_ind_outlined;
       case GmRequirement.none:
-        return Icons.person_off_outlined; // GMレス用
+        return Icons.person_off_outlined;
     }
   }
 
@@ -66,12 +64,11 @@ class ScenarioListItem extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      // ignore: deprecated_member_use
       color: theme.colorScheme.surfaceContainerLow,
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: theme.colorScheme.outlineVariant.withOpacity(0.5)),
+        side: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ),
       child: InkWell(
         onTap: onTap ?? (isReadOnly ? null : () => _showStatusMenu(context)),
@@ -85,7 +82,6 @@ class ScenarioListItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. タイトルとアクション
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -125,7 +121,6 @@ class ScenarioListItem extends StatelessWidget {
                               
                               const SizedBox(width: 12),
                               
-                              // 作者名 (Expandedで囲み、狭い画面でのOverflowを防ぐ)
                               Expanded(
                                 child: Text(
                                   'by ${scenario.authorName}',
@@ -151,7 +146,6 @@ class ScenarioListItem extends StatelessWidget {
                 ],
               ),
               
-              // 2. ステータス表示 (コンパクトなチップ)
               if (!status.isUnregistered) ...[
                 const SizedBox(height: 8),
                 Wrap(
@@ -207,7 +201,7 @@ class _CompactStatusChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,
@@ -221,7 +215,6 @@ class _CompactStatusChip extends StatelessWidget {
   }
 }
 
-// ステータス変更シート
 class _StatusSelectionSheet extends StatefulWidget {
   final UserScenarioStatus initialStatus;
   final Function(UserScenarioStatus newStatus) onStatusChanged;

@@ -9,7 +9,6 @@ import 'package:my_madamis_app/features/auth/presentation/viewmodels/create_prof
 
 import '../notifiers/auth_state_notifier.dart';
 
-// ★修正: パスワード表示状態を管理するため ConsumerStatefulWidget に変更
 class CreateProfilePage extends ConsumerStatefulWidget {
   final String email;
   const CreateProfilePage({super.key, required this.email});
@@ -23,7 +22,7 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   
-  bool _isObscure = true; // ★追加: パスワードの表示状態
+  bool _isObscure = true;
 
   @override
   void dispose() {
@@ -57,7 +56,6 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('予期せぬエラー: パスワードが見つかりません。')),
           );
-          // ※元のコードに合わせてメソッド呼び出しとして実行
           notifier.resetStateToInitial(); 
           return;
         }
@@ -65,7 +63,7 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
          Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => ConfirmationPage(
-              email: widget.email, // ★ widget.email でアクセス
+              email: widget.email,
               password: passwordForConfirmation,
               username: _usernameController.text,
             ),
@@ -79,7 +77,6 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
         title: const Text('プロフィール登録 (2/2)'),
         elevation: 0,
       ),
-      // ★修正: ログイン画面と同じレイアウト(最大幅500)に統一
       body: Center(
         child: SingleChildScrollView(
           child: Container(
@@ -108,8 +105,8 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
                   CustomTextFormField(
                     controller: _passwordController,
                     labelText: 'パスワード (8文字以上) *',
-                    obscureText: _isObscure, // ★追加: 状態を反映
-                    suffixIcon: IconButton(  // ★追加: 表示切り替えアイコン
+                    obscureText: _isObscure,
+                    suffixIcon: IconButton(
                       icon: Icon(
                         _isObscure ? Icons.visibility_off : Icons.visibility,
                         color: Colors.grey,
@@ -130,7 +127,7 @@ class _CreateProfilePageState extends ConsumerState<CreateProfilePage> {
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
                         notifier.signUp(
-                          email: widget.email, // ★ widget.email でアクセス
+                          email: widget.email,
                           password: _passwordController.text,
                           username: _usernameController.text,
                           bio: '',

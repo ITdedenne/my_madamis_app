@@ -9,7 +9,6 @@ import 'package:my_madamis_app/features/scenario_logbook/domain/entities/scenari
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 import 'package:my_madamis_app/models/ModelProvider.dart';
 import 'package:my_madamis_app/providers.dart';
-// ★追加: Lambdaの生レスポンスを保持するため import を追加
 import 'package:my_madamis_app/features/group_search/domain/entities/group_search_result.dart';
 
 enum GroupSearchSortOrder {
@@ -120,7 +119,7 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
   
   List<GroupSearchDisplayItem> _rawResults = [];
   
-  // ★追加: 通信コスト削減のためのキャッシュ変数
+  // 通信コスト削減のためのキャッシュ変数
   List<GroupSearchResult>? _lastLambdaResults; 
   Set<String>? _lastSearchedFriendIds;
 
@@ -150,7 +149,7 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
     state = state.copyWith(selectedFriendIds: current);
   }
 
-  // ★修正: 内部GMのON/OFF時、すでに検索結果を持っていれば「ローカルで即座に再計算」する (AWSコスト0・UX最高)
+  // ★内部GMのON/OFF時、すでに検索結果を持っていれば「ローカルで即座に再計算」する (AWSコスト0・UX最高)
   void toggleHasInternalGm(bool value) {
     state = state.copyWith(hasInternalGm: value);
     if (_lastLambdaResults != null && _lastSearchedFriendIds != null && _lastSearchedFriendIds!.length == state.selectedFriendIds.length && _lastSearchedFriendIds!.containsAll(state.selectedFriendIds)) {
@@ -206,7 +205,7 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
     state = state.copyWith(searchResults: sorted);
   }
 
-  // ★追加: Lambdaの結果を元に、現在の画面設定（GM有無など）に合わせて表示用アイテムを生成する処理を分離
+  // Lambdaの結果を元に、現在の画面設定（GM有無など）に合わせて表示用アイテムを生成する処理を分離
   Future<void> _generateDisplayItems(List<GroupSearchResult> lambdaResults) async {
     final allScenarios = await _ref.read(allScenariosProvider.future);
     final friendMap = {for (var f in state.friends) f.id: f};
@@ -261,10 +260,10 @@ class GroupSearchViewModel extends StateNotifier<GroupSearchState> {
 
   Future<void> search() async {
     if (state.selectedFriendIds.isEmpty) return;
-    // ★修正: 連打対策 (すでに検索中なら弾く)
+    // ★連打対策 (すでに検索中なら弾く)
     if (state.isSearching) return; 
 
-    // ★修正: キャッシュ判定 (直前とまったく同じメンバーでの検索ならAWS通信をスキップして即表示)
+    // ★キャッシュ判定 (直前とまったく同じメンバーでの検索ならAWS通信をスキップして即表示)
     if (_lastSearchedFriendIds != null && 
         _lastSearchedFriendIds!.length == state.selectedFriendIds.length && 
         _lastSearchedFriendIds!.containsAll(state.selectedFriendIds)) {

@@ -74,7 +74,7 @@ class GroupSearchResultsArea extends ConsumerWidget {
                     style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)
                   ),
                   const Spacer(),
-                  // ★ 追加: 身内GM（内部GM）トグルボタン
+                  // 身内GM（内部GM）トグルボタン
                   FilterChip(
                     label: const Text('身内GM', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     selected: state.hasInternalGm,
@@ -116,7 +116,7 @@ class GroupSearchResultsArea extends ConsumerWidget {
                     const ButtonSegment(value: false, label: Text('すべて (惜しい含む)', style: TextStyle(fontSize: 12))),
                     ButtonSegment(
                       value: true, 
-                      label: Text('${displayTargetPlayers}人用のみ', style: const TextStyle(fontSize: 12)),
+                      label: Text('$displayTargetPlayers人用のみ', style: const TextStyle(fontSize: 12)),
                     ),
                   ],
                   selected: {state.exactPlayerMatch},
