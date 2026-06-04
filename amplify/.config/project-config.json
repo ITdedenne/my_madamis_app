@@ -2,7 +2,7 @@
   "providers": [
     "awscloudformation"
   ],
-  "projectName": "mymadamisapp",
+  "projectName": "madamisprod",
   "version": "3.1",
   "frontend": "flutter",
   "flutter": {
