@@ -3,9 +3,11 @@ name: Flutter CI
 
 # ワークフローが実行されるタイミングを定義
 on:
-  # 'dev'ブランチに対するプルリクエストが作成または更新された時
+  # 'main' または 'dev' ブランチに対するプルリクエストが作成・更新された時
   pull_request:
-    branches: [ dev ]
+    branches:
+      - main
+      - dev
 
 # 実行される一連のタスク（ジョブ）を定義
 jobs:
@@ -32,17 +34,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
       
-      # --- ▼▼▼ ここから追加 ▼▼▼ ---
       # 4. (CI/CD用) ダミーのAmplify設定ファイルを作成する
       - name: Create dummy amplifyconfiguration.dart for analysis
         run: |
           echo "const String amplifyconfig = '''{}''';" > lib/amplifyconfiguration.dart
-      # --- ▲▲▲ ここまで追加 ▲▲▲ ---
 
 # 5. 静的コード解析を実行する (warning以上の場合のみエラーにする)
       - name: Run static analysis
         run: flutter analyze --no-fatal-infos
 
       # 6. テストを実行する (すべてのテストが成功するかチェック)
-      #- name: Run tests
-       # run: flutter test
+      - name: Run tests
+        run: flutter test
