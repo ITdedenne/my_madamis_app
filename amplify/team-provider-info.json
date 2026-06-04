@@ -1,0 +1,99 @@
+{
+  "main": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-madamisprod-main-d4642-authRole",
+      "UnauthRoleArn": "arn:aws:iam::208889941036:role/amplify-madamisprod-main-d4642-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::208889941036:role/amplify-madamisprod-main-d4642-authRole",
+      "Region": "ap-northeast-1",
+      "DeploymentBucketName": "amplify-madamisprod-main-d4642-deployment",
+      "UnauthRoleName": "amplify-madamisprod-main-d4642-unauthRole",
+      "StackName": "amplify-madamisprod-main-d4642",
+      "StackId": "arn:aws:cloudformation:ap-northeast-1:208889941036:stack/amplify-madamisprod-main-d4642/fe1001b0-5f6a-11f1-bcaf-06c9a5661109",
+      "AmplifyAppId": "d314swcut4bzde",
+      "AuthTriggerTemplateURL": "https://s3.amazonaws.com/amplify-madamisprod-main-d4642-deployment/amplify-cfn-templates/auth/auth-trigger-cloudformation-template.json"
+    },
+    "categories": {
+      "auth": {
+        "mymadamisappb2bf781d": {}
+      },
+      "function": {
+        "deleteUserAccount": {
+          "deploymentBucketName": "amplify-madamisprod-main-d4642-deployment",
+          "s3Key": "amplify-builds/deleteUserAccount-6b76494779737a6a5762-build.zip"
+        },
+        "findGroupScenarios": {
+          "deploymentBucketName": "amplify-madamisprod-main-d4642-deployment",
+          "s3Key": "amplify-builds/findGroupScenarios-75494e304d7939516655-build.zip"
+        },
+        "findUnplayedFriends": {
+          "deploymentBucketName": "amplify-madamisprod-main-d4642-deployment",
+          "s3Key": "amplify-builds/findUnplayedFriends-616e59617155312b4a4d-build.zip"
+        },
+        "mymadamisappb2bf781dPostConfirmation": {
+          "deploymentBucketName": "amplify-madamisprod-main-d4642-deployment",
+          "s3Key": "amplify-builds/mymadamisappb2bf781dPostConfirmation-48576663427051784c76-build.zip"
+        },
+        "updateUserProfile": {
+          "deploymentBucketName": "amplify-madamisprod-main-d4642-deployment",
+          "s3Key": "amplify-builds/updateUserProfile-4f4f31786c46724f5a35-build.zip"
+        },
+        "mymadamisappb2bf781d": {},
+        "mymadamisapp": {},
+        "madamisappS3": {}
+      },
+      "storage": {
+        "madamisappS3": {}
+      }
+    }
+  },
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-madamisprod-dev-b6490-authRole",
+      "UnauthRoleArn": "arn:aws:iam::208889941036:role/amplify-madamisprod-dev-b6490-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::208889941036:role/amplify-madamisprod-dev-b6490-authRole",
+      "Region": "ap-northeast-1",
+      "DeploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
+      "UnauthRoleName": "amplify-madamisprod-dev-b6490-unauthRole",
+      "StackName": "amplify-madamisprod-dev-b6490",
+      "StackId": "arn:aws:cloudformation:ap-northeast-1:208889941036:stack/amplify-madamisprod-dev-b6490/e236d4e0-6015-11f1-badd-0a4435b98ef5",
+      "AmplifyAppId": "d314swcut4bzde",
+      "AuthTriggerTemplateURL": "https://s3.amazonaws.com/amplify-madamisprod-dev-b6490-deployment/amplify-cfn-templates/auth/auth-trigger-cloudformation-template.json"
+    },
+    "categories": {
+      "auth": {
+        "mymadamisappb2bf781d": {}
+      },
+      "function": {
+        "deleteUserAccount": {
+          "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
+          "s3Key": "amplify-builds/deleteUserAccount-4e554e526a7263526d67-build.zip"
+        },
+        "findGroupScenarios": {
+          "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
+          "s3Key": "amplify-builds/findGroupScenarios-376f426d4c594a55716e-build.zip"
+        },
+        "findUnplayedFriends": {
+          "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
+          "s3Key": "amplify-builds/findUnplayedFriends-354d4d437a554d4e6a78-build.zip"
+        },
+        "mymadamisappb2bf781dPostConfirmation": {
+          "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
+          "s3Key": "amplify-builds/mymadamisappb2bf781dPostConfirmation-48576663427051784c76-build.zip"
+        },
+        "updateUserProfile": {
+          "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
+          "s3Key": "amplify-builds/updateUserProfile-59477859644379386650-build.zip"
+        },
+        "mymadamisappb2bf781d": {},
+        "mymadamisapp": {},
+        "madamisappS3": {}
+      },
+      "api": {
+        "mymadamisapp": {}
+      },
+      "storage": {
+        "madamisappS3": {}
+      }
+    }
+  }
+}
