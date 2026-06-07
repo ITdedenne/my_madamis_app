@@ -19,15 +19,15 @@
       "function": {
         "deleteUserAccount": {
           "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
-          "s3Key": "amplify-builds/deleteUserAccount-4e554e526a7263526d67-build.zip"
+          "s3Key": "amplify-builds/deleteUserAccount-422f77755545576a3036-build.zip"
         },
         "findGroupScenarios": {
           "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
-          "s3Key": "amplify-builds/findGroupScenarios-376f426d4c594a55716e-build.zip"
+          "s3Key": "amplify-builds/findGroupScenarios-316648464f7367445733-build.zip"
         },
         "findUnplayedFriends": {
           "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
-          "s3Key": "amplify-builds/findUnplayedFriends-354d4d437a554d4e6a78-build.zip"
+          "s3Key": "amplify-builds/findUnplayedFriends-6f792f62576165425952-build.zip"
         },
         "mymadamisappb2bf781dPostConfirmation": {
           "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
@@ -35,7 +35,7 @@
         },
         "updateUserProfile": {
           "deploymentBucketName": "amplify-madamisprod-dev-b6490-deployment",
-          "s3Key": "amplify-builds/updateUserProfile-59477859644379386650-build.zip"
+          "s3Key": "amplify-builds/updateUserProfile-716d506d4f434e74536c-build.zip"
         },
         "mymadamisappb2bf781d": {},
         "mymadamisapp": {},

@@ -6,7 +6,7 @@ const amplifyconfig = '''{
             "awsAPIPlugin": {
                 "mymadamisapp": {
                     "endpointType": "GraphQL",
-                    "endpoint": "https://zjznh5snuvbetde36l5jiyv6se.appsync-api.ap-northeast-1.amazonaws.com/graphql",
+                    "endpoint": "https://blebnvms7jefnndab5esxrmfcm.appsync-api.ap-northeast-1.amazonaws.com/graphql",
                     "region": "ap-northeast-1",
                     "authorizationType": "AMAZON_COGNITO_USER_POOLS"
                 }
@@ -23,7 +23,7 @@ const amplifyconfig = '''{
                 },
                 "AppSync": {
                     "Default": {
-                        "ApiUrl": "https://zjznh5snuvbetde36l5jiyv6se.appsync-api.ap-northeast-1.amazonaws.com/graphql",
+                        "ApiUrl": "https://blebnvms7jefnndab5esxrmfcm.appsync-api.ap-northeast-1.amazonaws.com/graphql",
                         "Region": "ap-northeast-1",
                         "AuthMode": "AMAZON_COGNITO_USER_POOLS",
                         "ClientDatabasePrefix": "mymadamisapp_AMAZON_COGNITO_USER_POOLS"
@@ -32,15 +32,15 @@ const amplifyconfig = '''{
                 "CredentialsProvider": {
                     "CognitoIdentity": {
                         "Default": {
-                            "PoolId": "ap-northeast-1:293f3a5e-af07-4d18-b506-e9d6df7b79f5",
+                            "PoolId": "ap-northeast-1:d4ea6c61-6956-4602-b331-08293cf1e187",
                             "Region": "ap-northeast-1"
                         }
                     }
                 },
                 "CognitoUserPool": {
                     "Default": {
-                        "PoolId": "ap-northeast-1_sj64cCvNi",
-                        "AppClientId": "3naajelhpkp35qd2mr8j989id7",
+                        "PoolId": "ap-northeast-1_JQ9uG3uHN",
+                        "AppClientId": "63m0qq9eob5chha0t762pa20gu",
                         "Region": "ap-northeast-1"
                     }
                 },
@@ -70,7 +70,7 @@ const amplifyconfig = '''{
                 },
                 "S3TransferUtility": {
                     "Default": {
-                        "Bucket": "mymadamisapp-master-data25d51-prodb",
+                        "Bucket": "mymadamisapp-master-datab6490-dev",
                         "Region": "ap-northeast-1"
                     }
                 }
@@ -80,7 +80,7 @@ const amplifyconfig = '''{
     "storage": {
         "plugins": {
             "awsS3StoragePlugin": {
-                "bucket": "mymadamisapp-master-data25d51-prodb",
+                "bucket": "mymadamisapp-master-datab6490-dev",
                 "region": "ap-northeast-1",
                 "defaultAccessLevel": "guest"
             }
