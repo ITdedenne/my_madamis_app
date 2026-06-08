@@ -48,5 +48,69 @@
         "madamisappS3": {}
       }
     }
+  },
+  "main": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-madamisrecord-main-ed4a5-authRole",
+      "UnauthRoleArn": "arn:aws:iam::208889941036:role/amplify-madamisrecord-main-ed4a5-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::208889941036:role/amplify-madamisrecord-main-ed4a5-authRole",
+      "Region": "ap-northeast-1",
+      "DeploymentBucketName": "amplify-madamisrecord-main-ed4a5-deployment",
+      "UnauthRoleName": "amplify-madamisrecord-main-ed4a5-unauthRole",
+      "StackName": "amplify-madamisrecord-main-ed4a5",
+      "StackId": "arn:aws:cloudformation:ap-northeast-1:208889941036:stack/amplify-madamisrecord-main-ed4a5/5953e580-6350-11f1-a68d-0e62d4764399",
+      "AmplifyAppId": "d10g4tfl608c3c",
+      "AuthTriggerTemplateURL": "https://s3.amazonaws.com/amplify-madamisrecord-main-ed4a5-deployment/amplify-cfn-templates/auth/auth-trigger-cloudformation-template.json"
+    },
+    "categories": {
+      "auth": {
+        "mymadamisappb2bf781d": {}
+      },
+      "function": {
+        "deleteUserAccount": {
+          "deploymentBucketName": "amplify-madamisrecord-main-ed4a5-deployment",
+          "s3Key": "amplify-builds/deleteUserAccount-50366d336b7378506434-build.zip"
+        },
+        "findGroupScenarios": {
+          "deploymentBucketName": "amplify-madamisrecord-main-ed4a5-deployment",
+          "s3Key": "amplify-builds/findGroupScenarios-696d3531694e38516a50-build.zip"
+        },
+        "findUnplayedFriends": {
+          "deploymentBucketName": "amplify-madamisrecord-main-ed4a5-deployment",
+          "s3Key": "amplify-builds/findUnplayedFriends-2b4134694a6f33685569-build.zip"
+        },
+        "mymadamisappb2bf781dPostConfirmation": {
+          "deploymentBucketName": "amplify-madamisrecord-main-ed4a5-deployment",
+          "s3Key": "amplify-builds/mymadamisappb2bf781dPostConfirmation-48576663427051784c76-build.zip"
+        },
+        "updateUserProfile": {
+          "deploymentBucketName": "amplify-madamisrecord-main-ed4a5-deployment",
+          "s3Key": "amplify-builds/updateUserProfile-355939532f666f36514b-build.zip"
+        },
+        "mymadamisappb2bf781d": {},
+        "mymadamisapp": {},
+        "madamisappS3": {}
+      },
+      "api": {
+        "mymadamisapp": {}
+      },
+      "storage": {
+        "madamisappS3": {}
+      }
+    }
+  },
+  "prod": {
+    "categories": {
+      "function": {
+        "deleteUserAccount": {},
+        "findGroupScenarios": {},
+        "findUnplayedFriends": {},
+        "mymadamisappb2bf781dPostConfirmation": {},
+        "updateUserProfile": {},
+        "mymadamisappb2bf781d": {},
+        "mymadamisapp": {},
+        "madamisappS3": {}
+      }
+    }
   }
 }
