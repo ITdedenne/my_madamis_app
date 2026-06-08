@@ -8,6 +8,7 @@ import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/
 import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/search_scenarios_viewmodel.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/filter_bottom_sheet.dart';
 import 'package:my_madamis_app/features/scenario_logbook/presentation/widgets/scenario_list_item.dart';
+import 'package:my_madamis_app/features/scenario_logbook/presentation/viewmodels/my_list_viewmodel.dart';
 
 class PlayerFinderScenarioSelectPage extends ConsumerStatefulWidget {
   const PlayerFinderScenarioSelectPage({super.key});
@@ -160,8 +161,8 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
 
   @override
   Widget build(BuildContext context) {
-    final notifier = ref.read(playerFinderSearchViewModelProvider.notifier);
-    final allFilteredScenariosAsync = ref.watch(playerFinderDisplayedScenariosProvider); 
+    final searchState = ref.watch(playerFinderSearchViewModelProvider);
+    final allScenariosAsync = ref.watch(allScenariosProvider); 
     final userStatuses = ref.watch(userScenarioStatusProvider);
 
     return Column(
@@ -209,57 +210,57 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
         ),
 
         Expanded(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (ScrollNotification scrollInfo) {
-              if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent - 200) {
-                notifier.loadMore();
-              }
-              return false;
-            },
-            child: allFilteredScenariosAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('エラー: $e')),
-              data: (scenarios) {
-                final myListScenarios = scenarios.where((s) {
-                  final status = userStatuses[s.id];
-                  if (status == null) return false;
-                  if (status.isUnregistered) return false;
+          child: allScenariosAsync.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('エラー: $e')),
+            data: (scenarios) {
+              final myListScenarios = scenarios.where((s) {
+                final status = userStatuses[s.id];
+                if (status == null) return false;
+                if (status.isUnregistered) return false;
 
-                  if (_isAllSelected()) return true;
-
-                  if (_showPossessed == true && status.isPossessed) return true;
-                  if (_showWantsToGm == true && status.wantsToGm) return true;
-                  if (_showPlayed == true && status.isPlayed) return true;
-                  if (_showWantsToPlay == true && status.wantsToPlay) return true;
-
-                  return false;
-                }).toList();
-
-                if (myListScenarios.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      '条件に一致するシナリオがありません。\nチップを切り替えるか、検索条件を変更してください。',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  );
+                if (searchState.searchTerm.isNotEmpty) {
+                  final terms = searchState.searchTerm.toLowerCase().split(' ');
+                  final matchesTerm = terms.every((t) =>
+                      s.title.toLowerCase().contains(t) ||
+                      s.authorName.toLowerCase().contains(t));
+                  if (!matchesTerm) return false;
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(8.0),
-                  itemCount: myListScenarios.length,
-                  itemBuilder: (context, index) {
-                    final scenario = myListScenarios[index];
-                    final status = userStatuses[scenario.id]!;
-                    
-                    return _ClickableScenarioItem(
-                      scenario: scenario,
-                      status: status,
-                    );
-                  },
+                if (_isAllSelected()) return true;
+
+                if (_showPossessed == true && status.isPossessed) return true;
+                if (_showWantsToGm == true && status.wantsToGm) return true;
+                if (_showPlayed == true && status.isPlayed) return true;
+                if (_showWantsToPlay == true && status.wantsToPlay) return true;
+
+                return false;
+              }).toList();
+
+              if (myListScenarios.isEmpty) {
+                return const Center(
+                  child: Text(
+                    '条件に一致するシナリオがありません。\nチップを切り替えるか、検索条件を変更してください。',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 );
-              },
-            ),
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(8.0),
+                itemCount: myListScenarios.length,
+                itemBuilder: (context, index) {
+                  final scenario = myListScenarios[index];
+                  final status = userStatuses[scenario.id]!;
+                  
+                  return _ClickableScenarioItem(
+                    scenario: scenario,
+                    status: status,
+                  );
+                },
+              );
+            },
           ),
         ),
       ],
@@ -284,7 +285,7 @@ class _MyListTabState extends ConsumerState<_MyListTab> {
       _showPossessed = type == 'possessed';
       _showWantsToGm = type == 'wantsToGm';
       _showPlayed = type == 'played';
-      _showWantsToPlay = type == 'wantsToPlay'; // ★ 追加
+      _showWantsToPlay = type == 'wantsToPlay'; 
     });
   }
 
