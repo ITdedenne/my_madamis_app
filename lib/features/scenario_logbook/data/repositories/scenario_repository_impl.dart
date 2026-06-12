@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/scenario.dart';
 import '../../domain/entities/user_scenario.dart';
 import '../../domain/repositories/scenario_repository.dart';
@@ -12,15 +13,51 @@ import '../../../../models/ModelProvider.dart' as models;
 class ScenarioRepositoryImpl implements ScenarioRepository {
   
   // ---------------------------------------------------------------------------
-  // 内部ユーティリティ: S3から全シナリオをフェッチする
+  // 内部ユーティリティ: S3からJSONをフェッチする（ローカルキャッシュ付き）
+  // ---------------------------------------------------------------------------
+  Future<String> _getS3DataWithCache(String fileKey) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = 'cache_$fileKey';
+      final timeKey = 'time_$fileKey';
+
+      final cachedData = prefs.getString(cacheKey);
+      final cachedTimeStr = prefs.getString(timeKey);
+
+      // 1. キャッシュが存在し、かつ保存から24時間以内かチェックする
+      if (cachedData != null && cachedTimeStr != null) {
+        final cachedTime = DateTime.tryParse(cachedTimeStr);
+        if (cachedTime != null && DateTime.now().difference(cachedTime).inHours < 24) {
+          return cachedData; // 24時間以内ならローカル保存データを即座に返す（S3通信なし）
+        }
+      }
+
+      // 2. キャッシュがない、または24時間以上経過している場合はS3から取得
+      final result = await Amplify.Storage.downloadData(key: fileKey).result;
+      final jsonString = utf8.decode(result.bytes);
+
+      // 3. 取得したデータをブラウザのローカルストレージに保存（次回以降のため）
+      await prefs.setString(cacheKey, jsonString);
+      await prefs.setString(timeKey, DateTime.now().toIso8601String());
+
+      return jsonString;
+    } catch (e) {
+      safePrint('キャッシュ/S3フェッチエラー ($fileKey): $e');
+      rethrow;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // 内部ユーティリティ: キャッシュを利用して全シナリオを組み立てる
   // ---------------------------------------------------------------------------
   Future<List<Scenario>> _fetchAllScenariosFromS3() async {
     try {
-      final scenariosResult = await Amplify.Storage.downloadData(key: 'Scenarios.json').result;
-      final authorsResult = await Amplify.Storage.downloadData(key: 'Authors.json').result;
+      // キャッシュ付きのメソッド経由でJSON文字列を取得する
+      final scenariosJsonStr = await _getS3DataWithCache('Scenarios.json');
+      final authorsJsonStr = await _getS3DataWithCache('Authors.json');
 
-      final List<dynamic> rawScenarios = jsonDecode(utf8.decode(scenariosResult.bytes));
-      final List<dynamic> rawAuthors = jsonDecode(utf8.decode(authorsResult.bytes));
+      final List<dynamic> rawScenarios = jsonDecode(scenariosJsonStr);
+      final List<dynamic> rawAuthors = jsonDecode(authorsJsonStr);
 
       final Map<String, String> authorMap = {
         for (var a in rawAuthors) 
@@ -33,7 +70,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
         return Scenario.fromJson(json, aName);
       }).toList();
     } catch (e) {
-      safePrint('S3フェッチエラー: $e');
+      safePrint('_fetchAllScenariosFromS3エラー: $e');
       rethrow;
     }
   }
@@ -79,8 +116,9 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
   @override
   Future<List<String>> fetchAllAuthorNames() async {
     try {
-      final result = await Amplify.Storage.downloadData(key: 'Authors.json').result;
-      final List<dynamic> rawAuthors = jsonDecode(utf8.decode(result.bytes));
+      // キャッシュ付きメソッド経由でJSON文字列を取得する
+      final authorsJsonStr = await _getS3DataWithCache('Authors.json');
+      final List<dynamic> rawAuthors = jsonDecode(authorsJsonStr);
       return rawAuthors.map((a) => (a['authorName']?.toString() ?? '不明')).toList();
     } catch (e) {
       return [];
@@ -171,7 +209,7 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
           isPlayed: status.isPlayed,
           isPossessed: status.isPossessed,
           wantsToGm: status.wantsToGm,
-          wantsToPlay: status.wantsToPlay,
+          wantsToPlay: status.wantsToPlay ?? false,
         );
 
         final createRequest = ModelMutations.create(newModel);
