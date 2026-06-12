@@ -139,18 +139,49 @@ class ScenarioRepositoryImpl implements ScenarioRepository {
     try {
       final authUser = await Amplify.Auth.getCurrentUser();
       
-      var newModel = models.UserScenario(
-        userId: authUser.userId,
-        scenarioId: scenarioId,
-        isPlayed: status.isPlayed,
-        isPossessed: status.isPossessed,
-        wantsToGm: status.wantsToGm,
+      // 1. まず既存のデータが存在するか確認する
+      final getRequest = ModelQueries.get(
+        models.UserScenario.classType,
+        models.UserScenarioModelIdentifier(userId: authUser.userId, scenarioId: scenarioId),
       );
+      final getResponse = await Amplify.API.query(request: getRequest).response;
+      final existingRecord = getResponse.data;
 
-      newModel = newModel.copyWith(wantsToPlay: status.wantsToPlay);
+      if (existingRecord != null) {
+        // 2. 既存データがある場合は「更新 (Update)」する
+        final updatedModel = existingRecord.copyWith(
+          isPlayed: status.isPlayed,
+          isPossessed: status.isPossessed,
+          wantsToGm: status.wantsToGm,
+          wantsToPlay: status.wantsToPlay,
+        );
 
-      final request = ModelMutations.create(newModel);
-      await Amplify.API.mutate(request: request).response;
+        final updateRequest = ModelMutations.update(updatedModel);
+        final response = await Amplify.API.mutate(request: updateRequest).response;
+        
+        // サーバー側でエラーが返ってきた場合は例外を投げる
+        if (response.hasErrors) {
+          throw Exception('更新中にエラーが発生しました: ${response.errors}');
+        }
+      } else {
+        // 3. 既存データがない場合は「新規作成 (Create)」する
+        var newModel = models.UserScenario(
+          userId: authUser.userId,
+          scenarioId: scenarioId,
+          isPlayed: status.isPlayed,
+          isPossessed: status.isPossessed,
+          wantsToGm: status.wantsToGm,
+          wantsToPlay: status.wantsToPlay,
+        );
+
+        final createRequest = ModelMutations.create(newModel);
+        final response = await Amplify.API.mutate(request: createRequest).response;
+        
+        // サーバー側でエラーが返ってきた場合は例外を投げる
+        if (response.hasErrors) {
+          throw Exception('作成中にエラーが発生しました: ${response.errors}');
+        }
+      }
     } catch (e) {
       safePrint('updateUserScenarioStatusエラー: $e');
       rethrow;

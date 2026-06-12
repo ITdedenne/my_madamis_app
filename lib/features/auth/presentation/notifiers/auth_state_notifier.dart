@@ -3,6 +3,8 @@ import 'package:my_madamis_app/features/auth/domain/repositories/auth_repository
 import 'package:my_madamis_app/providers.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
 
+import 'package:my_madamis_app/features/scenario_logbook/presentation/notifiers/user_scenario_status_notifier.dart';
+
 enum AuthStatus {
   initial,
   authenticated,
@@ -42,13 +44,14 @@ class AuthState {
 
 final authStateNotifierProvider =
     StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
-  return AuthStateNotifier(ref.watch(authRepositoryProvider));
+  return AuthStateNotifier(ref.watch(authRepositoryProvider), ref);
 });
 
 class AuthStateNotifier extends StateNotifier<AuthState> {
   final AuthRepository _authRepository;
+  final Ref _ref; 
 
-  AuthStateNotifier(this._authRepository) : super(const AuthState(status: AuthStatus.initial)) {
+  AuthStateNotifier(this._authRepository, this._ref) : super(const AuthState(status: AuthStatus.initial)) {
     _checkCurrentUser();
   }
 
@@ -56,7 +59,6 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
     try {
       final attributes = await _authRepository.getCurrentUserAttributes();
       
-      //preferredUsername が無い場合は email をフォールバックとして使用する防衛的実装
       final usernameAttribute = attributes.firstWhere(
         (element) => element.userAttributeKey == AuthUserAttributeKey.preferredUsername,
         orElse: () => attributes.firstWhere(
@@ -80,6 +82,22 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
 
   Future<void> signOut() async {
     await _authRepository.signOut();
+    
+    // 1. シナリオ手帳のデータ残留の原因となっていた大元のステータス情報を破棄
+    _ref.invalidate(userScenarioStatusProvider);
+
+    // 2. 各Repositoryがメモリに保持している可能性がある通信結果を破棄
+    _ref.invalidate(profileRepositoryProvider);
+    _ref.invalidate(scenarioRepositoryProvider);
+    _ref.invalidate(friendsRepositoryProvider);
+    _ref.invalidate(playerFinderRepositoryProvider);
+    _ref.invalidate(groupSearchRepositoryProvider);
+
+    // 3. (任意) その他、データを持ったままになるViewModelがあればここで破棄
+    // _ref.invalidate(profileViewModelProvider);
+    // _ref.invalidate(friendsViewModelProvider);
+    // _ref.invalidate(myListPageStateProvider); // 絞り込みやソート状態もリセットしたい場合は追加
+
     state = const AuthState(status: AuthStatus.unauthenticated);
   }
 
@@ -111,7 +129,6 @@ class AuthStateNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(
           status: AuthStatus.passwordResetRequired, errorMessage: null);
     } on Exception catch (e) {
-      // API層で投げられたエラーメッセージから "Exception: " の文字列を取り除いてUIへ渡す
       state = state.copyWith(
           status: AuthStatus.error, errorMessage: e.toString().replaceAll('Exception: ', ''));
     }
